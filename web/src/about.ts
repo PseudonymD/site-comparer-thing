@@ -53,7 +53,7 @@ blended B_i = (1 − α) S_i + α N_i              hard filters set S_i = 0</spa
 
       <h2>Data sources (this build)</h2>
       <table><thead><tr><th>Feature</th><th>Unit</th><th>Group</th><th>Source used</th></tr></thead><tbody>${srcRows}</tbody></table>
-      <p class="note">Preferred sources need a NASA Earthdata token. The pipeline falls back automatically to no-auth NASA services (POWER, GIBS) and records what was used. Basemaps: Esri World Imagery and CARTO / OpenStreetMap. Country lookup: Natural Earth (public domain). Elevation tiles: Mapzen/Nextzen Terrain Tiles on AWS Open Data (SRTM, GMTED, ETOPO1, NED, and others).</p>
+      <p class="note">Preferred sources need a NASA Earthdata token. The pipeline falls back automatically to no-auth NASA services (POWER, GIBS) and records what was used. Basemaps and place labels: Esri (World Imagery, Dark Gray Canvas, Boundaries and Places). Country lookup: Natural Earth (public domain). Elevation tiles: Mapzen/Nextzen Terrain Tiles on AWS Open Data (SRTM, GMTED, ETOPO1, NED, and others).</p>
 
       <h2>Limitations</h2>
       <ul>

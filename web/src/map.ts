@@ -17,16 +17,17 @@ function style(): StyleSpecification {
       },
       dark: {
         type: 'raster',
-        tiles: ['a', 'b', 'c', 'd'].map((s) => `https://${s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}.png`),
+        tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}'],
         tileSize: 256,
-        maxzoom: 19,
-        attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/attributions">CARTO</a>',
+        maxzoom: 16,
+        attribution: 'Basemap © Esri, HERE, Garmin, © OpenStreetMap contributors, and the GIS User Community',
       },
       labels: {
         type: 'raster',
-        tiles: ['a', 'b', 'c', 'd'].map((s) => `https://${s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}.png`),
+        tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}'],
         tileSize: 256,
-        maxzoom: 19,
+        maxzoom: 13,
+        attribution: 'Labels © Esri, HERE, Garmin, © OpenStreetMap contributors',
       },
     },
     layers: [
