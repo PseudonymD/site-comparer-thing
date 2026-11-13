@@ -59,7 +59,7 @@ function quantile(sorted: Float32Array, p: number) {
 }
 
 export async function runDrill(lat: number, lon: number, target: Target, out: HTMLElement): Promise<void> {
-  out.innerHTML = '<div class="muted small" style="margin-top:8px">Fetching ~30 m elevation tiles…</div>';
+  out.innerHTML = '<div class="note" style="margin-top:8px">Fetching ~30 m elevation tiles…</div>';
   try {
     Z = zoomFor30m(lat);
     const dLat = BOX_KM / 2 / 111.2;
@@ -93,7 +93,7 @@ export async function runDrill(lat: number, lon: number, target: Target, out: HT
       }
     }
     await Promise.all(tiles);
-    out.innerHTML = '<div class="muted small" style="margin-top:8px">Computing slope and roughness…</div>';
+    out.innerHTML = '<div class="note" style="margin-top:8px">Computing slope and roughness…</div>';
 
     // Slope, TRI, hillshade for interior pixels.
     const iw = W - 2;
@@ -158,7 +158,7 @@ export async function runDrill(lat: number, lon: number, target: Target, out: HT
     };
     render(out, result, target, shade, slope, iw, ih);
   } catch (e) {
-    out.innerHTML = `<div class="beyond small" style="margin-top:8px">Drill-down failed: ${(e as Error).message}</div>`;
+    out.innerHTML = `<div class="beyond note" style="margin-top:8px">Drill-down failed: ${(e as Error).message}</div>`;
   }
 }
 
@@ -172,12 +172,12 @@ function render(out: HTMLElement, r: DrillResult, t: Target, shade: Float32Array
   const th = t.slope_hist;
   const sim = overlap(r.slopeHist, th.probs);
   out.innerHTML = `
-    <div class="drill-grid" style="margin-top:10px">
+    <div class="drill-grid">
       <div><canvas id="drill-canvas" width="${w}" height="${h}"></canvas>
-        <div class="muted small" style="margin-top:4px">Hillshade, ${Math.round(r.pixelM)} m pixels; steep (&gt;15°) tinted.</div></div>
+        <div class="note" style="margin-top:4px">Hillshade, ${Math.round(r.pixelM)} m pixels; steep (&gt;15°) tinted.</div></div>
       <div>
         <svg id="slope-chart" viewBox="0 0 300 150" width="100%"></svg>
-        <div class="chart-legend"><span style="color:#f8850f">this site</span><span style="color:#c9d4ff">${t.body} target</span></div>
+        <div class="chart-legend"><span class="lg-site">this site</span><span class="lg-target">${t.body} target</span></div>
         <div class="stats">
           Median slope <b>${r.medianSlope.toFixed(1)}°</b> (target ${th.median}°) · p90 <b>${r.p90Slope.toFixed(1)}°</b> (target ${th.p90}°)<br>
           Flat ground &lt;5°: <b>${(r.fracBelow5 * 100).toFixed(0)}%</b> · &lt;15° (landable): <b>${(r.fracBelow15 * 100).toFixed(0)}%</b><br>
@@ -186,7 +186,7 @@ function render(out: HTMLElement, r: DrillResult, t: Target, shade: Float32Array
       </div>
     </div>
     <svg id="tri-chart" viewBox="0 0 520 90" width="100%" style="margin-top:8px"></svg>
-    <div class="muted small">Terrain Ruggedness Index distribution (m). Target slope histogram: ${th.method} at ~${th.baseline_m} m baseline. Elevation source resolution varies by region (SRTM/NED where available, coarser at high latitude).</div>`;
+    <div class="note">Terrain Ruggedness Index distribution (m). Target slope histogram: ${th.method} at ~${th.baseline_m} m baseline. Elevation source resolution varies by region (SRTM/NED where available, coarser at high latitude).</div>`;
 
   // Hillshade canvas
   const cv = out.querySelector('#drill-canvas') as HTMLCanvasElement;
@@ -218,7 +218,7 @@ function render(out: HTMLElement, r: DrillResult, t: Target, shade: Float32Array
   const Y = (p: number) => 128 - (p / maxP) * 115;
   let bars = '';
   r.slopeHist.forEach((p, i) => {
-    bars += `<rect x="${X(i) + 0.5}" y="${Y(p)}" width="${262 / nb - 1}" height="${128 - Y(p)}" fill="#f8850f" opacity="0.8"/>`;
+    bars += `<rect x="${X(i) + 0.5}" y="${Y(p)}" width="${262 / nb - 1}" height="${128 - Y(p)}" fill="var(--accent)" opacity="0.85"/>`;
   });
   let line = '';
   th.probs.forEach((p, i) => {
@@ -227,9 +227,9 @@ function render(out: HTMLElement, r: DrillResult, t: Target, shade: Float32Array
   let ticks = '';
   for (let d = 0; d <= 60; d += 10) {
     const x = 28 + (d / th.edges[th.edges.length - 1]) * 262;
-    ticks += `<text x="${x}" y="142" font-size="9" fill="#8d97b3" text-anchor="middle">${d}°</text>`;
+    ticks += `<text x="${x}" y="142" font-size="9" fill="var(--muted)" text-anchor="middle">${d}°</text>`;
   }
-  svg.innerHTML = `<line x1="28" y1="128" x2="290" y2="128" stroke="#2a3350"/>${bars}<path d="${line}" fill="none" stroke="#c9d4ff" stroke-width="1.6"/>${ticks}<text x="2" y="12" font-size="9" fill="#8d97b3">share</text>`;
+  svg.innerHTML = `<line x1="28" y1="128" x2="290" y2="128" stroke="var(--line)"/>${bars}<path d="${line}" fill="none" stroke="var(--ink)" stroke-width="1.6"/>${ticks}<text x="2" y="12" font-size="9" fill="var(--muted)">share</text>`;
 
   // TRI histogram
   const tri = out.querySelector('#tri-chart') as SVGSVGElement;
@@ -238,8 +238,8 @@ function render(out: HTMLElement, r: DrillResult, t: Target, shade: Float32Array
   r.triHist.forEach((p, i) => {
     const x = 30 + i * 24;
     const hh = (p / maxT) * 60;
-    tb += `<rect x="${x}" y="${70 - hh}" width="22" height="${hh}" fill="#c084fc" opacity="0.8"/>`;
-    if (i % 4 === 0) tb += `<text x="${x}" y="84" font-size="9" fill="#8d97b3">${r.triEdges[i].toFixed(0)}</text>`;
+    tb += `<rect x="${x}" y="${70 - hh}" width="22" height="${hh}" fill="var(--remoteness)" opacity="0.85"/>`;
+    if (i % 4 === 0) tb += `<text x="${x}" y="84" font-size="9" fill="var(--muted)">${r.triEdges[i].toFixed(0)}</text>`;
   });
-  tri.innerHTML = `<text x="0" y="10" font-size="9" fill="#8d97b3">TRI</text>${tb}<text x="510" y="84" font-size="9" fill="#8d97b3" text-anchor="end">${r.triEdges[20].toFixed(0)} m</text>`;
+  tri.innerHTML = `<text x="0" y="10" font-size="9" fill="var(--muted)">TRI</text>${tb}<text x="510" y="84" font-size="9" fill="var(--muted)" text-anchor="end">${r.triEdges[20].toFixed(0)} m</text>`;
 }

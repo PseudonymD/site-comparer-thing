@@ -7,10 +7,10 @@ export const GROUP_COLORS: Record<string, string> = {
   Remoteness: 'var(--remoteness)',
 };
 export const GROUP_HEX: Record<string, string> = {
-  Terrain: '#fb923c',
-  Climate: '#60a5fa',
-  Surface: '#a3e635',
-  Remoteness: '#c084fc',
+  Terrain: '#8f5626',
+  Climate: '#2a68a8',
+  Surface: '#47763a',
+  Remoteness: '#74499c',
 };
 
 export function fmtValue(v: number, f: FeatureMeta): string {
