@@ -1,0 +1,28 @@
+name: Release data files
+
+# Manual trigger: attach web/public/data/* to a GitHub Release tagged data-<date>.
+# The Pages build (deploy.yml) downloads the newest data-* release automatically, so data
+# that outgrows git's 50 MB comfort zone can live in releases instead of the repository.
+on:
+  workflow_dispatch:
+    inputs:
+      note:
+        description: "Release note (e.g. which pipeline run this is)"
+        required: false
+        default: "Pipeline output"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create release with data files
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="data-$(date -u +%Y%m%d-%H%M)"
+          ls -la web/public/data
+          gh release create "$tag" web/public/data/* --title "$tag" --notes "${{ inputs.note }}" --latest=false
