@@ -285,7 +285,8 @@
     "mcmurdo",
     "svalbard",
     "meteor_crater"
-   ]
+   ],
+   "default_filters": []
   },
   {
    "id": "moon_mare_lava_tube",
@@ -548,6 +549,12 @@
     "askja",
     "holuhraun",
     "mauna_kea"
+   ],
+   "default_filters": [
+    {
+     "feature": "ice",
+     "max": 0.5
+    }
    ]
   },
   {
@@ -814,6 +821,12 @@
     "pilbara",
     "utah_mdrs",
     "rio_tinto"
+   ],
+   "default_filters": [
+    {
+     "feature": "ice",
+     "max": 0.5
+    }
    ]
   },
   {
@@ -1079,6 +1092,12 @@
     "utah_mdrs",
     "death_valley",
     "pilbara"
+   ],
+   "default_filters": [
+    {
+     "feature": "ice",
+     "max": 0.5
+    }
    ]
   },
   {
@@ -1348,7 +1367,8 @@
     "mcmurdo",
     "askja",
     "holuhraun"
-   ]
+   ],
+   "default_filters": []
   },
   {
    "id": "mars_north_polar",
@@ -1613,7 +1633,8 @@
     "mcmurdo",
     "svalbard",
     "haughton"
-   ]
+   ],
+   "default_filters": []
   }
  ],
  "references": {

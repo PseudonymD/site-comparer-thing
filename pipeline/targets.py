@@ -168,6 +168,7 @@ TARGETS = [
     },
 ]
 
+DEFAULT_ICE_MAX = 0.5  # fraction; default hard filter for non-ice targets
 HIST_BINS = list(range(0, 62, 2))  # slope histogram bin edges (degrees), shared with the web drill-down
 
 
@@ -206,5 +207,7 @@ def build_targets(cdfs: dict) -> dict:
                            "median": sh["median"], "p90": sh["p90"], "baseline_m": sh["baseline_m"],
                            "refs": sh["refs"], "method": "lognormal fit to literature median/p90"},
             "validation": t["validation"],
+            # Targets that do not weight ice exclude ice sheets by default (user-toggleable in the UI).
+            "default_filters": [] if t["weights"]["ice"] > 0 else [{"feature": "ice", "max": DEFAULT_ICE_MAX}],
         })
     return {"features": FEATURE_IDS, "targets": out, "references": REFS}

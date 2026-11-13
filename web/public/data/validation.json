@@ -1,5 +1,5 @@
 {
- "generated": "2026-11-13T14:18:53",
+ "generated": "2026-11-13T14:23:03",
  "n_random": 1000,
  "synthetic_features": [
   "temp_mean",
@@ -56,139 +56,139 @@
   {
    "target": "moon_mare_lava_tube",
    "name": "Moon – Mare / lava tube (Marius Hills)",
-   "auc": 0.584,
-   "median_analog_percentile": 70.7,
-   "random_median_score": 0.5661,
+   "auc": 0.861,
+   "median_analog_percentile": 94.1,
+   "random_median_score": 0.4454,
    "analogs": [
     {
      "id": "hawaii_lava_tubes",
      "name": "Hawaiian lava tubes (Kazumura)",
      "score": 0.5734,
-     "percentile": 61.63,
-     "rank": 822294
+     "percentile": 89.72,
+     "rank": 220393
     },
     {
      "id": "kilauea",
      "name": "Kīlauea",
      "score": 0.6002,
-     "percentile": 70.67,
-     "rank": 628596
+     "percentile": 94.11,
+     "rank": 126281
     },
     {
      "id": "black_point",
      "name": "Black Point Lava Flow",
      "score": 0.5564,
-     "percentile": 56.54,
-     "rank": 931478
+     "percentile": 86.25,
+     "rank": 294739
     },
     {
      "id": "lanzarote",
      "name": "Lanzarote (Timanfaya)",
      "score": 0.558,
-     "percentile": 57.0,
-     "rank": 921516
+     "percentile": 86.59,
+     "rank": 287335
     },
     {
      "id": "askja",
      "name": "Askja, Iceland",
      "score": 0.6315,
-     "percentile": 82.81,
-     "rank": 368442
+     "percentile": 97.71,
+     "rank": 49049
     },
     {
      "id": "holuhraun",
      "name": "Holuhraun lava field",
      "score": 0.6173,
-     "percentile": 77.25,
-     "rank": 487553
+     "percentile": 96.3,
+     "rank": 79196
     },
     {
      "id": "mauna_kea",
      "name": "Mauna Kea",
      "score": 0.6102,
-     "percentile": 74.49,
-     "rank": 546723
+     "percentile": 95.47,
+     "rank": 97184
     }
    ]
   },
   {
    "target": "mars_jezero",
    "name": "Mars – Jezero crater",
-   "auc": 0.474,
-   "median_analog_percentile": 48.6,
-   "random_median_score": 0.5682,
+   "auc": 0.774,
+   "median_analog_percentile": 79.8,
+   "random_median_score": 0.4313,
    "analogs": [
     {
      "id": "atacama",
      "name": "Atacama Desert (Yungay)",
      "score": 0.6426,
-     "percentile": 76.8,
-     "rank": 497304
+     "percentile": 97.41,
+     "rank": 55518
     },
     {
      "id": "death_valley",
      "name": "Death Valley",
      "score": 0.5251,
-     "percentile": 48.56,
-     "rank": 1102388
+     "percentile": 79.85,
+     "rank": 431870
     },
     {
      "id": "pilbara",
      "name": "Pilbara Craton",
      "score": 0.5848,
-     "percentile": 61.34,
-     "rank": 828618
+     "percentile": 90.94,
+     "rank": 194099
     },
     {
      "id": "utah_mdrs",
      "name": "Mars Desert Research Station",
      "score": 0.5184,
-     "percentile": 47.09,
-     "rank": 1134011
+     "percentile": 78.43,
+     "rank": 462367
     },
     {
      "id": "rio_tinto",
      "name": "Río Tinto",
      "score": 0.5009,
-     "percentile": 43.19,
-     "rank": 1217576
+     "percentile": 74.62,
+     "rank": 543948
     }
    ]
   },
   {
    "target": "mars_gale",
    "name": "Mars – Gale crater",
-   "auc": 0.512,
-   "median_analog_percentile": 55.4,
-   "random_median_score": 0.5708,
+   "auc": 0.806,
+   "median_analog_percentile": 85.7,
+   "random_median_score": 0.4319,
    "analogs": [
     {
      "id": "atacama",
      "name": "Atacama Desert (Yungay)",
      "score": 0.6472,
-     "percentile": 78.54,
-     "rank": 459847
+     "percentile": 97.5,
+     "rank": 53575
     },
     {
      "id": "utah_mdrs",
      "name": "Mars Desert Research Station",
      "score": 0.523,
-     "percentile": 47.89,
-     "rank": 1116888
+     "percentile": 79.19,
+     "rank": 446021
     },
     {
      "id": "death_valley",
      "name": "Death Valley",
      "score": 0.5305,
-     "percentile": 49.52,
-     "rank": 1081919
+     "percentile": 80.75,
+     "rank": 412632
     },
     {
      "id": "pilbara",
      "name": "Pilbara Craton",
      "score": 0.5856,
-     "percentile": 61.33,
-     "rank": 828699
+     "percentile": 90.72,
+     "rank": 198950
     }
    ]
   },

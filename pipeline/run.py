@@ -197,7 +197,8 @@ def run(opts: RunOptions) -> dict:
     files.append(write_json(out / "known_analogs.json", analogs))
 
     # ---- 8. validation ------------------------------------------------------------------------
-    report, md = validate(q, land_idx, grid, targets, analogs["analogs"], synthetic)
+    bps = {f["id"]: f["breakpoints"] for f in meta["features"]}
+    report, md = validate(q, land_idx, grid, targets, analogs["analogs"], synthetic, bps)
     files.append(write_json(out / "validation.json", report))
     (PIPELINE_DIR / "report.md").write_text(md, encoding="utf-8")
 

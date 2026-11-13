@@ -57,3 +57,9 @@ describe('breakpoint helpers', () => {
     expect(zThresholdFromValue(ties, 0)).toBeCloseTo(0.89, 9); // exclude everything above the zero block
   });
 });
+
+describe('real-unit filter thresholds match Python', () => {
+  it('zThresholdFromValue', () => {
+    for (const [tau, z] of fx.zthr_cases as [number, number][]) expect(zThresholdFromValue(fx.zthr_breakpoints, tau)).toBeCloseTo(z, 12);
+  });
+});

@@ -7,7 +7,8 @@ from datetime import datetime
 import numpy as np
 
 from .grid import Grid
-from .scoring import score
+from .config import FEATURE_IDS
+from .scoring import score, z_threshold_from_value
 
 log = logging.getLogger("pipeline.validate")
 
@@ -35,13 +36,16 @@ def auc(pos: np.ndarray, neg: np.ndarray) -> float:
 
 
 def validate(q: np.ndarray, land_idx: np.ndarray, grid: Grid, targets: dict, analogs: list[dict],
-             synthetic_features: list[str], seed: int = 42) -> tuple[dict, str]:
+             synthetic_features: list[str], breakpoints: dict | None = None, seed: int = 42) -> tuple[dict, str]:
     rng = np.random.default_rng(seed)
     by_id = {a["id"]: a for a in analogs}
     rand_idx = rng.choice(land_idx.size, size=min(N_RANDOM, land_idx.size), replace=False)
     results = []
     for t in targets["targets"]:
-        s = score(q, np.array(t["vector"]), np.array(t["weights"]))
+        filters = []
+        for flt in t.get("default_filters", []) if breakpoints else []:
+            filters.append((FEATURE_IDS.index(flt["feature"]), z_threshold_from_value(breakpoints[flt["feature"]], flt["max"])))
+        s = score(q, np.array(t["vector"]), np.array(t["weights"]), filters)
         g = np.full(grid.size, np.nan, dtype=np.float32)
         g[land_idx] = s
         g = g.reshape(grid.shape)
@@ -74,7 +78,8 @@ def _markdown(results, synthetic, n_land) -> str:
     lines = [
         "# Validation report", "",
         f"Generated {datetime.now():%Y-%m-%d %H:%M}. Land cells scored: {n_land:,}.", "",
-        "For each planetary target we score every land cell with the target's default weights, then compare "
+        "For each planetary target we score every land cell with the target's default weights and default filters "
+        "(non-ice targets exclude cells with > 50 % permanent ice), then compare "
         "the **known analog sites** used for that body against **1000 random land cells**. A site's score is "
         "the best cell within ±2 cells (~±20 km) of its published coordinates; random cells use the same rule. "
         "ROC-AUC = probability that a known analog outranks a random land cell (0.5 = chance, 1.0 = perfect).", "",

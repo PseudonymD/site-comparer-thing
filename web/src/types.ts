@@ -52,6 +52,7 @@ export interface Target {
   raw: Record<string, TargetRaw>;
   slope_hist: { edges: number[]; probs: number[]; median: number; p90: number; baseline_m: number; refs: string[]; method: string };
   validation: string[];
+  default_filters: { feature: string; max: number }[];
 }
 
 export interface TargetsFile {

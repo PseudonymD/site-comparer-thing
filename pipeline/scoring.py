@@ -51,3 +51,19 @@ def novelty_unit(d_km: np.ndarray) -> np.ndarray:
 def blend(s: np.ndarray, d_km: np.ndarray, alpha: float) -> np.ndarray:
     b = (1.0 - alpha) * s + alpha * novelty_unit(d_km)
     return np.where(s > 0, b, 0.0)
+
+
+def z_threshold_from_value(breakpoints, tau: float) -> float:
+    """Real-unit threshold -> percentile threshold for "exclude value > tau" (docs/scoring.md)."""
+    n = len(breakpoints) - 1
+    k = -1
+    for i, b in enumerate(breakpoints):
+        if b <= tau:
+            k = i
+    if k < 0:
+        return 0.0
+    if k >= n:
+        return 1.0
+    a, b = breakpoints[k], breakpoints[k + 1]
+    frac = (tau - a) / (b - a) if b > a else 0.0
+    return (k + frac) / n

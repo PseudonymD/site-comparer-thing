@@ -210,6 +210,18 @@ async function main() {
   // ---------------------------------------------------------------- UI: left panel
   const left = $('#left');
   const sliders: HTMLInputElement[] = [];
+  const filterInputs: { flt: FilterState; cb: HTMLInputElement; num: HTMLInputElement }[] = [];
+  function applyDefaultFilters(t: Target) {
+    // Each target may switch on default hard filters (non-ice targets exclude ice sheets).
+    const ice = state.filters.find((f) => f.id === 'ice')!;
+    const d = (t.default_filters || []).find((f) => f.feature === 'ice');
+    ice.on = !!d;
+    if (d) ice.tau = d.max;
+    for (const fi of filterInputs) {
+      fi.cb.checked = fi.flt.on;
+      fi.num.value = String(fi.flt.tau);
+    }
+  }
   const sliderVals: HTMLElement[] = [];
   function buildLeft() {
     const synth = meta.synthetic_features;
@@ -271,6 +283,7 @@ async function main() {
         flt.tau = +(num as HTMLInputElement).value;
         if (flt.on) requestScore();
       });
+      filterInputs.push({ flt, cb: cb as HTMLInputElement, num: num as HTMLInputElement });
       fDiv.appendChild(row);
     });
     const alpha = $<HTMLInputElement>('#alpha');
@@ -338,9 +351,7 @@ async function main() {
   function selectTarget(i: number) {
     state.t = i;
     state.weights = [...targets.targets[i].weights];
-    // Ice targets should not exclude ice.
-    const ice = state.filters.find((f) => f.id === 'ice')!;
-    if (state.weights[featIndex('ice')] > 0 && ice.on) ice.on = false;
+    applyDefaultFilters(targets.targets[i]);
     syncTargetUI();
     closeCard();
     requestScore();
@@ -398,6 +409,7 @@ async function main() {
 
   // ---------------------------------------------------------------- wire up
   buildLeft();
+  applyDefaultFilters(app.target());
   $('#legend-bar').style.background = cssGradient();
   $('#btn-about').onclick = () => renderAbout(app);
   $('#btn-basemap').onclick = () => {
