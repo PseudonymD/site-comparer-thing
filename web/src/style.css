@@ -232,6 +232,13 @@ table.vals tr.off td { color: var(--muted); }
 .chart-legend span::before { content: ''; display: inline-block; width: 10px; height: 3px; margin-right: 4px; vertical-align: middle; background: var(--ink); }
 .chart-legend .lg-site::before { background: var(--accent); height: 8px; }
 
+/* ---------- site focus ---------- */
+#heat-toggle { display: none; position: fixed; bottom: var(--gut); z-index: 9; left: calc(var(--inset-l) + (100vw - var(--inset-l) - var(--inset-r)) / 2); transform: translateX(-50%); border: 0; padding: 8px 14px; font-weight: 600; font-size: 12.5px; cursor: pointer; transition: left 0.25s ease, background-color 0.35s; }
+#heat-toggle:hover { background: var(--raised); }
+body.site-focus #heat-toggle { display: block; }
+body.site-focus:not(.focus-heat) #legend { display: none; }
+body.site-focus.focus-heat #legend { bottom: calc(var(--gut) + 46px); }
+
 /* ---------- legend ---------- */
 #legend { position: fixed; bottom: var(--gut); z-index: 9; width: 250px; padding: 10px 12px 9px; left: calc(var(--inset-l) + (100vw - var(--inset-l) - var(--inset-r)) / 2); transform: translateX(-50%); transition: left 0.25s ease, background-color 0.35s; }
 .legend-hist { display: flex; align-items: flex-end; gap: 1px; height: 30px; margin: 7px 0 0; padding: 3px 3px 0; background: var(--map); border-radius: 4px 4px 0 0; }
