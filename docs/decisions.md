@@ -27,7 +27,7 @@ Reasonable calls made during the build, as asked for in the brief. Nothing here 
 ## Web
 
 17. **Score overlay**: the worker paints a Web-Mercator RGBA image (one column per grid column, mercator-spaced rows) and encodes it to PNG with `OffscreenCanvas`. A MapLibre `image` source displays it. A `canvas` source would skip the PNG step, but its texture upload rendered black under software WebGL during testing. The PNG round trip costs ~100–150 ms and stays within the 500 ms budget.
-18. **Basemaps**: Esri World Imagery (default, satellite) and CARTO dark (toggle), both free with attribution. **Globe** projection is a toggle (MapLibre v5). Flat Mercator is the default because it reads better on a projector.
+18. **Basemaps**: Esri World Imagery (default, satellite) and Esri Dark Gray Canvas (toggle), with Esri Boundaries and Places for labels, all free with attribution (CARTO was dropped when its tiles began requiring an API key). **Globe** projection is a toggle (MapLibre v5). Flat Mercator is the default because it reads better on a projector.
 19. **Colour stretch**: colours span the chosen Earth percentile (default p50) to the maximum of the current score distribution. Without this, scores bunch up in 0.6–0.9 and the map looks flat.
 20. **Novelty** is precomputed once per cell in the worker. The 16 known analogs are fixed, so slider changes cost nothing extra.
 21. **Pinned versions** older than two weeks at build time: maplibre-gl 5.24.0, vite 6.4.5, TypeScript 5.9.3, vitest 3.2.7.

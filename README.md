@@ -73,7 +73,7 @@ Tests: `npm test` (web) and `python -m pytest pipeline/tests` (pipeline).
 | Aerosol / dust AOD | [MERRA-2 M2TMNXAER](https://doi.org/10.5067/FH9A0MLJPC7N) | NASA GIBS AOD (colormap-decoded) | NASA open data |
 | Land mask, countries | [Natural Earth](https://www.naturalearthdata.com/) 10m land, 50m admin-0 | – | Public domain |
 | Planetary targets | Literature values: LOLA, Diviner, MOLA, REMS/MEDA, HiRISE/CRISM studies (citations in `targets.json` and on the About page) | – | – |
-| Basemaps | Esri World Imagery, CARTO dark / © OpenStreetMap contributors | – | Attribution shown on map |
+| Basemaps | Esri World Imagery, Esri Dark Gray Canvas, Esri Boundaries and Places labels | – | Attribution shown on map |
 
 `meta.json` records which source was used for each feature. Synthetic placeholders appear only if a source was unreachable, and each one is flagged in the data and the UI.
 
