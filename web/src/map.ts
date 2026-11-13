@@ -50,6 +50,8 @@ export interface MapApi {
   flyTo(lat: number, lon: number, zoom?: number): void;
   setBasemap(kind: 'satellite' | 'dark'): void;
   setProjection(kind: 'globe' | 'mercator'): void;
+  setPadding(p: { top: number; right: number; bottom: number; left: number }): void;
+  pulseSite(i: number | null): void;
   onCellClick(cb: (lat: number, lon: number) => void): void;
 }
 
@@ -64,7 +66,7 @@ export function createMap(container: HTMLElement): MapApi {
     attributionControl: { compact: true },
     renderWorldCopies: true,
   });
-  map.addControl(new maplibregl.NavigationControl({ visualizePitch: false }), 'top-right');
+  map.addControl(new maplibregl.NavigationControl({ visualizePitch: false, showCompass: false }), 'top-right');
   map.addControl(new maplibregl.ScaleControl({ maxWidth: 120, unit: 'metric' }), 'bottom-right');
 
   // The score raster is a north-up Web-Mercator PNG covering the whole world (±85.05°), produced by
@@ -77,6 +79,7 @@ export function createMap(container: HTMLElement): MapApi {
   let siteMarkers: maplibregl.Marker[] = [];
   let analogMarkers: { m: maplibregl.Marker; a: KnownAnalog }[] = [];
   let hl: maplibregl.Marker | null = null;
+  let padding = { top: 0, right: 0, bottom: 0, left: 0 };
 
   const ready = new Promise<void>((resolve) => {
     map.on('load', () => {
@@ -127,7 +130,7 @@ export function createMap(container: HTMLElement): MapApi {
       el.className = 'analog-marker';
       el.title = `${a.name} (known ${a.bodies.join('/')} analog)`;
       const popup = new maplibregl.Popup({ offset: 10, closeButton: false }).setHTML(
-        `<b>${a.name}</b><br><span style="color:#8d97b3">Known ${a.bodies.join(' & ')} analog · ${a.country}</span><br>${a.note}`,
+        `<b>${a.name}</b><br><span class="popup-sub">Known ${a.bodies.join(' & ')} analog · ${a.country}</span><br>${a.note}`,
       );
       const m = new maplibregl.Marker({ element: el }).setLngLat([a.lon, a.lat]).setPopup(popup).addTo(map);
       el.addEventListener('click', (e) => e.stopPropagation());
@@ -139,15 +142,14 @@ export function createMap(container: HTMLElement): MapApi {
     for (const { m, a } of analogMarkers) {
       const el = m.getElement();
       const relevant = a.bodies.includes(body);
-      el.style.opacity = relevant ? '1' : '0.35';
-      el.classList.toggle('moon', body === 'Moon');
+      el.classList.toggle('dim', !relevant);
     }
   }
 
   function highlight(lat: number, lon: number) {
     if (!hl) {
       const el = document.createElement('div');
-      el.style.cssText = 'width:34px;height:34px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 3px rgba(248,133,15,.8),0 0 24px rgba(248,133,15,.8);pointer-events:none';
+      el.className = 'hl-marker';
       hl = new maplibregl.Marker({ element: el });
     }
     hl.setLngLat([lon, lat]).addTo(map);
@@ -166,7 +168,7 @@ export function createMap(container: HTMLElement): MapApi {
     setTargetBody,
     highlight,
     flyTo(lat, lon, zoom = 6) {
-      map.flyTo({ center: [lon, lat], zoom, speed: 1.6, essential: true });
+      map.flyTo({ center: [lon, lat], zoom, padding, speed: 1.6, essential: true });
     },
     setBasemap(kind) {
       map.setLayoutProperty('satellite', 'visibility', kind === 'satellite' ? 'visible' : 'none');
@@ -174,6 +176,14 @@ export function createMap(container: HTMLElement): MapApi {
     },
     setProjection(kind) {
       map.setProjection({ type: kind });
+    },
+    setPadding(p) {
+      if (p.top === padding.top && p.right === padding.right && p.bottom === padding.bottom && p.left === padding.left) return;
+      padding = p;
+      map.easeTo({ padding: p, duration: 250 });
+    },
+    pulseSite(i) {
+      siteMarkers.forEach((m, k) => m.getElement().classList.toggle('pulse', k === i));
     },
     onCellClick(cb) {
       map.on('click', (e) => cb(e.lngLat.lat, ((e.lngLat.lng + 540) % 360) - 180));
