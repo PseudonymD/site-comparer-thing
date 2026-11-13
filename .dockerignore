@@ -1,0 +1,7 @@
+.venv
+web/node_modules
+web/dist
+pipeline/cache
+pipeline/logs
+pipeline/output
+.git

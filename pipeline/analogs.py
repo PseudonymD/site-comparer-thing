@@ -1,0 +1,41 @@
+"""Known terrestrial analog sites (used for validation, novelty distance and map markers)."""
+from __future__ import annotations
+
+KNOWN_ANALOGS = [
+    {"id": "atacama", "name": "Atacama Desert (Yungay)", "country": "Chile", "lat": -24.08, "lon": -69.93,
+     "bodies": ["Mars"], "note": "Hyper-arid, near-sterile soils; NASA rover and life-detection tests."},
+    {"id": "haughton", "name": "Haughton Crater, Devon Island", "country": "Canada", "lat": 75.38, "lon": -89.68,
+     "bodies": ["Mars", "Moon"], "note": "Polar-desert impact crater; NASA Haughton-Mars Project."},
+    {"id": "death_valley", "name": "Death Valley", "country": "USA", "lat": 36.46, "lon": -116.87,
+     "bodies": ["Mars"], "note": "Evaporites, alluvial fans, extreme aridity; rover field tests."},
+    {"id": "mcmurdo", "name": "McMurdo Dry Valleys", "country": "Antarctica", "lat": -77.52, "lon": 161.85,
+     "bodies": ["Mars"], "note": "Coldest, driest ice-free terrain on Earth; Mars polar analog."},
+    {"id": "askja", "name": "Askja, Iceland", "country": "Iceland", "lat": 65.05, "lon": -16.75,
+     "bodies": ["Moon", "Mars"], "note": "Apollo astronaut geology training (1965, 1967)."},
+    {"id": "holuhraun", "name": "Holuhraun lava field", "country": "Iceland", "lat": 64.87, "lon": -16.83,
+     "bodies": ["Mars"], "note": "Fresh 2014-15 basalt flow; Mars rover and spectroscopy tests."},
+    {"id": "mauna_kea", "name": "Mauna Kea", "country": "USA", "lat": 19.82, "lon": -155.47,
+     "bodies": ["Moon", "Mars"], "note": "PISCES regolith and ISRU tests on volcanic tephra."},
+    {"id": "hawaii_lava_tubes", "name": "Hawaiian lava tubes (Kazumura)", "country": "USA", "lat": 19.49, "lon": -155.08,
+     "bodies": ["Moon", "Mars"], "note": "Longest known lava tube; cave-habitat and robotics analog."},
+    {"id": "rio_tinto", "name": "Río Tinto", "country": "Spain", "lat": 37.72, "lon": -6.55,
+     "bodies": ["Mars"], "note": "Acidic, iron-rich river; jarosite like Meridiani Planum."},
+    {"id": "svalbard", "name": "Svalbard (Bockfjord, AMASE)", "country": "Norway", "lat": 79.42, "lon": 13.33,
+     "bodies": ["Mars"], "note": "Arctic Mars Analog Svalbard Expedition: volcanic + permafrost."},
+    {"id": "utah_mdrs", "name": "Mars Desert Research Station", "country": "USA", "lat": 38.406, "lon": -110.792,
+     "bodies": ["Mars"], "note": "Mars Society habitat; Jurassic red-bed sediments."},
+    {"id": "black_point", "name": "Black Point Lava Flow", "country": "USA", "lat": 35.68, "lon": -111.36,
+     "bodies": ["Moon"], "note": "NASA Desert RATS rover and EVA trials."},
+    {"id": "meteor_crater", "name": "Meteor Crater (Barringer)", "country": "USA", "lat": 35.03, "lon": -111.02,
+     "bodies": ["Moon"], "note": "Apollo crater-geology training site."},
+    {"id": "lanzarote", "name": "Lanzarote (Timanfaya)", "country": "Spain", "lat": 29.0, "lon": -13.75,
+     "bodies": ["Moon", "Mars"], "note": "ESA PANGAEA astronaut geology training; lava tubes."},
+    {"id": "pilbara", "name": "Pilbara Craton", "country": "Australia", "lat": -21.17, "lon": 119.75,
+     "bodies": ["Mars"], "note": "3.5 Ga stromatolites; biosignature analog for Jezero."},
+    {"id": "kilauea", "name": "Kīlauea", "country": "USA", "lat": 19.41, "lon": -155.28,
+     "bodies": ["Moon", "Mars"], "note": "Active basaltic volcanism; lava-flow and tube studies."},
+]
+
+
+def build_known_analogs() -> dict:
+    return {"analogs": KNOWN_ANALOGS}

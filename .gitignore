@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+*.egg-info/
+
+# Pipeline working data
+pipeline/cache/
+pipeline/logs/
+pipeline/output/
+
+# Secrets
+.env
+
+# Web
+web/node_modules/
+web/dist/
+node_modules/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

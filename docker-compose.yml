@@ -1,0 +1,14 @@
+# Usage:  docker compose run --rm pipeline doctor
+#         docker compose run --rm pipeline run --quick
+#         docker compose run --rm pipeline run
+#         docker compose run --rm pipeline publish
+services:
+  pipeline:
+    build: .
+    image: analog-finder-pipeline
+    working_dir: /app
+    volumes:
+      - .:/app
+    env_file:
+      - path: .env
+        required: false
