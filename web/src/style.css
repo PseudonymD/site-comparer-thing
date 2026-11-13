@@ -238,12 +238,18 @@ table.vals tr.off td { color: var(--muted); }
 .legend-hist i { flex: 1; border-radius: 1px 1px 0 0; min-width: 0; }
 .legend-ticks { display: flex; justify-content: space-between; gap: 8px; font: 500 9.5px var(--mono); font-stretch: 78%; margin-top: 4px; }
 .legend-ticks span:nth-child(2) { color: var(--muted); font-weight: 400; }
+.legend-key { display: flex; gap: 14px; font-size: 11px; color: var(--muted); margin-top: 7px; padding-top: 7px; border-top: 1px solid var(--line); }
+.legend-key span { display: flex; align-items: center; gap: 6px; }
+.legend-key .k-site { width: 12px; height: 12px; border-radius: 50%; background: var(--paper); border: 1.5px solid var(--ink); }
+.legend-key .k-analog { width: 8px; height: 8px; background: var(--map); border: 1.5px solid var(--muted); transform: rotate(45deg); margin: 0 2px; }
 .legend-foot { font: 400 9px var(--mono); font-stretch: 76%; color: var(--muted); margin-top: 5px; }
 
 /* ---------- map furniture ---------- */
 .site-marker { width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; font: 600 10px var(--mono); font-stretch: 80%; color: var(--ink); background: var(--paper); border: 1.5px solid var(--ink); cursor: pointer; box-shadow: 0 1px 6px rgba(0, 0, 0, 0.5); }
 .site-marker:hover, .site-marker.pulse { background: var(--accent); color: var(--on-accent); border-color: #fff; z-index: 3; box-shadow: 0 0 0 5px rgba(255, 255, 255, 0.28); }
-.analog-marker { width: 11px; height: 11px; transform-origin: center; background: var(--map); border: 2px solid var(--paper); rotate: 45deg; cursor: pointer; }
+/* The diamond is drawn on a pseudo-element: rotating the marker itself would also rotate MapLibre's positioning transform. */
+.analog-marker { width: 16px; height: 16px; display: grid; place-items: center; cursor: pointer; }
+.analog-marker::before { content: ''; width: 9px; height: 9px; background: var(--map); border: 2px solid var(--paper); transform: rotate(45deg); }
 .analog-marker.dim { opacity: 0.35; }
 .hl-marker { width: 40px; height: 40px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 0 2px var(--accent), 0 0 0 9px rgba(255, 255, 255, 0.16); pointer-events: none; }
 .maplibregl-map { font-family: var(--text); }
