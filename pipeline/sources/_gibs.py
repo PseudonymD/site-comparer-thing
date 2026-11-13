@@ -140,7 +140,8 @@ def capabilities_colormap(cache_dir: Path, layer: str) -> str | None:
     j = text.rfind("<Layer>", 0, i)
     k = text.find("</Layer>", i)
     block = text[j:k]
-    m = re.search(r'colormaps/v1\.3/([^"]+)\.xml', block)
+    # Capabilities use single-quoted attributes; stop at any quote, whitespace or tag delimiter.
+    m = re.search(r"""colormaps/v1\.3/([^\s"'<>]+?)\.xml""", block)
     return m.group(1) if m else None
 
 
@@ -162,6 +163,10 @@ def layer_mean(cache_dir: Path, grid: Grid, layer: str, times: list[str | None],
         cnt[ok] += 1
     with np.errstate(invalid="ignore", divide="ignore"):
         mean = np.where(cnt > 0, acc / cnt, np.nan)
-    if np.isfinite(mean).mean() < 0.05:
+    # Judge coverage only over the requested bbox (tiles outside it are never fetched).
+    rs, cs = grid.bbox_slices()
+    k = grid.res / PIX_DEG
+    sub = mean[int(rs.start * k):int(round(rs.stop * k)), int(cs.start * k):int(round(cs.stop * k))]
+    if sub.size == 0 or np.isfinite(sub).mean() < 0.05:
         raise RuntimeError(f"GIBS layer {layer} decoded to almost no valid pixels")
     return cmg_to_grid(mean, grid, PIX_DEG)
