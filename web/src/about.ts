@@ -1,7 +1,9 @@
 import type { App } from './main';
 import { esc } from './format';
+import { howItWorksHTML, mountHowItWorks } from './ui/howitworks';
 
-export function renderAbout(app: App) {
+/** onShow: close the page and open a place on the map (used by the worked example). */
+export function renderAbout(app: App, onShow: (lat: number, lon: number) => void = () => {}) {
   const { meta, targets, validation, analogs } = app.ds;
   const el = document.getElementById('about')!;
   const synth = meta.synthetic_features;
@@ -32,14 +34,7 @@ export function renderAbout(app: App) {
 
       ${synth.length ? `<div class="warn-box">This build contains ${synth.length} synthetic placeholder layer(s): ${synth.map((s) => esc(s)).join(', ')}. They exist so the app works end to end while the full data pipeline runs. The validation numbers below refer to this build.</div>` : ''}
 
-      <h2>How it works</h2>
-      <ol class="steps">
-        <li><b>Describe Earth.</b> For each land cell an offline Python pipeline computes 18 features: terrain (elevation, mean and 90th-percentile slope, roughness, local relief, from ~1 km DEM pixels), climate (temperature, day–night range, coldest month, precipitation, humidity, sunlight), surface (vegetation, soil carbon, sand, basaltic rock, permanent ice) and remoteness (night lights, dust/aerosol).</li>
-        <li><b>Put everything on one scale.</b> Each feature becomes its <i>Earth percentile</i>: z = CDF(x) over all land cells. A cell's z of 0.97 for slope means it is steeper than 97% of Earth's land. The 101 percentile breakpoints are kept, so the app can still show real units.</li>
-        <li><b>Describe the target in the same terms.</b> Moon and Mars sites are characterised from the literature (LOLA, Diviner, MOLA, REMS/MEDA, CRISM…). The Moon is often beyond anything on Earth: it is colder, drier, airless, with no vegetation. So we <b>clamp each target value to Earth's own range</b> before mapping it through the same CDF. The question becomes: <i>how close can Earth get?</i></li>
-        <li><b>Score every cell, live.</b> A Web Worker computes a weighted distance in percentile space for all cells whenever you move a slider. This takes a few hundred milliseconds for ~2 million cells. Adjacent high-scoring cells are merged into candidate sites.</li>
-        <li><b>Explain and zoom in.</b> Each site gets a breakdown of which features match and which don't. A live drill-down fetches 30 m elevation tiles and compares the site's slope distribution with the target's.</li>
-      </ol>
+${howItWorksHTML(app)}
 
       <h2>The score</h2>
       <span class="formula">S_i = 1 − √( Σ_f w_f (z_if − t_f)² / Σ_f w_f )        contribution c_if = w_f (z_if − t_f)² / Σ_f w_f
@@ -92,4 +87,8 @@ blended B_i = (1 − α) S_i + α N_i              hard filters set S_i = 0</spa
   el.classList.remove('hidden');
   el.scrollTop = 0;
   document.getElementById('about-close')!.onclick = () => el.classList.add('hidden');
+  mountHowItWorks(app, (lat, lon) => {
+    el.classList.add('hidden');
+    onShow(lat, lon);
+  });
 }

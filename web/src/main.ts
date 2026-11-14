@@ -540,7 +540,7 @@ async function main() {
     b.className = `vbadge ${cls}`;
     b.innerHTML = `<i></i><span>How well does this work? <b>AUC ${v.auc.toFixed(2)}</b> · known analogs median p${v.median_analog_percentile.toFixed(0)} · ${word}</span>`;
     b.onclick = () => {
-      renderAbout(app);
+      renderAbout(app, showPlace);
       document.getElementById(`val-${t.id}`)?.scrollIntoView({ block: 'center' });
     };
   }
@@ -622,6 +622,7 @@ async function main() {
     if (leftWasOpen) setPanel('left', true);
   }
 
+  const showPlace = (lat: number, lon: number) => void showCell(lat, lon, undefined, true);
   async function showCell(lat: number, lon: number, rank?: number, fly = false, keepScroll = false, zoomIn = false) {
     const info = await app.requestCell(lat, lon);
     if (!info) {
@@ -726,7 +727,7 @@ async function main() {
   buildLeft();
   applyDefaultFilters(app.target());
   root.style.setProperty('--inferno', cssGradient());
-  $('#btn-about').onclick = () => renderAbout(app);
+  $('#btn-about').onclick = () => renderAbout(app, showPlace);
   $('#toggle-left').onclick = () => setPanel('left', body.classList.contains('left-closed'));
   $('#heat-toggle').onclick = () => {
     if (!focus) return;
