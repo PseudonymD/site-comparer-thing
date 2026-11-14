@@ -11,7 +11,7 @@ export default defineConfig({
   server: {
     host: '127.0.0.1',
     allowedHosts: [
-      'debian-hackathon.tail2905d.ts.net'
+      'debian-hackathon.tail2905d.ts.net',
       '100.102.30.87'
     ]
   }
