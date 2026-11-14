@@ -70,17 +70,4 @@ describe('weight validation', () => {
     expect(() => buildLut([0, 1], [-1, 1])).toThrow();
     expect(() => buildLut([0, 1], [Number.NaN, 1])).toThrow();
   });
-
-  describe('target ranges', () => {
-    it('give zero distance inside the interval and retain point parity for equal bounds', () => {
-      const target = [0.5];
-      const weights = [1];
-      expect(scoreCell([128], target, weights, [], [{ low: 0.4, high: 0.6 }])).toBe(1);
-      expect(scoreCell([0], target, weights, [], [{ low: 0.5, high: 0.5 }])).toBeCloseTo(scoreCell([0], target, weights), 12);
-    });
-    it('rejects invalid intervals', () => {
-      expect(() => buildLut([0.5], [1], [], [{ low: 0.8, high: 0.2 }])).toThrow();
-      expect(() => buildLut([0.5], [1], [], [{ low: -0.1, high: 0.2 }])).toThrow();
-    });
-  });
 });

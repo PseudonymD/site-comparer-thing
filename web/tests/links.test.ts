@@ -6,7 +6,6 @@ describe('deep links', () => {
     const s = {
       t: 'mars_jezero', w: Array.from({ length: 18 }, (_, i) => (i % 4) * 0.75), f: [{ id: 'ice', tau: 0.5 }, { id: 'ndvi', tau: 0.35 }],
       c: ['NA', 'ZA'], g: ['africa' as const], a: 0.3, r: 'safrica', v: { lat: -24.08, lon: -69.93, zoom: 9.5 }, s: { lat: -24.1, lon: -69.9 }, p: 'globe' as const, b: 'dark' as const,
-      m: 'earth-complications' as const, h: 'solar-power', x: Array.from({ length: 18 }, (_, i) => ({ low: i, high: i + 1 })),
     };
     expect(parseHash(buildHash(s))).toEqual(s);
   });

@@ -10,12 +10,9 @@ import { renderAbout } from './about';
 import { buildHash, copyText, parseHash, type LinkState } from './links';
 import { renderDiscoveries } from './ui/discoveries';
 import { createTour } from './ui/tour';
-import { renderValidation } from './ui/validation';
 import { REGIONS as GEO_REGIONS, matchesGeography, validRegion, type RegionId } from './geography';
 import { validWeightVector } from './population';
-import type { ActivityId, CellInfo, Discovery, MapMode, ScoreRequest, ScoreResult, Site, Target } from './types';
-import { ACTIVITIES, activityFor } from './activities';
-import { capability } from './capabilities';
+import type { CellInfo, Discovery, ScoreRequest, ScoreResult, Site, Target } from './types';
 
 export const REGIONS: Record<string, { name: string; bbox: [number, number, number, number] }> = {
   safrica: { name: 'southern Africa', bbox: [11.0, -35.5, 33.0, -16.5] },
@@ -46,9 +43,6 @@ export interface AppState {
   projection: 'globe' | 'mercator';
   region: string; // 'world' or a key of REGIONS
   geography: GeographyState;
-  mode: MapMode;
-  activity: ActivityId;
-  ranges: { low: number; high: number }[];
 }
 
 export interface App {
@@ -141,15 +135,6 @@ async function main() {
     basemap: link.b ?? 'satellite',
     projection: link.p ?? 'mercator',
     region: link.r && REGIONS[link.r] ? link.r : 'world',
-    mode: link.m ?? 'exploration',
-    activity: (link.h && ACTIVITIES.some((activity) => activity.id === link.h) ? link.h : 'rover-mobility') as ActivityId,
-    ranges: meta.features.map((feature, i) => {
-      const raw = targets.targets[t0].raw[feature.id];
-      const value = raw?.clamped ?? feature.min;
-      const low = link.x?.[i]?.low ?? value;
-      const high = link.x?.[i]?.high ?? value;
-      return { low: Math.max(feature.min, Math.min(feature.max, Math.min(low, high))), high: Math.min(feature.max, Math.max(feature.min, Math.max(low, high))) };
-    }),
     geography: {
       countries: [...new Set((link.c ?? []).filter((iso) => meta.countries.some((c) => c.iso === iso)))],
       regions: [...new Set((link.g ?? []).filter(validRegion))],
@@ -223,8 +208,7 @@ async function main() {
       c: state.geography.countries.length ? state.geography.countries : undefined,
       g: state.geography.regions.length ? state.geography.regions : undefined,
       r: state.region, v: { lat: c.lat, lon: c.lng, zoom: mapApi.map.getZoom() }, s: site,
-      p: state.projection, b: state.basemap, m: state.mode, h: state.activity,
-      x: state.ranges,
+      p: state.projection, b: state.basemap,
     };
   }
   let hashTimer = 0;
@@ -243,20 +227,11 @@ async function main() {
     const t = app.target();
     return {
       type: 'score', id: ++reqId, target: t.vector, weights: state.weights,
-      ranges: state.ranges.map((range, i) => {
-        const raw = t.raw[meta.features[i].id];
-        const isDefaultPoint = raw && range.low === raw.clamped && range.high === raw.clamped;
-        const point = isDefaultPoint ? t.vector[i] : undefined;
-        return {
-          low: point ?? zThresholdFromValue(meta.features[i].breakpoints, range.low),
-          high: point ?? zThresholdFromValue(meta.features[i].breakpoints, range.high),
-        };
-      }),
       filters: state.filters.filter((f) => f.on).map((f) => {
         const fm = meta.features[featIndex(f.id)];
         return { feature: featIndex(f.id), zThreshold: zThresholdFromValue(fm.breakpoints, f.tau) };
       }),
-      alpha: state.mode === 'direct' ? 0 : state.alpha, stretchLow: state.stretchLow, hideBelow: state.hideBelow, topN: 50,
+      alpha: state.alpha, stretchLow: state.stretchLow, hideBelow: state.hideBelow, topN: 50,
       bbox: state.region !== 'world' ? REGIONS[state.region].bbox : null,
       countryIds: selectedCountryIds(),
     };
@@ -318,49 +293,15 @@ async function main() {
     select.appendChild(og);
   }
   select.onchange = () => selectTarget(+select.value);
-  const modeSelect = $<HTMLSelectElement>('#mode-select');
-  const modeInfo: Record<MapMode, { title: string; note: string }> = {
-    exploration: { title: 'Exploration', note: 'Rank Earth cells by similarity, novelty, and the active geographic filters.' },
-    direct: { title: 'Direct comparison', note: 'Compare the selected target with Earth using the active physical ranges and feature weights.' },
-    'earth-complications': { title: 'Comparison + Earth complications', note: 'Similarity remains the score; Earth-side operational caveats are shown separately and never hidden in the score.' },
-    radiation: { title: 'Radiation', note: capability('radiation').explanation },
-  };
-  function syncModeUI() {
-    modeSelect.value = state.mode;
-    document.body.classList.remove('mode-exploration', 'mode-direct', 'mode-earth-complications', 'mode-radiation');
-    document.body.classList.add(`mode-${state.mode}`);
-    const info = modeInfo[state.mode];
-    const title = document.getElementById('mode-title');
-    const note = document.getElementById('mode-note');
-    if (title) title.textContent = info.title;
-    if (note) note.textContent = info.note;
-    const activity = activityFor(state.activity);
-    const activitySelect = document.getElementById('activity-select') as HTMLSelectElement | null;
-    if (activitySelect) activitySelect.value = state.activity;
-    const activityNote = document.getElementById('activity-note');
-    if (activityNote) activityNote.textContent = activity.enabled ? activity.description : `${activity.description} ${activity.limitations[0]}`;
-    mapApi.setScoreVisible(state.mode !== 'radiation');
-    updateHash();
-  }
-  modeSelect.onchange = () => {
-    state.mode = modeSelect.value as MapMode;
-    syncModeUI();
-  };
 
   // ---------------------------------------------------------------- UI: left panel
   const left = $('#left');
   const sliders: HTMLInputElement[] = [];
   const sliderVals: HTMLElement[] = [];
   const targetLines: HTMLElement[] = [];
-  const rangeMins: HTMLInputElement[] = [];
-  const rangeMaxs: HTMLInputElement[] = [];
   const filterInputs: { flt: FilterState; cb: HTMLInputElement; num: HTMLInputElement }[] = [];
   const groups = ['Terrain', 'Climate', 'Surface', 'Remoteness'] as const;
   const fmtW = (w: number) => w.toFixed(2).replace(/\.?0+$/, '');
-  const weightPercent = (j: number) => {
-    const total = state.weights.reduce((sum, weight) => sum + weight, 0);
-    return total > 0 ? (state.weights[j] / total) * 100 : 0;
-  };
   /** Paint the filled part of a range input (CSS reads --v). */
   const fill = (el: HTMLInputElement) => el.style.setProperty('--v', `${((+el.value - +el.min) / (+el.max - +el.min)) * 100}%`);
 
@@ -387,7 +328,7 @@ async function main() {
       let n = 0;
       meta.features.forEach((f, j) => {
         if (f.ui_group !== g) return;
-        sum += weightPercent(j);
+        sum += state.weights[j];
         n++;
       });
       $(`#gsum-${g}`).textContent = `${n} layers · weight ${fmtW(sum)}`;
@@ -424,15 +365,6 @@ async function main() {
       </div>
       ${synth.length ? `<div class="warn-box"><b>${synth.length} of ${F} layers ${synth.length > 1 ? 'are placeholders' : 'is a placeholder'}</b> in this build (${synth.map((s) => esc(meta.features[featIndex(s)].name)).join(', ')}). Treat rankings as illustrative.</div>` : ''}
       ${meta.bbox ? `<div class="warn-box">Regional build: only ${meta.bbox.join(', ')} is included.</div>` : ''}
-      <div class="mode-card">
-        <div class="eyebrow">Scientific mode</div>
-        <h3 id="mode-title"></h3>
-        <p class="note" id="mode-note"></p>
-        <label class="activity-field">Research activity
-          <select id="activity-select" aria-label="Research activity"></select>
-        </label>
-        <p class="note" id="activity-note"></p>
-      </div>
       <div class="tabs" role="tablist">
         <button role="tab" data-tab="weights" aria-selected="true">Weights</button>
         <button role="tab" data-tab="filters" aria-selected="false">Filters<span class="count" id="tab-filters-n"></span></button>
@@ -479,19 +411,6 @@ async function main() {
         for (const id of ['weights', 'filters', 'view']) $(`#pane-${id}`).classList.toggle('hidden', id !== b.dataset.tab);
       };
     });
-    const activitySelect = $<HTMLSelectElement>('#activity-select');
-    ACTIVITIES.forEach((activity) => {
-      const option = document.createElement('option');
-      option.value = activity.id;
-      option.textContent = activity.name + (activity.enabled ? '' : ' (unavailable)');
-      option.disabled = !activity.enabled;
-      activitySelect.appendChild(option);
-    });
-    activitySelect.onchange = () => {
-      state.activity = activitySelect.value as ActivityId;
-      syncModeUI();
-      updateHash();
-    };
 
     // weights
     const wDiv = $('#weights');
@@ -505,45 +424,21 @@ async function main() {
         const row = document.createElement('div');
         row.className = 'wrow';
         const badge = f.synthetic ? '<span class="badge synth">placeholder</span>' : f.proxy ? '<span class="badge proxy">proxy</span>' : '';
-        row.innerHTML = `<div class="wl"><label for="w-${f.id}">${esc(f.name)}${badge}</label><div class="tv"></div><div class="range-editor"><label>min <input id="rmin-${f.id}" type="number" step="any" min="${f.min}" max="${f.max}" aria-label="${esc(f.name)} minimum"></label><label>max <input id="rmax-${f.id}" type="number" step="any" min="${f.min}" max="${f.max}" aria-label="${esc(f.name)} maximum"></label></div></div><input type="number" id="w-${f.id}" min="0" max="100" step="1" aria-label="${esc(f.name)} weight percentage"><span class="val"></span>`;
-        const input = row.querySelector<HTMLInputElement>(`#w-${f.id}`)!;
+        row.innerHTML = `<div class="wl"><label for="w-${f.id}">${esc(f.name)}${badge}</label><div class="tv"></div></div><input type="range" id="w-${f.id}" min="0" max="3" step="0.25"><span class="val"></span>`;
+        const input = row.querySelector('input')!;
         input.addEventListener('input', () => {
-          const desired = Math.min(100, Math.max(0, Number(input.value) || 0));
-          const current = weightPercent(j);
-          const remaining = 100 - desired;
-          const otherTotal = 100 - current;
-          if (otherTotal > 0) {
-            state.weights = state.weights.map((_, k) => k === j ? desired : weightPercent(k) * remaining / otherTotal);
-          } else {
-            state.weights = state.weights.map((_, k) => k === j ? desired : 0);
-          }
+          state.weights[j] = +input.value;
           if (!validWeightVector(state.weights, F)) {
-            state.weights[j] = Math.max(0.1, desired);
-            input.value = String(weightPercent(j).toFixed(0));
+            state.weights[j] = 0.25;
+            input.value = '0.25';
             toast('At least one feature must have a positive weight.');
           }
-          sliderVals[j].textContent = `${weightPercent(j).toFixed(0)}%`;
+          sliderVals[j].textContent = fmtW(state.weights[j]);
           row.classList.toggle('off', state.weights[j] === 0);
           fill(input);
           syncGroupSums();
           requestScore();
         });
-        const minInput = row.querySelector<HTMLInputElement>(`#rmin-${f.id}`)!;
-        const maxInput = row.querySelector<HTMLInputElement>(`#rmax-${f.id}`)!;
-        const syncRange = () => {
-          const low = Math.max(f.min, Math.min(f.max, Number(minInput.value)));
-          const high = Math.max(f.min, Math.min(f.max, Number(maxInput.value)));
-          if (!Number.isFinite(low) || !Number.isFinite(high)) return;
-          state.ranges[j] = { low: Math.min(low, high), high: Math.max(low, high) };
-          minInput.value = String(state.ranges[j].low);
-          maxInput.value = String(state.ranges[j].high);
-          targetLines[j].title = `${f.description}\nRange: ${state.ranges[j].low} to ${state.ranges[j].high}`;
-          requestScore();
-        };
-        minInput.addEventListener('change', syncRange);
-        maxInput.addEventListener('change', syncRange);
-        rangeMins[j] = minInput;
-        rangeMaxs[j] = maxInput;
         sliders[j] = input;
         sliderVals[j] = row.querySelector('.val')!;
         targetLines[j] = row.querySelector('.tv')!;
@@ -738,7 +633,6 @@ async function main() {
     mapApi.setTargetBody(t.body);
     syncSliders();
     syncBadge();
-    syncModeUI();
     updateHash();
   }
 
@@ -762,25 +656,17 @@ async function main() {
 
   function syncSliders() {
     meta.features.forEach((_, j) => {
-      sliders[j].value = String(Math.round(weightPercent(j)));
-      sliderVals[j].textContent = `${weightPercent(j).toFixed(0)}%`;
+      sliders[j].value = String(state.weights[j]);
+      sliderVals[j].textContent = fmtW(state.weights[j]);
       sliders[j].closest('.wrow')!.classList.toggle('off', state.weights[j] === 0);
       fill(sliders[j]);
     });
     syncGroupSums();
-    meta.features.forEach((_, j) => {
-      rangeMins[j].value = String(state.ranges[j].low);
-      rangeMaxs[j].value = String(state.ranges[j].high);
-    });
   }
 
   function selectTarget(i: number) {
     state.t = i;
     state.weights = [...targets.targets[i].weights];
-    state.ranges = meta.features.map((feature) => {
-      const value = targets.targets[i].raw[feature.id]?.clamped ?? feature.min;
-      return { low: value, high: value };
-    });
     applyDefaultFilters(targets.targets[i]);
     syncTargetUI();
     closeDossier();
@@ -909,17 +795,12 @@ async function main() {
     $('#legend-lo').textContent = (lo * 100).toFixed(1);
     $('#legend-mid').textContent = `99th percentile ${(res.stats.p99 * 100).toFixed(1)}`;
     $('#legend-hi').textContent = (hi * 100).toFixed(1);
-    $('#legend-title').textContent = state.mode === 'radiation'
-      ? 'Radiation layer unavailable'
-      : state.mode === 'earth-complications'
-        ? `Similarity + Earth complications · ${shortName(app.target())}`
-        : state.alpha > 0 ? `Analog score + novelty · ${shortName(app.target())}` : `Analog score · ${shortName(app.target())}`;
+    $('#legend-title').textContent = state.alpha > 0 ? `Analog score + novelty · ${shortName(app.target())}` : `Analog score · ${shortName(app.target())}`;
     $('#legend-foot').textContent = `${res.stats.valid.toLocaleString()} cells re-scored in ${Math.round(res.timings.total)} ms`;
   }
 
   function onScored(res: ScoreResult) {
     void mapApi.setScoreImage(res.image, res.width, res.height, res.blob);
-    mapApi.setScoreVisible(state.mode !== 'radiation');
     const list = $('#sites');
     list.innerHTML = '';
     const span = Math.max(1e-6, res.stats.hi - res.stats.lo);
@@ -956,7 +837,6 @@ async function main() {
   applyDefaultFilters(app.target());
   root.style.setProperty('--inferno', cssGradient());
   $('#btn-about').onclick = () => renderAbout(app, showPlace);
-  $('#btn-validation').onclick = () => renderValidation(app);
   $('#toggle-left').onclick = () => setPanel('left', body.classList.contains('left-closed'));
   $('#heat-toggle').onclick = () => {
     if (!focus) return;

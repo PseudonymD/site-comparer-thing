@@ -18,22 +18,14 @@ This document is the single source of truth for the analog score. It is implemen
 | `q_if ∈ {0..255}` | stored value of feature *f* for land cell *i* (`features.bin`, cell-major `[cell][18]`) |
 | `z_if = q_if / 255` | Earth-land percentile of the cell's raw value, `CDF_f(x_if)` (mid-rank for ties) |
 | `t_f ∈ [0,1]` | target percentile `CDF_f(clamp(T_f, min_f, max_f))` (`targets.json → vector`) |
-| `w_f ≥ 0` | user weight (the UI displays normalized percentages; defaults remain in `targets.json → weights`) |
-| `[L_f, U_f]` | active target interval in percentile space, derived from the physical min/max controls |
+| `w_f ≥ 0` | user weight (UI sliders 0–3; defaults in `targets.json → weights`) |
 
 ## Score
 
 ```
-d_if = max(L_f − z_if, 0, z_if − U_f)
-S_i  = 1 − sqrt( Σ_f w_f d_if² / Σ_f w_f )
-c_if = w_f d_if² / Σ_f w_f            (per-feature contribution; Σ_f c_if = (1 − S_i)²)
+S_i  = 1 − sqrt( Σ_f w_f (z_if − t_f)² / Σ_f w_f )
+c_if = w_f (z_if − t_f)² / Σ_f w_f            (per-feature contribution; Σ_f c_if = (1 − S_i)²)
 ```
-
-When the interval is collapsed (`L_f = U_f = t_f`), this is exactly the
-original point-distance score. New intervals are initialized to the target's
-existing clamped physical value, so existing rankings are preserved until a
-user broadens a range. Values are converted through the published feature
-breakpoints; no physical uncertainty is invented.
 
 `S_i ∈ [0, 1]`: 1 means the cell matches the target percentile on every weighted feature, 0 means maximally different.
 If every weight is 0, the configuration is invalid and both implementations reject it.

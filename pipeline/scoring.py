@@ -27,45 +27,22 @@ def _validated_weights(weights: np.ndarray, expected: int | None = None) -> tupl
 
 
 def score(q: np.ndarray, target: np.ndarray, weights: np.ndarray,
-          filters: list[tuple[int, float]] | None = None,
-          ranges: np.ndarray | None = None) -> np.ndarray:
+          filters: list[tuple[int, float]] | None = None) -> np.ndarray:
     """q: uint8 (n, F); target: (F,) in [0,1]; weights: (F,) >= 0;
     filters: [(feature_index, z_threshold)] -> exclude cells with z > z_threshold. Returns float64 (n,)."""
     w, wsum = _validated_weights(weights, q.shape[1])
     z = q.astype(np.float64) / 255.0
-    t = np.asarray(target, dtype=np.float64)
-    if ranges is None:
-        low = high = t
-    else:
-        ranges = np.asarray(ranges, dtype=np.float64)
-        if (ranges.shape != (q.shape[1], 2) or not np.all(np.isfinite(ranges))
-                or np.any(ranges[:, 0] > ranges[:, 1])
-                or np.any(ranges < 0) or np.any(ranges > 1)):
-            raise ValueError("ranges must be finite, ordered, shaped (features, 2), and within 0..1")
-        low, high = ranges[:, 0], ranges[:, 1]
-    d = np.maximum(low[None, :] - z, 0) + np.maximum(z - high[None, :], 0)
-    d2 = d ** 2
+    d2 = (z - np.asarray(target, dtype=np.float64)[None, :]) ** 2
     s = 1.0 - np.sqrt((d2 * w[None, :]).sum(axis=1) / wsum)
     for j, thr in filters or []:
         s[z[:, j] > thr] = 0.0
     return s
 
 
-def contributions(qrow: np.ndarray, target: np.ndarray, weights: np.ndarray,
-                  ranges: np.ndarray | None = None) -> np.ndarray:
+def contributions(qrow: np.ndarray, target: np.ndarray, weights: np.ndarray) -> np.ndarray:
     w, wsum = _validated_weights(weights, qrow.shape[-1])
     z = qrow.astype(np.float64) / 255.0
-    if ranges is None:
-        low = high = np.asarray(target, dtype=np.float64)
-    else:
-        ranges = np.asarray(ranges, dtype=np.float64)
-        if (ranges.shape != (qrow.shape[-1], 2) or not np.all(np.isfinite(ranges))
-                or np.any(ranges[:, 0] > ranges[:, 1])
-                or np.any(ranges < 0) or np.any(ranges > 1)):
-            raise ValueError("ranges must be finite, ordered, shaped (features, 2), and within 0..1")
-        low, high = ranges[:, 0], ranges[:, 1]
-    d = np.maximum(low - z, 0) + np.maximum(z - high, 0)
-    return w * d ** 2 / wsum
+    return w * (z - target) ** 2 / wsum
 
 
 def novelty(lat: np.ndarray, lon: np.ndarray, analogs: list[dict]) -> np.ndarray:

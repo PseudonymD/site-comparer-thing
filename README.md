@@ -6,13 +6,6 @@ Astronauts train, and rovers get tested, in places on Earth that resemble the Mo
 
 The map also supports searchable multi-select filters for countries and geographic regions. Country and region selections are applied in the scoring worker, so the heatmap, candidate sites, counts and site details stay in sync; selections are preserved in shareable links.
 
-The interface includes four explicit scientific modes: Exploration, Direct Comparison,
-Comparison + Earth Complications, and Radiation. The first three use the published
-Earth-observation layers and active feature ranges; Direct Comparison disables novelty
-blending. Radiation is selectable but intentionally shows an unavailable state because
-this build does not contain a validated global terrestrial ionizing-radiation layer.
-Research activities are contextual explanations, not automatic changes to target weights.
-
 **Live demo:** https://site-comparer-thing.vercel.app (hosted on Vercel, rebuilt on every push to `main`; pull requests get preview URLs)
 
 ![Screenshot](docs/screenshot.png)
@@ -30,20 +23,7 @@ Research activities are contextual explanations, not automatic changes to target
 
 1. **Offline pipeline (`pipeline/`, Python).** Fetches and caches each dataset, regrids it to a 0.1° EPSG:4326 grid, masks the ocean, and converts every feature to its **Earth-land percentile**. It quantises the results to `uint8` and writes `web/public/data/` (≈26 MB gzipped). It also builds target vectors from the literature, the known-analog list and a validation report (`pipeline/report.md`).
 2. **Static web app (`web/`, Vite + TypeScript + MapLibre GL).** A Web Worker holds the feature matrix and re-scores all cells in a few hundred milliseconds whenever a control changes. It paints the map, clusters the top cells into sites, and powers the site card and the drill-down.
-3. **Scoring.** The score is a weighted distance in percentile space. Each feature can
-   use a physical min/max target interval; cells inside that interval receive zero
-   distance, while collapsed intervals preserve the original point score. Target values
-   beyond Earth's range are clamped first. See [`docs/scoring.md`](docs/scoring.md).
-   Python and TypeScript implementations are checked against a shared fixture.
-
-## Scientific capability limits
-
-The application does not claim data it does not have. Cave Exploration is disabled
-because the published dataset has no sufficiently complete, verified global cave
-inventory; basalt or karst indicators are not cave detections. Earth-side access,
-safety, legal, infrastructure and local-survey facts are disclosed as limitations
-rather than inferred from environmental similarity. Validation uses the curated
-development analog registry and is not independent held-out validation.
+3. **Scoring.** The score is a weighted distance in percentile space: `S = 1 − √(Σ w (z − t)² / Σ w)`. Target values beyond Earth's range are clamped first, so the question becomes *how close can Earth get?*. See [`docs/scoring.md`](docs/scoring.md). Python and TypeScript implementations are checked against a shared fixture.
 
 ## Run the pipeline
 

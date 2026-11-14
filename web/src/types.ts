@@ -20,18 +20,6 @@ export interface FeatureMeta {
   breakpoints: number[];
 }
 
-export type MapMode = 'radiation' | 'direct' | 'exploration' | 'earth-complications';
-export type ActivityId =
-  | 'rover-mobility'
-  | 'geological-sampling'
-  | 'habitat-construction'
-  | 'dust-materials'
-  | 'ice-exploration'
-  | 'human-operations'
-  | 'solar-power'
-  | 'thermal-experiments'
-  | 'cave-exploration';
-
 export interface Meta {
   schema_version: number;
   generated: string;
@@ -121,7 +109,6 @@ export interface ScoreRequest {
   id: number;
   target: number[];
   weights: number[];
-  ranges?: { low: number; high: number }[];
   filters: { feature: number; zThreshold: number }[];
   alpha: number;
   stretchLow: number;

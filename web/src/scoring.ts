@@ -10,11 +10,6 @@ export interface Filter {
   zThreshold: number; // exclude cells with z > zThreshold
 }
 
-export interface TargetRange {
-  low: number;
-  high: number;
-}
-
 function validateWeights(weights: ArrayLike<number>, expected: number): number {
   if (weights.length !== expected) throw new RangeError(`weights must have length ${expected}`);
   let sum = 0;
@@ -28,21 +23,15 @@ function validateWeights(weights: ArrayLike<number>, expected: number): number {
 }
 
 /** Per-feature lookup table: lut[f*256 + q] = w_f (q/255 - t_f)^2 / W  (Infinity = filtered). */
-export function buildLut(target: ArrayLike<number>, weights: ArrayLike<number>, filters: Filter[] = [], ranges?: ArrayLike<TargetRange>): Float64Array {
+export function buildLut(target: ArrayLike<number>, weights: ArrayLike<number>, filters: Filter[] = []): Float64Array {
   const F = target.length;
   const lut = new Float64Array(F * 256);
   const wsum = validateWeights(weights, F);
   for (let f = 0; f < F; f++) {
     const w = weights[f];
-    const range = ranges?.[f];
-    const low = range?.low ?? target[f];
-    const high = range?.high ?? target[f];
-    if (!Number.isFinite(low) || !Number.isFinite(high) || low > high || low < 0 || high > 1) {
-      throw new RangeError('target ranges must be finite, ordered, and within 0..1');
-    }
+    const t = target[f];
     for (let q = 0; q < 256; q++) {
-      const z = q / 255;
-      const d = z < low ? low - z : z > high ? z - high : 0;
+      const d = q / 255 - t;
       lut[f * 256 + q] = (w * d * d) / wsum;
     }
   }
@@ -62,26 +51,19 @@ export function scoreAll(q: Uint8Array, F: number, lut: Float64Array, out: Float
   }
 }
 
-export function scoreCell(qrow: ArrayLike<number>, target: ArrayLike<number>, weights: ArrayLike<number>, filters: Filter[] = [], ranges?: ArrayLike<TargetRange>): number {
-  const c = contributions(qrow, target, weights, ranges);
+export function scoreCell(qrow: ArrayLike<number>, target: ArrayLike<number>, weights: ArrayLike<number>, filters: Filter[] = []): number {
+  const c = contributions(qrow, target, weights);
   for (const f of filters) if (qrow[f.feature] / 255 > f.zThreshold) return 0;
   let s = 0;
   for (const v of c) s += v;
   return 1 - Math.sqrt(s);
 }
 
-export function contributions(qrow: ArrayLike<number>, target: ArrayLike<number>, weights: ArrayLike<number>, ranges?: ArrayLike<TargetRange>): number[] {
+export function contributions(qrow: ArrayLike<number>, target: ArrayLike<number>, weights: ArrayLike<number>): number[] {
   const wsum = validateWeights(weights, target.length);
   const out: number[] = [];
   for (let f = 0; f < target.length; f++) {
-    const range = ranges?.[f];
-    const low = range?.low ?? target[f];
-    const high = range?.high ?? target[f];
-    if (!Number.isFinite(low) || !Number.isFinite(high) || low > high || low < 0 || high > 1) {
-      throw new RangeError('target ranges must be finite, ordered, and within 0..1');
-    }
-    const z = qrow[f] / 255;
-    const d = z < low ? low - z : z > high ? z - high : 0;
+    const d = qrow[f] / 255 - target[f];
     out.push((weights[f] * d * d) / wsum);
   }
   return out;
