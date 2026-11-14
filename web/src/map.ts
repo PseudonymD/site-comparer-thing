@@ -53,6 +53,8 @@ export interface MapApi {
   setProjection(kind: 'globe' | 'mercator'): void;
   setPadding(p: { top: number; right: number; bottom: number; left: number }): void;
   pulseSite(i: number | null): void;
+  /** Site focus: hide (or re-show) the score layer and show the imagery in full colour. */
+  setFocus(on: boolean, showScore: boolean): void;
   onCellClick(cb: (lat: number, lon: number) => void): void;
 }
 
@@ -185,6 +187,11 @@ export function createMap(container: HTMLElement): MapApi {
     },
     pulseSite(i) {
       siteMarkers.forEach((m, k) => m.getElement().classList.toggle('pulse', k === i));
+    },
+    setFocus(on, showScore) {
+      if (map.getLayer('score')) map.setLayoutProperty('score', 'visibility', !on || showScore ? 'visible' : 'none');
+      map.setPaintProperty('satellite', 'raster-saturation', on ? 0 : -0.35);
+      map.setPaintProperty('satellite', 'raster-brightness-max', on ? 1 : 0.75);
     },
     onCellClick(cb) {
       map.on('click', (e) => cb(e.lngLat.lat, ((e.lngLat.lng + 540) % 360) - 180));

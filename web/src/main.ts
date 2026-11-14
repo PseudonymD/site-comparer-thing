@@ -517,10 +517,35 @@ async function main() {
   }
 
   function selectSite(s: Site, i: number) {
-    void showCell(s.lat, s.lon, i + 1, true);
+    void showCell(s.lat, s.lon, i + 1, true, false, true);
   }
 
-  async function showCell(lat: number, lon: number, rank?: number, fly = false, keepScroll = false) {
+  // Site focus: opening a candidate collapses the controls, hides the heatmap and zooms in close.
+  const FOCUS_ZOOM = 10;
+  let focus: { leftWasOpen: boolean; heat: boolean } | null = null;
+  function syncFocus() {
+    body.classList.toggle('site-focus', !!focus);
+    body.classList.toggle('focus-heat', !!focus?.heat);
+    mapApi.setFocus(!!focus, !!focus?.heat);
+    const btn = $('#heat-toggle');
+    btn.textContent = focus?.heat ? 'Hide heatmap' : 'Show heatmap';
+    btn.setAttribute('aria-pressed', String(!!focus?.heat));
+  }
+  function enterFocus() {
+    if (focus) return;
+    focus = { leftWasOpen: !body.classList.contains('left-closed'), heat: false };
+    if (focus.leftWasOpen) setPanel('left', false);
+    syncFocus();
+  }
+  function exitFocus() {
+    if (!focus) return;
+    const { leftWasOpen } = focus;
+    focus = null;
+    syncFocus();
+    if (leftWasOpen) setPanel('left', true);
+  }
+
+  async function showCell(lat: number, lon: number, rank?: number, fly = false, keepScroll = false, zoomIn = false) {
     const info = await app.requestCell(lat, lon);
     if (!info) {
       toast('No land here. Pick a spot on land inside the data.');
@@ -546,8 +571,9 @@ async function main() {
     }, keepScroll);
     if (body.classList.contains('right-closed')) setPanel('right', true);
     else applyPadding();
+    if (zoomIn) enterFocus();
     mapApi.highlight(clat, clon);
-    if (fly) mapApi.flyTo(lat, lon, Math.max(mapApi.map.getZoom(), 5.5));
+    if (fly) mapApi.flyTo(lat, lon, zoomIn ? Math.max(mapApi.map.getZoom(), FOCUS_ZOOM) : Math.max(mapApi.map.getZoom(), 5.5));
   }
 
   function closeDossier() {
@@ -556,6 +582,7 @@ async function main() {
     hideDossier();
     $('#list-view').classList.remove('hidden');
     body.classList.remove('dossier-open');
+    exitFocus();
     applyPadding();
   }
 
@@ -620,6 +647,11 @@ async function main() {
   root.style.setProperty('--inferno', cssGradient());
   $('#btn-about').onclick = () => renderAbout(app);
   $('#toggle-left').onclick = () => setPanel('left', body.classList.contains('left-closed'));
+  $('#heat-toggle').onclick = () => {
+    if (!focus) return;
+    focus.heat = !focus.heat;
+    syncFocus();
+  };
   $('#toggle-right').onclick = () => setPanel('right', body.classList.contains('right-closed'));
   window.addEventListener('keydown', (e) => {
     const about = $('#about');
