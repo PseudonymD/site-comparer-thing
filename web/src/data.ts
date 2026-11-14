@@ -58,7 +58,7 @@ async function headSize(url: string): Promise<number> {
   }
 }
 
-export async function loadDataset(onProgress: Progress): Promise<Dataset> {
+export async function loadDataset(onProgress: Progress, onMeta?: (d: Pick<Dataset, 'meta' | 'targets' | 'analogs'>) => void): Promise<Dataset> {
   const getJson = async <T>(name: string): Promise<T> => {
     const r = await fetch(BASE + name);
     if (!r.ok) throw new Error(`${name}: HTTP ${r.status}`);
@@ -73,6 +73,7 @@ export async function loadDataset(onProgress: Progress): Promise<Dataset> {
     getJson<DiscoveriesFile>('discoveries.json').catch(() => null),
     getJson<SpotlightFile>('spotlight.json').catch(() => null),
   ]);
+  onMeta?.({ meta, targets, analogs: analogsFile.analogs });
   // The .gz files are served with a one-year immutable cache (web/vercel.json); the version query makes a
   // new pipeline run (new meta.generated) fetch fresh copies.
   const v = `?v=${encodeURIComponent(meta.generated)}`;

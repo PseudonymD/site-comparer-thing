@@ -9,6 +9,7 @@ import { fingerprint } from './ui/fingerprint';
 import { renderAbout } from './about';
 import { buildHash, copyText, parseHash, type LinkState } from './links';
 import { renderDiscoveries, renderSpotlight } from './ui/discoveries';
+import { createTour } from './ui/tour';
 import type { CellInfo, Discovery, ScoreRequest, ScoreResult, Site, Target } from './types';
 
 export const REGIONS: Record<string, { name: string; bbox: [number, number, number, number] }> = {
@@ -68,9 +69,15 @@ function toast(msg: string, ms = 3500) {
 }
 
 async function main() {
+  // The map (and the known analog sites) appear while the 30 MB grid streams in.
+  const mapApi = createMap($('#map'));
   let ds: Dataset;
   try {
-    ds = await loadDataset(setProgress);
+    ds = await loadDataset(setProgress, (m) => {
+      $('#ls-meta').classList.add('done');
+      void mapApi.ready.then(() => mapApi.setAnalogs(m.analogs));
+    });
+    $('#ls-grid').classList.add('done');
   } catch (e) {
     $('#progress-label').textContent = `Failed to load data: ${(e as Error).message}`;
     throw e;
@@ -122,7 +129,6 @@ async function main() {
     region: link.r && REGIONS[link.r] ? link.r : 'world',
   };
 
-  const mapApi = createMap($('#map'));
   let lastResult: ScoreResult | null = null;
   const pendingCells = new Map<number, (c: CellInfo | null) => void>();
   let cellReqId = 0;
@@ -800,6 +806,40 @@ async function main() {
   renderDiscoveries($('#rv-disc'), ds, hooks);
   renderSpotlight($('#rv-sa'), ds, hooks);
 
+  // ---------------------------------------------------------------- guided tour
+  const clickWhenReady = (sel: string, tries = 20) => {
+    const el = document.querySelector<HTMLButtonElement>(sel);
+    if (el && !el.disabled) {
+      el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      el.click();
+    } else if (tries > 0) window.setTimeout(() => clickWhenReady(sel, tries - 1), 250);
+  };
+  const tour = createTour({
+    selectTarget: (id) => flyToTarget(id),
+    setAlpha: (a) => {
+      setAlphaUI(a);
+      requestScore();
+    },
+    worldView: () => {
+      exitFocus();
+      mapApi.map.flyTo({ center: [10, 20], zoom: 1.6, duration: 1200 });
+    },
+    closeSite: () => closeDossier(),
+    showTab: (id) => showRightTab(id),
+    openFirstDiscovery: () => {
+      const list = ds.discoveries?.discoveries ?? [];
+      const d = list.find((x) => x.target === app.target().id) ?? list[0];
+      if (d) hooks.flyToDiscovery(d);
+    },
+    runDrill: () => window.setTimeout(() => clickWhenReady('#drill-btn'), 300),
+    openPlanet: () => {
+      const b = document.querySelector<HTMLButtonElement>('#pm-btn');
+      if (b && /^Show/.test(b.textContent || '')) clickWhenReady('#pm-btn');
+      else b?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    },
+  });
+  $('#btn-tour').onclick = () => tour.start();
+
   await Promise.all([workerReady, mapApi.ready]);
   mapApi.setAnalogs(ds.analogs);
   // Apply a shared link (weights, filters, novelty, view) on top of the target defaults.
@@ -828,6 +868,7 @@ async function main() {
   window.addEventListener('resize', applyPadding);
   requestScore();
   if (link.s) void showCell(link.s.lat, link.s.lon, undefined, !link.v, false, true);
+  if (link.tour) window.setTimeout(() => tour.start(), 800);
   $('#loader').classList.add('hidden');
   (window as unknown as { app: App }).app = app;
 }
