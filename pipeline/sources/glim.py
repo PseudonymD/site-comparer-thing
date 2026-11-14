@@ -6,9 +6,9 @@ ice    = fraction mapped as 'ig' (ice and glaciers)      [exposed as source "gli
 (*) GLiM level-1 classes: su sm sc ss py mt pa pi pb va vi vb ig wb nd. We use vb + pb as the
 "basaltic / volcanic" fraction, following the challenge brief.
 
-Download: the polygon database is large (~1 GB zipped). If the automatic download fails, download it
-manually from PANGAEA and put the .zip / .gdb / .shp anywhere under pipeline/cache/glim/ (or set
-GLIM_PATH in .env) - it will be picked up automatically.
+The PANGAEA record publishes a 0.5° ESRI ASCII grid. A local polygon database is also supported for
+backwards compatibility: put the .zip / .gdb / .shp anywhere under pipeline/cache/glim/ (or set
+GLIM_PATH in .env).
 """
 from __future__ import annotations
 
@@ -26,15 +26,11 @@ log = logging.getLogger("pipeline.glim")
 NAME = "glim"
 FEATURES = ["basalt"]
 REQUIRES_TOKEN = False
-HOST = "https://download.pangaea.de"
-PROBE = "https://download.pangaea.de/dataset/788537/files/LiMW_GIS%202015.gdb.zip"
-URLS = [
-    # The file path is correct (checked 2026-11-14): PANGAEA answers HTTP 500 with "the download area of PANGAEA
-    # has some problems with its backing file archive" during archive outages, not 404. Retried with backoff.
-    "https://download.pangaea.de/dataset/788537/files/LiMW_GIS%202015.gdb.zip",
-]
-MANUAL = ("Download 'LiMW_GIS 2015.gdb.zip' from https://doi.pangaea.de/10.1594/PANGAEA.788537 in a browser and "
-          "put it under pipeline/cache/glim/ (or set GLIM_PATH in .env), then rerun.")
+HOST = "https://doi.pangaea.de"
+PROBE = "https://doi.pangaea.de/10.1594/PANGAEA.788537"
+URLS = ["https://hdl.handle.net/10013/epic.39939.d001"]
+MANUAL = ("Download the GLiM dataset from https://doi.pangaea.de/10.1594/PANGAEA.788537 and put it under "
+          "pipeline/cache/glim/ (or set GLIM_PATH in .env), then rerun.")
 CLASS_FIELDS = ("xx", "XX", "Litho", "LITHO", "litho")
 BASALT = ("vb", "pb")
 ICE = ("ig",)
@@ -57,14 +53,14 @@ def fetch(cache_dir: Path, grid: Grid | None = None) -> Path:
     local = _find_local(cache_dir)
     if local:
         return local
-    dest = Path(cache_dir) / "glim" / "LiMW_GIS_2015.gdb.zip"
+    dest = Path(cache_dir) / "glim" / "glim_wgs84_0point5deg.zip"
     status = archive_status()
     if status:
         raise RuntimeError(f"GLiM: {status}. {MANUAL}")
     errors = []
     for url in URLS:
         try:
-            download(url, dest, min_bytes=1_000_000, timeout=1800, retries=4)
+            download(url, dest, min_bytes=10_000, timeout=1800, retries=4)
             return dest
         except Exception as e:  # noqa: BLE001
             errors.append(f"{url}: {e}")
@@ -72,7 +68,7 @@ def fetch(cache_dir: Path, grid: Grid | None = None) -> Path:
 
 
 def archive_status(timeout: float = 30.0) -> str | None:
-    """None if the PANGAEA file is downloadable, else a one-line reason (outage page, 404, ...)."""
+    """None if the PANGAEA file is downloadable, else a one-line reason."""
     from ..util import session
 
     try:
@@ -80,14 +76,12 @@ def archive_status(timeout: float = 30.0) -> str | None:
             if r.status_code in (200, 206):
                 return None
             body = r.raw.read(20000, decode_content=True).decode("utf-8", "replace") if r.status_code >= 400 else ""
-            if "backing file archive" in body or "file downloads are not possible" in body:
-                return "PANGAEA reports a file-archive outage (HTTP %d); try again later" % r.status_code
-            return f"PANGAEA answered HTTP {r.status_code}"
+            return f"PANGAEA download answered HTTP {r.status_code}: {body[:160].strip()}"
     except Exception as e:  # noqa: BLE001
         return f"PANGAEA unreachable ({e.__class__.__name__})"
 
 
-def _read(path: Path):
+def _read_polygon(path: Path):
     import geopandas as gpd
 
     p = str(path)
@@ -102,6 +96,47 @@ def _read(path: Path):
     if gdf.crs is not None and gdf.crs.to_epsg() != 4326:
         gdf = gdf.to_crs(4326)
     return gdf
+
+
+def _read_grid(path: Path) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    import io
+    import zipfile
+
+    with zipfile.ZipFile(path) as zf:
+        names = [n for n in zf.namelist() if n.lower().endswith(".asc")]
+        if not names:
+            raise RuntimeError("GLiM: PANGAEA archive contains no ASCII grid")
+        raw = io.TextIOWrapper(zf.open(names[0]), encoding="ascii")
+        header = {}
+        for _ in range(6):
+            key, value = raw.readline().split()[:2]
+            header[key.lower()] = float(value)
+        values = np.loadtxt(raw, dtype=np.float32)
+    nrows, ncols = int(header["nrows"]), int(header["ncols"])
+    if values.shape != (nrows, ncols):
+        raise RuntimeError(f"GLiM: expected {(nrows, ncols)} cells, got {values.shape}")
+    values[values == header.get("nodata_value", -9999.0)] = np.nan
+    lat = header["yllcorner"] + (nrows - np.arange(nrows, dtype=np.float32) - 0.5) * header["cellsize"]
+    lon = header["xllcorner"] + (np.arange(ncols, dtype=np.float32) + 0.5) * header["cellsize"]
+    return values, lat, lon
+
+
+def _is_grid_archive(path: Path) -> bool:
+    import zipfile
+
+    try:
+        with zipfile.ZipFile(path) as zf:
+            return any(name.lower().endswith(".asc") for name in zf.namelist())
+    except (OSError, zipfile.BadZipFile):
+        return False
+
+
+def _grid_fraction(values: np.ndarray, classes, lat: np.ndarray, lon: np.ndarray, grid: Grid) -> np.ndarray:
+    from ._regrid import regular_to_grid
+
+    valid = np.isfinite(values)
+    fraction = np.where(valid, np.isin(values, classes).astype(np.float32), np.nan)
+    return regular_to_grid(fraction, lat, lon, grid, order=1)
 
 
 def _fraction(gdf, classes, grid: Grid) -> np.ndarray:
@@ -120,8 +155,15 @@ def compute(grid: Grid, cache_dir: Path) -> dict[str, np.ndarray]:
     if is_done(marker) and all(p.exists() for p in paths.values()):
         return {k: np.load(p) for k, p in paths.items()}
     src = fetch(cache_dir, grid)
-    gdf = _read(src)
-    res = {"basalt": _fraction(gdf, BASALT, grid), "ice": _fraction(gdf, ICE, grid)}
+    if _is_grid_archive(src):
+        values, lat, lon = _read_grid(src)
+        res = {
+            "basalt": _grid_fraction(values, (2, 4), lat, lon, grid),
+            "ice": _grid_fraction(values, (16,), lat, lon, grid),
+        }
+    else:
+        gdf = _read_polygon(src)
+        res = {"basalt": _fraction(gdf, BASALT, grid), "ice": _fraction(gdf, ICE, grid)}
     for k, v in res.items():
         save_grid(paths[k], v)
     mark_done(marker, {"source": src.name})

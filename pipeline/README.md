@@ -188,7 +188,10 @@ If the proxy inspects TLS, also point `REQUESTS_CA_BUNDLE` at your organisation'
 
 **`pyhdf` failed to install (Intel Macs).** This is fine. MODIS needs it, so those features fall back to NASA POWER and GIBS automatically.
 
-**GLiM download fails.** Download "LiMW_GIS 2015.gdb.zip" manually from https://doi.org/10.1594/PANGAEA.788537 and put it in `pipeline/cache/glim/`. Then run again.
+**GLiM download fails.** The PANGAEA record currently publishes the official 0.5° grid as
+`glim_wgs84_0point5deg.zip`. Open https://doi.org/10.1594/PANGAEA.788537, download the dataset,
+and put the archive in `pipeline/cache/glim/`. Polygon GLiM archives (`.gdb`, `.shp`, or `.gpkg`)
+remain supported for local use.
 
 **The run crashed or the computer slept.** Run the same command again. It resumes from where it stopped.
 
@@ -214,7 +217,7 @@ The published data still has a **synthetic** basalt layer, because PANGAEA (the 
 python -c "from pipeline.sources import glim; print(glim.archive_status())"
 ```
 
-**2a. If it prints `None`:** patch basalt from GLiM (about 1 GB to download, then ~10–20 min to rasterise):
+**2a. If it prints `None`:** patch basalt from GLiM (the published archive is about 40 kB; rasterisation is quick):
 
 ```bash
 python -m pipeline patch --features basalt
@@ -232,7 +235,9 @@ A value well above 0 means it works. In that case run the global patch. It tries
 python -m pipeline patch --features basalt
 ```
 
-If the smoke test errors or prints 0, send us the error text. Or download GLiM by hand: open https://doi.pangaea.de/10.1594/PANGAEA.788537 in a browser, download `LiMW_GIS 2015.gdb.zip`, put it in `pipeline/cache/glim/`, and run the patch command above.
+If the smoke test errors or prints 0, send us the error text. Or download GLiM by hand from
+https://doi.pangaea.de/10.1594/PANGAEA.788537, put the published zip in `pipeline/cache/glim/`,
+and run the patch command above.
 
 **3. Check the summary.** The log shows `patched basalt <- glim` (or `macrostrat`) and a new validation table. If it says `<- synthetic`, nothing improved, so stop here and send us the log from `pipeline/logs/`.
 

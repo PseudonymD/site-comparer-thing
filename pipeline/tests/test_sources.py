@@ -176,6 +176,30 @@ def test_glim_fraction():
     assert out[g.row_of_lat(0.5), g.col_of_lon(0.5)] == pytest.approx(0.6, abs=0.11)
 
 
+def test_glim_pangaea_grid_archive(tmp_path):
+    from pipeline.sources import glim
+
+    archive = tmp_path / "glim.zip"
+    asc = """ncols 4
+nrows 2
+xllcorner -2
+yllcorner -1
+cellsize 1
+NODATA_value -9999
+2 4 1 -9999
+16 1 1 2
+"""
+    import zipfile
+
+    with zipfile.ZipFile(archive, "w") as zf:
+        zf.writestr("glim_wgs84_0point5deg.txt.asc", asc)
+    values, lat, lon = glim._read_grid(archive)
+    assert values.shape == (2, 4)
+    assert lat[0] == pytest.approx(0.5)
+    assert lon[0] == pytest.approx(-1.5)
+    assert glim._is_grid_archive(archive)
+
+
 # ------------------------------------------------------------------ synthetic
 def test_synthetic_layers_complete_and_finite():
     from pipeline.config import FEATURE_IDS
@@ -203,6 +227,23 @@ def test_macrostrat_parser_and_major_lith():
     assert not m.is_major_mafic(feats[1]["properties"])  # basalt only as a minor component
     assert m.is_major_mafic({"liths": [{"lith": "gabbro"}]})
     assert m.parse_features([{"a": 1}]) == [{"a": 1}]
+
+
+def test_macrostrat_vector_tile_decoder():
+    import mapbox_vector_tile
+    from pipeline.sources import macrostrat as m
+
+    raw = mapbox_vector_tile.encode({
+        "name": "units",
+        "features": [{
+            "geometry": {"type": "Polygon", "coordinates": [[[0, 0], [100, 0], [100, 100], [0, 100], [0, 0]]]},
+            "properties": {"lith": "mafic volcanic rocks"},
+        }],
+    })
+    features = m._decode_tile(raw, (0, 0, 1))
+    assert len(features) == 1
+    assert features[0]["geometry"]["type"] == "Polygon"
+    assert -85.1 <= features[0]["geometry"]["coordinates"][0][0][1] <= 85.1
 
 
 def test_macrostrat_to_grid_from_cache(tmp_path, monkeypatch):

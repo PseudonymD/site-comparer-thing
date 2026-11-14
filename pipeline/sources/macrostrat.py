@@ -1,73 +1,112 @@
-"""Basaltic / mafic fraction from the Macrostrat geologic map API (no login, CC-BY 4.0): https://macrostrat.org
+"""Basaltic / mafic fraction from Macrostrat's vector-tile service (CC-BY 4.0).
 
-No-login fallback for GLiM (see glim.py). Macrostrat harmonises many geological maps into one database and
-serves map polygons with lithology attributes. We request the small-scale global compilation one lithology
-at a time (basalt, gabbro, diabase/dolerite, "mafic volcanic") in 30°x30° tiles, keep polygons whose
-*major* lithology is one of those, and rasterise their union to a per-cell fraction - the same definition as
-GLiM vb + pb ("basic volcanic + basic plutonic").
-
-Caveats (also shown in the UI via meta.json): Macrostrat's small-scale coverage is uneven between
-continents, and its polygons are generalised. Treat it as a fallback, not a replacement for GLiM.
-Responses are cached under pipeline/cache/macrostrat/, so reruns are offline.
-
-Not testable from the cloud session that wrote it (macrostrat.org is blocked there); the parser is unit
-tested with a recorded-shape fixture. The teammate smoke test is in pipeline/README.md ("Basalt hot-fix").
+Macrostrat's query API supports point lookups, while polygon coverage is served as Mapbox vector
+tiles. The adapter decodes the documented carto tiles at a moderate zoom, keeps polygons whose
+major lithology is mafic, and rasterises their union to a per-cell fraction.
 """
 from __future__ import annotations
 
-import json
-import logging
+import math
 import re
 from pathlib import Path
 
 import numpy as np
 
 from ..grid import Grid, grid_tag
-from ..util import get_json, grid_cache_path, is_done, mark_done, save_grid
-
-log = logging.getLogger("pipeline.macrostrat")
+from ..util import download, grid_cache_path, is_done, mark_done, save_grid
 
 NAME = "macrostrat"
 FEATURES = ["basalt"]
 REQUIRES_TOKEN = False
-HOST = "https://macrostrat.org"
-PROBE = "https://macrostrat.org/api/v2/"
-API = "https://macrostrat.org/api/v2/geologic_units/map"
-SCALE = __import__("os").environ.get("MACROSTRAT_SCALE", "small")  # tiny | small | medium
-LITHS = ["basalt", "gabbro", "diabase", "dolerite", "mafic volcanic"]
-MAFIC = re.compile(r"basalt|gabbro|diabase|dolerite|mafic|picrite|komatiite|tholeiite|basanite|norite|troctolite",
-                   re.I)
-TILE_DEG = 30
+HOST = "https://tiles.macrostrat.org"
+PROBE = "https://tiles.macrostrat.org/carto/0/0/0.mvt"
+TILE_API = "https://tiles.macrostrat.org/carto/{z}/{x}/{y}.mvt"
+TILE_ZOOM = 3
+MAFIC = re.compile(
+    r"basalt|gabbro|diabase|dolerite|mafic|picrite|komatiite|tholeiite|basanite|norite|troctolite",
+    re.I,
+)
 
 
 def _tiles(grid: Grid):
-    minlon, minlat, maxlon, maxlat = grid.bbox or (-180.0, -90.0, 180.0, 90.0)
-    for lat0 in range(-90, 90, TILE_DEG):
-        for lon0 in range(-180, 180, TILE_DEG):
-            lat1, lon1 = lat0 + TILE_DEG, lon0 + TILE_DEG
-            if lon1 <= minlon or lon0 >= maxlon or lat1 <= minlat or lat0 >= maxlat:
-                continue
-            yield lon0, lat0, lon1, lat1
+    minlon, minlat, maxlon, maxlat = grid.bbox or (-180.0, -85.051129, 180.0, 85.051129)
+    n = 1 << TILE_ZOOM
 
+    def x(lon):
+        return int(math.floor((lon + 180.0) / 360.0 * n)) % n
 
-def _wkt(lon0, lat0, lon1, lat1) -> str:
-    return f"POLYGON(({lon0} {lat0},{lon1} {lat0},{lon1} {lat1},{lon0} {lat1},{lon0} {lat0}))"
+    def y(lat):
+        lat = max(-85.051129, min(85.051129, lat))
+        return int(math.floor((1.0 - math.asinh(math.tan(math.radians(lat))) / math.pi) / 2.0 * n))
+
+    x0, x1 = x(minlon), x(maxlon - 1e-9)
+    y0, y1 = y(maxlat), y(minlat)
+    xs = range(x0, x1 + 1) if x0 <= x1 else list(range(x0, n)) + list(range(0, x1 + 1))
+    for ty in range(max(0, y0), min(n - 1, y1) + 1):
+        for tx in xs:
+            yield tx, ty, n
 
 
 def is_major_mafic(props: dict) -> bool:
-    """True if a polygon's *major* lithology is mafic. Macrostrat writes e.g. 'Major:{basalt}, Minor:{tuff}'
-    in `lith`, or gives a `liths` list of {lith, ...}; plain names are treated as major."""
-    lith = props.get("lith") or ""
-    if isinstance(lith, str) and lith:
-        m = re.search(r"Major:\s*\{([^}]*)\}", lith)
-        return bool(MAFIC.search(m.group(1) if m else lith))
-    liths = props.get("liths") or []
-    names = " ".join(str(x.get("lith", x) if isinstance(x, dict) else x) for x in liths)
-    return bool(MAFIC.search(names))
+    """True when a feature's major lithology or descriptive field is mafic."""
+    lith = props.get("lith") or props.get("lithology") or props.get("descrip") or ""
+    if not lith and props.get("liths"):
+        lith = " ".join(
+            str(item.get("lith", item) if isinstance(item, dict) else item)
+            for item in props["liths"]
+        )
+    text = str(lith)
+    major = re.search(r"Major:\s*\{([^}]*)\}", text, re.I)
+    return bool(MAFIC.search(major.group(1) if major else text))
+
+
+def _tile_path(cache_dir: Path, tile) -> Path:
+    return Path(cache_dir) / "macrostrat" / f"carto_z{TILE_ZOOM}_{tile[0]}_{tile[1]}.mvt"
+
+
+def _fetch_tile(cache_dir: Path, tile) -> bytes:
+    path = _tile_path(cache_dir, tile)
+    if path.exists():
+        return path.read_bytes()
+    download(TILE_API.format(z=TILE_ZOOM, x=tile[0], y=tile[1]), path, min_bytes=1, timeout=180)
+    return path.read_bytes()
+
+
+def _decode_tile(raw: bytes, tile) -> list[dict]:
+    import mapbox_vector_tile
+    from shapely.affinity import affine_transform
+    from shapely.geometry import mapping, shape
+
+    decoded = mapbox_vector_tile.decode(raw, default_options={"y_coord_down": True})
+    layer = decoded.get("units", {})
+    extent = layer.get("extent", 4096)
+    n = tile[2]
+    lon0 = tile[0] / n * 360.0 - 180.0
+    lon1 = (tile[0] + 1) / n * 360.0 - 180.0
+    lat0 = math.degrees(math.atan(math.sinh(math.pi * (1 - 2 * tile[1] / n))))
+    lat1 = math.degrees(math.atan(math.sinh(math.pi * (1 - 2 * (tile[1] + 1) / n))))
+    features = []
+    for item in layer.get("features", []):
+        props = item.get("properties") or {}
+        if not is_major_mafic(props):
+            continue
+        geom = shape(item["geometry"])
+        geom = affine_transform(
+            geom,
+            [(lon1 - lon0) / extent, 0, 0, (lat1 - lat0) / extent, lon0, lat0],
+        )
+        features.append(
+            {
+                "type": "Feature",
+                "geometry": mapping(geom),
+                "properties": {"lith": str(props.get("lith") or props.get("lithology") or "")},
+            }
+        )
+    return features
 
 
 def parse_features(payload) -> list[dict]:
-    """GeoJSON FeatureCollection, bare feature list, or {'success': {'data': ...}} -> list of features."""
+    """Retained for compatibility with cached/API fixtures."""
     if isinstance(payload, dict) and "success" in payload:
         payload = payload["success"].get("data", payload["success"])
     if isinstance(payload, dict) and payload.get("type") == "FeatureCollection":
@@ -81,27 +120,11 @@ def parse_features(payload) -> list[dict]:
     return []
 
 
-def _fetch_tile(cache_dir: Path, lith: str, tile) -> list[dict]:
-    p = Path(cache_dir) / "macrostrat" / f"{SCALE}_{lith.replace(' ', '_')}_{tile[0]}_{tile[1]}.json"
-    if p.exists():
-        return json.loads(p.read_text(encoding="utf-8"))
-    payload = get_json(API, params={"lith": lith, "scale": SCALE, "shape": _wkt(*tile), "format": "geojson_bare"},
-                       timeout=180)
-    feats = [f for f in parse_features(payload) if f.get("geometry")]
-    keep = [{"type": "Feature", "geometry": f["geometry"],
-             "properties": {"lith": (f.get("properties") or {}).get("lith", ""),
-                            "liths": (f.get("properties") or {}).get("liths", [])}} for f in feats]
-    p.parent.mkdir(parents=True, exist_ok=True)
-    p.write_text(json.dumps(keep), encoding="utf-8")
-    return keep
-
-
 def fetch(cache_dir: Path, grid: Grid | None = None) -> list[dict]:
     grid = grid or Grid(0.1)
     out = []
     for tile in _tiles(grid):
-        for lith in LITHS:
-            out.extend(_fetch_tile(cache_dir, lith, tile))
+        out.extend(_decode_tile(_fetch_tile(cache_dir, tile), tile))
     return out
 
 
@@ -115,21 +138,17 @@ def to_grid(grid: Grid, cache_dir: Path, feature: str = "basalt", **_) -> np.nda
     marker = f"grid_{gkey}_{NAME}"
     if is_done(marker) and path.exists():
         return np.load(path)
-    feats = fetch(cache_dir, grid)
     geoms = []
-    for f in feats:
-        if not is_major_mafic(f.get("properties") or {}):
-            continue
+    for item in fetch(cache_dir, grid):
         try:
-            g = shape(f["geometry"])
+            geom = shape(item["geometry"])
         except Exception:  # noqa: BLE001 - malformed polygon
             continue
-        if not g.is_empty:
-            geoms.append((g, None))
+        if not geom.is_empty:
+            geoms.append((geom, None))
     if not geoms:
-        raise RuntimeError("Macrostrat returned no mafic polygons (API change?)")
-    log.info("Macrostrat: rasterising %d mafic polygons", len(geoms))
-    arr = rasterize_fraction(geoms, grid)  # overlapping duplicates (one per lith query) are unioned by burning
+        raise RuntimeError("Macrostrat returned no mafic polygons (tile schema or coverage changed)")
+    arr = rasterize_fraction(geoms, grid)
     save_grid(path, arr)
-    mark_done(marker, {"polygons": len(geoms)})
+    mark_done(marker, {"polygons": len(geoms), "tile_zoom": TILE_ZOOM})
     return arr
