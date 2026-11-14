@@ -1,0 +1,3113 @@
+{
+ "generated": "2026-11-14T11:48:42",
+ "data_generated": "2026-11-14T11:48:30",
+ "bbox": [
+  11.0,
+  -35.5,
+  33.0,
+  -16.5
+ ],
+ "radius_cells": 5,
+ "method": "Default weights and filters, novelty off. A local place's score is its best cell within ±5 cells (~±50 km) of the coordinates given; the percentile is among all of Earth's land cells for that target. 'Region best' is the top cell inside the bbox.",
+ "synthetic_features": [],
+ "places": [
+  {
+   "id": "tankwa",
+   "name": "Tankwa Karoo",
+   "lat": -32.25,
+   "lon": 20.0,
+   "why": "Hyper-arid succulent Karoo basin; often called South Africa's most Mars-like landscape.",
+   "results": [
+    {
+     "target": "moon_south_pole",
+     "target_name": "Moon – South Pole (Artemis)",
+     "score": 0.597,
+     "percentile": 92.33,
+     "lat": -31.85,
+     "lon": 19.95,
+     "best": [
+      {
+       "feature": "basalt",
+       "name": "Basaltic / volcanic",
+       "unit": "fraction",
+       "site": 0.116,
+       "target": 0.046,
+       "target_raw": 0.05,
+       "beyond_earth": false,
+       "share_of_gap": 0.0,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "temp_range",
+       "name": "Diurnal temp range",
+       "unit": "°C",
+       "site": 15.912,
+       "target": 19.462,
+       "target_raw": 100.0,
+       "beyond_earth": true,
+       "share_of_gap": 0.0,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "tri",
+       "name": "Roughness (TRI)",
+       "unit": "m",
+       "site": 114.233,
+       "target": 182.52,
+       "target_raw": 180.0,
+       "beyond_earth": false,
+       "share_of_gap": 0.0,
+       "synthetic": false,
+       "proxy": false
+      }
+     ],
+     "worst": [
+      {
+       "feature": "solar",
+       "name": "Solar irradiance",
+       "unit": "kWh/m²/day",
+       "site": 6.036,
+       "target": 1.479,
+       "target_raw": 0.7,
+       "beyond_earth": true,
+       "share_of_gap": 0.236,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "temp_mean",
+       "name": "Mean temperature",
+       "unit": "°C",
+       "site": 15.244,
+       "target": -51.12,
+       "target_raw": -120.0,
+       "beyond_earth": true,
+       "share_of_gap": 0.207,
+       "synthetic": false,
+       "proxy": false
+      }
+     ]
+    },
+    {
+     "target": "moon_mare_lava_tube",
+     "target_name": "Moon – Mare / lava tube (Marius Hills)",
+     "score": 0.7114,
+     "percentile": 99.78,
+     "lat": -31.85,
+     "lon": 20.15,
+     "best": [
+      {
+       "feature": "relief",
+       "name": "Local relief",
+       "unit": "m",
+       "site": 381.765,
+       "target": 350.42,
+       "target_raw": 350.0,
+       "beyond_earth": false,
+       "share_of_gap": 0.0,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "temp_range",
+       "name": "Diurnal temp range",
+       "unit": "°C",
+       "site": 15.912,
+       "target": 19.462,
+       "target_raw": 290.0,
+       "beyond_earth": true,
+       "share_of_gap": 0.0,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "slope_p90",
+       "name": "Slope p90",
+       "unit": "°",
+       "site": 7.013,
+       "target": 6.001,
+       "target_raw": 6.0,
+       "beyond_earth": false,
+       "share_of_gap": 0.0,
+       "synthetic": false,
+       "proxy": false
+      }
+     ],
+     "worst": [
+      {
+       "feature": "precip",
+       "name": "Precipitation",
+       "unit": "mm/yr",
+       "site": 263.886,
+       "target": 0.932,
+       "target_raw": 0.0,
+       "beyond_earth": false,
+       "share_of_gap": 0.21,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "temp_mean",
+       "name": "Mean temperature",
+       "unit": "°C",
+       "site": 14.431,
+       "target": -51.12,
+       "target_raw": -58.0,
+       "beyond_earth": true,
+       "share_of_gap": 0.207,
+       "synthetic": false,
+       "proxy": false
+      }
+     ]
+    },
+    {
+     "target": "mars_jezero",
+     "target_name": "Mars – Jezero crater",
+     "score": 0.6526,
+     "percentile": 97.6,
+     "lat": -31.85,
+     "lon": 20.15,
+     "best": [
+      {
+       "feature": "temp_range",
+       "name": "Diurnal temp range",
+       "unit": "°C",
+       "site": 15.912,
+       "target": 19.462,
+       "target_raw": 80.0,
+       "beyond_earth": true,
+       "share_of_gap": 0.0,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "tri",
+       "name": "Roughness (TRI)",
+       "unit": "m",
+       "site": 76.713,
+       "target": 55.052,
+       "target_raw": 55.0,
+       "beyond_earth": false,
+       "share_of_gap": 0.0,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "relief",
+       "name": "Local relief",
+       "unit": "m",
+       "site": 381.765,
+       "target": 499.9,
+       "target_raw": 500.0,
+       "beyond_earth": false,
+       "share_of_gap": 0.001,
+       "synthetic": false,
+       "proxy": false
+      }
+     ],
+     "worst": [
+      {
+       "feature": "temp_mean",
+       "name": "Mean temperature",
+       "unit": "°C",
+       "site": 14.431,
+       "target": -51.12,
+       "target_raw": -55.0,
+       "beyond_earth": true,
+       "share_of_gap": 0.21,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "temp_min",
+       "name": "Annual min temperature",
+       "unit": "°C",
+       "site": -6.114,
+       "target": -78.583,
+       "target_raw": -100.0,
+       "beyond_earth": true,
+       "share_of_gap": 0.17,
+       "synthetic": false,
+       "proxy": false
+      }
+     ]
+    },
+    {
+     "target": "mars_gale",
+     "target_name": "Mars – Gale crater",
+     "score": 0.6556,
+     "percentile": 97.72,
+     "lat": -31.85,
+     "lon": 20.15,
+     "best": [
+      {
+       "feature": "tri",
+       "name": "Roughness (TRI)",
+       "unit": "m",
+       "site": 76.713,
+       "target": 90.229,
+       "target_raw": 90.0,
+       "beyond_earth": false,
+       "share_of_gap": 0.0,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "temp_range",
+       "name": "Diurnal temp range",
+       "unit": "°C",
+       "site": 15.912,
+       "target": 19.462,
+       "target_raw": 85.0,
+       "beyond_earth": true,
+       "share_of_gap": 0.0,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "slope_mean",
+       "name": "Mean slope",
+       "unit": "°",
+       "site": 4.121,
+       "target": 5.003,
+       "target_raw": 5.0,
+       "beyond_earth": false,
+       "share_of_gap": 0.0,
+       "synthetic": false,
+       "proxy": false
+      }
+     ],
+     "worst": [
+      {
+       "feature": "temp_mean",
+       "name": "Mean temperature",
+       "unit": "°C",
+       "site": 14.431,
+       "target": -51.032,
+       "target_raw": -50.0,
+       "beyond_earth": false,
+       "share_of_gap": 0.214,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "temp_min",
+       "name": "Annual min temperature",
+       "unit": "°C",
+       "site": -6.114,
+       "target": -78.583,
+       "target_raw": -95.0,
+       "beyond_earth": true,
+       "share_of_gap": 0.173,
+       "synthetic": false,
+       "proxy": false
+      }
+     ]
+    },
+    {
+     "target": "mars_arcadia",
+     "target_name": "Mars – Arcadia Planitia (mid-latitude ice)",
+     "score": 0.6492,
+     "percentile": 94.65,
+     "lat": -31.95,
+     "lon": 20.15,
+     "best": [
+      {
+       "feature": "ice",
+       "name": "Permanent ice / snow",
+       "unit": "fraction",
+       "site": 0.0,
+       "target": 0.0,
+       "target_raw": 0.0,
+       "beyond_earth": false,
+       "share_of_gap": 0.0,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "temp_range",
+       "name": "Diurnal temp range",
+       "unit": "°C",
+       "site": 15.912,
+       "target": 19.462,
+       "target_raw": 60.0,
+       "beyond_earth": true,
+       "share_of_gap": 0.0,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "basalt",
+       "name": "Basaltic / volcanic",
+       "unit": "fraction",
+       "site": 0.053,
+       "target": 0.91,
+       "target_raw": 0.9,
+       "beyond_earth": false,
+       "share_of_gap": 0.001,
+       "synthetic": false,
+       "proxy": false
+      }
+     ],
+     "worst": [
+      {
+       "feature": "temp_mean",
+       "name": "Mean temperature",
+       "unit": "°C",
+       "site": 15.244,
+       "target": -51.12,
+       "target_raw": -70.0,
+       "beyond_earth": true,
+       "share_of_gap": 0.186,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "temp_min",
+       "name": "Annual min temperature",
+       "unit": "°C",
+       "site": -5.661,
+       "target": -78.583,
+       "target_raw": -125.0,
+       "beyond_earth": true,
+       "share_of_gap": 0.149,
+       "synthetic": false,
+       "proxy": false
+      }
+     ]
+    },
+    {
+     "target": "mars_north_polar",
+     "target_name": "Mars – North polar layered deposits",
+     "score": 0.5782,
+     "percentile": 82.22,
+     "lat": -31.85,
+     "lon": 20.15,
+     "best": [
+      {
+       "feature": "basalt",
+       "name": "Basaltic / volcanic",
+       "unit": "fraction",
+       "site": 0.053,
+       "target": 0.276,
+       "target_raw": 0.3,
+       "beyond_earth": false,
+       "share_of_gap": 0.0,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "temp_range",
+       "name": "Diurnal temp range",
+       "unit": "°C",
+       "site": 15.912,
+       "target": 19.462,
+       "target_raw": 25.0,
+       "beyond_earth": true,
+       "share_of_gap": 0.0,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "slope_p90",
+       "name": "Slope p90",
+       "unit": "°",
+       "site": 7.013,
+       "target": 8.001,
+       "target_raw": 8.0,
+       "beyond_earth": false,
+       "share_of_gap": 0.0,
+       "synthetic": false,
+       "proxy": false
+      }
+     ],
+     "worst": [
+      {
+       "feature": "solar",
+       "name": "Solar irradiance",
+       "unit": "kWh/m²/day",
+       "site": 6.06,
+       "target": 1.479,
+       "target_raw": 1.6,
+       "beyond_earth": false,
+       "share_of_gap": 0.215,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "temp_mean",
+       "name": "Mean temperature",
+       "unit": "°C",
+       "site": 14.431,
+       "target": -51.12,
+       "target_raw": -100.0,
+       "beyond_earth": true,
+       "share_of_gap": 0.183,
+       "synthetic": false,
+       "proxy": false
+      }
+     ]
+    }
+   ],
+   "best_target": "moon_mare_lava_tube",
+   "best_percentile": 99.78
+  },
+  {
+   "id": "richtersveld",
+   "name": "Richtersveld",
+   "lat": -28.15,
+   "lon": 17.05,
+   "why": "Rugged, mountainous desert on the Orange River with sparse rainfall and fog.",
+   "results": [
+    {
+     "target": "moon_south_pole",
+     "target_name": "Moon – South Pole (Artemis)",
+     "score": 0.6045,
+     "percentile": 93.85,
+     "lat": -27.75,
+     "lon": 17.15,
+     "best": [
+      {
+       "feature": "temp_range",
+       "name": "Diurnal temp range",
+       "unit": "°C",
+       "site": 19.462,
+       "target": 19.462,
+       "target_raw": 100.0,
+       "beyond_earth": true,
+       "share_of_gap": 0.0,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "tri",
+       "name": "Roughness (TRI)",
+       "unit": "m",
+       "site": 126.486,
+       "target": 182.52,
+       "target_raw": 180.0,
+       "beyond_earth": false,
+       "share_of_gap": 0.0,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "slope_mean",
+       "name": "Mean slope",
+       "unit": "°",
+       "site": 6.364,
+       "target": 10.018,
+       "target_raw": 10.0,
+       "beyond_earth": false,
+       "share_of_gap": 0.001,
+       "synthetic": false,
+       "proxy": false
+      }
+     ],
+     "worst": [
+      {
+       "feature": "solar",
+       "name": "Solar irradiance",
+       "unit": "kWh/m²/day",
+       "site": 6.483,
+       "target": 1.479,
+       "target_raw": 0.7,
+       "beyond_earth": true,
+       "share_of_gap": 0.279,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "temp_mean",
+       "name": "Mean temperature",
+       "unit": "°C",
+       "site": 16.634,
+       "target": -51.12,
+       "target_raw": -120.0,
+       "beyond_earth": true,
+       "share_of_gap": 0.225,
+       "synthetic": false,
+       "proxy": false
+      }
+     ]
+    },
+    {
+     "target": "moon_mare_lava_tube",
+     "target_name": "Moon – Mare / lava tube (Marius Hills)",
+     "score": 0.6762,
+     "percentile": 98.94,
+     "lat": -27.75,
+     "lon": 16.95,
+     "best": [
+      {
+       "feature": "temp_range",
+       "name": "Diurnal temp range",
+       "unit": "°C",
+       "site": 19.462,
+       "target": 19.462,
+       "target_raw": 290.0,
+       "beyond_earth": true,
+       "share_of_gap": 0.0,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "slope_p90",
+       "name": "Slope p90",
+       "unit": "°",
+       "site": 6.651,
+       "target": 6.001,
+       "target_raw": 6.0,
+       "beyond_earth": false,
+       "share_of_gap": 0.0,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "solar",
+       "name": "Solar irradiance",
+       "unit": "kWh/m²/day",
+       "site": 6.483,
+       "target": 7.35,
+       "target_raw": 10.4,
+       "beyond_earth": true,
+       "share_of_gap": 0.0,
+       "synthetic": false,
+       "proxy": false
+      }
+     ],
+     "worst": [
+      {
+       "feature": "basalt",
+       "name": "Basaltic / volcanic",
+       "unit": "fraction",
+       "site": 0.0,
+       "target": 1.0,
+       "target_raw": 1.0,
+       "beyond_earth": false,
+       "share_of_gap": 0.378,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "temp_mean",
+       "name": "Mean temperature",
+       "unit": "°C",
+       "site": 15.597,
+       "target": -51.12,
+       "target_raw": -58.0,
+       "beyond_earth": true,
+       "share_of_gap": 0.17,
+       "synthetic": false,
+       "proxy": false
+      }
+     ]
+    },
+    {
+     "target": "mars_jezero",
+     "target_name": "Mars – Jezero crater",
+     "score": 0.6616,
+     "percentile": 98.34,
+     "lat": -27.75,
+     "lon": 16.95,
+     "best": [
+      {
+       "feature": "temp_range",
+       "name": "Diurnal temp range",
+       "unit": "°C",
+       "site": 19.462,
+       "target": 19.462,
+       "target_raw": 80.0,
+       "beyond_earth": true,
+       "share_of_gap": 0.0,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "tri",
+       "name": "Roughness (TRI)",
+       "unit": "m",
+       "site": 68.418,
+       "target": 55.052,
+       "target_raw": 55.0,
+       "beyond_earth": false,
+       "share_of_gap": 0.0,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "relief",
+       "name": "Local relief",
+       "unit": "m",
+       "site": 427.157,
+       "target": 499.9,
+       "target_raw": 500.0,
+       "beyond_earth": false,
+       "share_of_gap": 0.0,
+       "synthetic": false,
+       "proxy": false
+      }
+     ],
+     "worst": [
+      {
+       "feature": "temp_mean",
+       "name": "Mean temperature",
+       "unit": "°C",
+       "site": 15.597,
+       "target": -51.12,
+       "target_raw": -55.0,
+       "beyond_earth": true,
+       "share_of_gap": 0.229,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "temp_min",
+       "name": "Annual min temperature",
+       "unit": "°C",
+       "site": -4.401,
+       "target": -78.583,
+       "target_raw": -100.0,
+       "beyond_earth": true,
+       "share_of_gap": 0.187,
+       "synthetic": false,
+       "proxy": false
+      }
+     ]
+    },
+    {
+     "target": "mars_gale",
+     "target_name": "Mars – Gale crater",
+     "score": 0.6656,
+     "percentile": 98.48,
+     "lat": -27.75,
+     "lon": 17.15,
+     "best": [
+      {
+       "feature": "temp_range",
+       "name": "Diurnal temp range",
+       "unit": "°C",
+       "site": 19.462,
+       "target": 19.462,
+       "target_raw": 85.0,
+       "beyond_earth": true,
+       "share_of_gap": 0.0,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "tri",
+       "name": "Roughness (TRI)",
+       "unit": "m",
+       "site": 126.486,
+       "target": 90.229,
+       "target_raw": 90.0,
+       "beyond_earth": false,
+       "share_of_gap": 0.0,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "slope_mean",
+       "name": "Mean slope",
+       "unit": "°",
+       "site": 6.364,
+       "target": 5.003,
+       "target_raw": 5.0,
+       "beyond_earth": false,
+       "share_of_gap": 0.0,
+       "synthetic": false,
+       "proxy": false
+      }
+     ],
+     "worst": [
+      {
+       "feature": "temp_mean",
+       "name": "Mean temperature",
+       "unit": "°C",
+       "site": 16.634,
+       "target": -51.032,
+       "target_raw": -50.0,
+       "beyond_earth": false,
+       "share_of_gap": 0.242,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "temp_min",
+       "name": "Annual min temperature",
+       "unit": "°C",
+       "site": -4.008,
+       "target": -78.583,
+       "target_raw": -95.0,
+       "beyond_earth": true,
+       "share_of_gap": 0.194,
+       "synthetic": false,
+       "proxy": false
+      }
+     ]
+    },
+    {
+     "target": "mars_arcadia",
+     "target_name": "Mars – Arcadia Planitia (mid-latitude ice)",
+     "score": 0.6513,
+     "percentile": 95.01,
+     "lat": -27.65,
+     "lon": 16.95,
+     "best": [
+      {
+       "feature": "temp_range",
+       "name": "Diurnal temp range",
+       "unit": "°C",
+       "site": 19.462,
+       "target": 19.462,
+       "target_raw": 60.0,
+       "beyond_earth": true,
+       "share_of_gap": 0.0,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "ice",
+       "name": "Permanent ice / snow",
+       "unit": "fraction",
+       "site": 0.0,
+       "target": 0.0,
+       "target_raw": 0.0,
+       "beyond_earth": false,
+       "share_of_gap": 0.0,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "elevation",
+       "name": "Elevation",
+       "unit": "m",
+       "site": 1374.451,
+       "target": 4688.431,
+       "target_raw": 4500.0,
+       "beyond_earth": false,
+       "share_of_gap": 0.001,
+       "synthetic": false,
+       "proxy": false
+      }
+     ],
+     "worst": [
+      {
+       "feature": "temp_mean",
+       "name": "Mean temperature",
+       "unit": "°C",
+       "site": 15.949,
+       "target": -51.12,
+       "target_raw": -70.0,
+       "beyond_earth": true,
+       "share_of_gap": 0.193,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "temp_min",
+       "name": "Annual min temperature",
+       "unit": "°C",
+       "site": -4.401,
+       "target": -78.583,
+       "target_raw": -125.0,
+       "beyond_earth": true,
+       "share_of_gap": 0.156,
+       "synthetic": false,
+       "proxy": false
+      }
+     ]
+    },
+    {
+     "target": "mars_north_polar",
+     "target_name": "Mars – North polar layered deposits",
+     "score": 0.5851,
+     "percentile": 84.68,
+     "lat": -27.75,
+     "lon": 16.95,
+     "best": [
+      {
+       "feature": "temp_range",
+       "name": "Diurnal temp range",
+       "unit": "°C",
+       "site": 19.462,
+       "target": 19.462,
+       "target_raw": 25.0,
+       "beyond_earth": true,
+       "share_of_gap": 0.0,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "slope_p90",
+       "name": "Slope p90",
+       "unit": "°",
+       "site": 6.651,
+       "target": 8.001,
+       "target_raw": 8.0,
+       "beyond_earth": false,
+       "share_of_gap": 0.0,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "tri",
+       "name": "Roughness (TRI)",
+       "unit": "m",
+       "site": 68.418,
+       "target": 40.049,
+       "target_raw": 40.0,
+       "beyond_earth": false,
+       "share_of_gap": 0.001,
+       "synthetic": false,
+       "proxy": false
+      }
+     ],
+     "worst": [
+      {
+       "feature": "solar",
+       "name": "Solar irradiance",
+       "unit": "kWh/m²/day",
+       "site": 6.483,
+       "target": 1.479,
+       "target_raw": 1.6,
+       "beyond_earth": false,
+       "share_of_gap": 0.251,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "temp_mean",
+       "name": "Mean temperature",
+       "unit": "°C",
+       "site": 15.597,
+       "target": -51.12,
+       "target_raw": -100.0,
+       "beyond_earth": true,
+       "share_of_gap": 0.195,
+       "synthetic": false,
+       "proxy": false
+      }
+     ]
+    }
+   ],
+   "best_target": "moon_mare_lava_tube",
+   "best_percentile": 98.94
+  },
+  {
+   "id": "namib",
+   "name": "Central Namib (Gobabeb)",
+   "lat": -23.56,
+   "lon": 15.04,
+   "why": "One of the oldest deserts, with gravel plains and dune seas; a studied Mars dune and microbial analog.",
+   "results": [
+    {
+     "target": "moon_south_pole",
+     "target_name": "Moon – South Pole (Artemis)",
+     "score": 0.5735,
+     "percentile": 86.55,
+     "lat": -23.65,
+     "lon": 15.45,
+     "best": [
+      {
+       "feature": "temp_range",
+       "name": "Diurnal temp range",
+       "unit": "°C",
+       "site": 15.693,
+       "target": 19.462,
+       "target_raw": 100.0,
+       "beyond_earth": true,
+       "share_of_gap": 0.0,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "humidity",
+       "name": "Relative humidity",
+       "unit": "%",
+       "site": 33.889,
+       "target": 16.56,
+       "target_raw": 0.0,
+       "beyond_earth": true,
+       "share_of_gap": 0.001,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "tri",
+       "name": "Roughness (TRI)",
+       "unit": "m",
+       "site": 35.129,
+       "target": 182.52,
+       "target_raw": 180.0,
+       "beyond_earth": false,
+       "share_of_gap": 0.004,
+       "synthetic": false,
+       "proxy": false
+      }
+     ],
+     "worst": [
+      {
+       "feature": "temp_mean",
+       "name": "Mean temperature",
+       "unit": "°C",
+       "site": 22.708,
+       "target": -51.12,
+       "target_raw": -120.0,
+       "beyond_earth": true,
+       "share_of_gap": 0.245,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "solar",
+       "name": "Solar irradiance",
+       "unit": "kWh/m²/day",
+       "site": 6.161,
+       "target": 1.479,
+       "target_raw": 0.7,
+       "beyond_earth": true,
+       "share_of_gap": 0.219,
+       "synthetic": false,
+       "proxy": false
+      }
+     ]
+    },
+    {
+     "target": "moon_mare_lava_tube",
+     "target_name": "Moon – Mare / lava tube (Marius Hills)",
+     "score": 0.6548,
+     "percentile": 97.6,
+     "lat": -23.65,
+     "lon": 15.45,
+     "best": [
+      {
+       "feature": "relief",
+       "name": "Local relief",
+       "unit": "m",
+       "site": 349.686,
+       "target": 350.42,
+       "target_raw": 350.0,
+       "beyond_earth": false,
+       "share_of_gap": 0.0,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "temp_range",
+       "name": "Diurnal temp range",
+       "unit": "°C",
+       "site": 15.693,
+       "target": 19.462,
+       "target_raw": 290.0,
+       "beyond_earth": true,
+       "share_of_gap": 0.0,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "tri",
+       "name": "Roughness (TRI)",
+       "unit": "m",
+       "site": 35.129,
+       "target": 45.016,
+       "target_raw": 45.0,
+       "beyond_earth": false,
+       "share_of_gap": 0.0,
+       "synthetic": false,
+       "proxy": false
+      }
+     ],
+     "worst": [
+      {
+       "feature": "basalt",
+       "name": "Basaltic / volcanic",
+       "unit": "fraction",
+       "site": 0.0,
+       "target": 1.0,
+       "target_raw": 1.0,
+       "beyond_earth": false,
+       "share_of_gap": 0.332,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "temp_mean",
+       "name": "Mean temperature",
+       "unit": "°C",
+       "site": 22.708,
+       "target": -51.12,
+       "target_raw": -58.0,
+       "beyond_earth": true,
+       "share_of_gap": 0.196,
+       "synthetic": false,
+       "proxy": false
+      }
+     ]
+    },
+    {
+     "target": "mars_jezero",
+     "target_name": "Mars – Jezero crater",
+     "score": 0.6533,
+     "percentile": 97.66,
+     "lat": -23.65,
+     "lon": 15.45,
+     "best": [
+      {
+       "feature": "temp_range",
+       "name": "Diurnal temp range",
+       "unit": "°C",
+       "site": 15.693,
+       "target": 19.462,
+       "target_raw": 80.0,
+       "beyond_earth": true,
+       "share_of_gap": 0.0,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "tri",
+       "name": "Roughness (TRI)",
+       "unit": "m",
+       "site": 35.129,
+       "target": 55.052,
+       "target_raw": 55.0,
+       "beyond_earth": false,
+       "share_of_gap": 0.001,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "relief",
+       "name": "Local relief",
+       "unit": "m",
+       "site": 349.686,
+       "target": 499.9,
+       "target_raw": 500.0,
+       "beyond_earth": false,
+       "share_of_gap": 0.001,
+       "synthetic": false,
+       "proxy": false
+      }
+     ],
+     "worst": [
+      {
+       "feature": "temp_mean",
+       "name": "Mean temperature",
+       "unit": "°C",
+       "site": 22.708,
+       "target": -51.12,
+       "target_raw": -55.0,
+       "beyond_earth": true,
+       "share_of_gap": 0.286,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "temp_min",
+       "name": "Annual min temperature",
+       "unit": "°C",
+       "site": 2.458,
+       "target": -78.583,
+       "target_raw": -100.0,
+       "beyond_earth": true,
+       "share_of_gap": 0.227,
+       "synthetic": false,
+       "proxy": false
+      }
+     ]
+    },
+    {
+     "target": "mars_gale",
+     "target_name": "Mars – Gale crater",
+     "score": 0.654,
+     "percentile": 97.57,
+     "lat": -23.65,
+     "lon": 15.45,
+     "best": [
+      {
+       "feature": "temp_range",
+       "name": "Diurnal temp range",
+       "unit": "°C",
+       "site": 15.693,
+       "target": 19.462,
+       "target_raw": 85.0,
+       "beyond_earth": true,
+       "share_of_gap": 0.0,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "humidity",
+       "name": "Relative humidity",
+       "unit": "%",
+       "site": 33.889,
+       "target": 16.56,
+       "target_raw": 5.0,
+       "beyond_earth": true,
+       "share_of_gap": 0.002,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "tri",
+       "name": "Roughness (TRI)",
+       "unit": "m",
+       "site": 35.129,
+       "target": 90.229,
+       "target_raw": 90.0,
+       "beyond_earth": false,
+       "share_of_gap": 0.004,
+       "synthetic": false,
+       "proxy": false
+      }
+     ],
+     "worst": [
+      {
+       "feature": "temp_mean",
+       "name": "Mean temperature",
+       "unit": "°C",
+       "site": 22.708,
+       "target": -51.032,
+       "target_raw": -50.0,
+       "beyond_earth": false,
+       "share_of_gap": 0.287,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "temp_min",
+       "name": "Annual min temperature",
+       "unit": "°C",
+       "site": 2.458,
+       "target": -78.583,
+       "target_raw": -95.0,
+       "beyond_earth": true,
+       "share_of_gap": 0.228,
+       "synthetic": false,
+       "proxy": false
+      }
+     ]
+    },
+    {
+     "target": "mars_arcadia",
+     "target_name": "Mars – Arcadia Planitia (mid-latitude ice)",
+     "score": 0.6552,
+     "percentile": 95.6,
+     "lat": -23.95,
+     "lon": 15.05,
+     "best": [
+      {
+       "feature": "ice",
+       "name": "Permanent ice / snow",
+       "unit": "fraction",
+       "site": 0.0,
+       "target": 0.0,
+       "target_raw": 0.0,
+       "beyond_earth": false,
+       "share_of_gap": 0.0,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "relief",
+       "name": "Local relief",
+       "unit": "m",
+       "site": 158.941,
+       "target": 149.824,
+       "target_raw": 150.0,
+       "beyond_earth": false,
+       "share_of_gap": 0.0,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "temp_range",
+       "name": "Diurnal temp range",
+       "unit": "°C",
+       "site": 15.531,
+       "target": 19.462,
+       "target_raw": 60.0,
+       "beyond_earth": true,
+       "share_of_gap": 0.0,
+       "synthetic": false,
+       "proxy": false
+      }
+     ],
+     "worst": [
+      {
+       "feature": "temp_mean",
+       "name": "Mean temperature",
+       "unit": "°C",
+       "site": 21.58,
+       "target": -51.12,
+       "target_raw": -70.0,
+       "beyond_earth": true,
+       "share_of_gap": 0.241,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "temp_min",
+       "name": "Annual min temperature",
+       "unit": "°C",
+       "site": 2.782,
+       "target": -78.583,
+       "target_raw": -125.0,
+       "beyond_earth": true,
+       "share_of_gap": 0.205,
+       "synthetic": false,
+       "proxy": false
+      }
+     ]
+    },
+    {
+     "target": "mars_north_polar",
+     "target_name": "Mars – North polar layered deposits",
+     "score": 0.5771,
+     "percentile": 81.83,
+     "lat": -23.95,
+     "lon": 15.05,
+     "best": [
+      {
+       "feature": "temp_range",
+       "name": "Diurnal temp range",
+       "unit": "°C",
+       "site": 15.531,
+       "target": 19.462,
+       "target_raw": 25.0,
+       "beyond_earth": true,
+       "share_of_gap": 0.0,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "tri",
+       "name": "Roughness (TRI)",
+       "unit": "m",
+       "site": 27.321,
+       "target": 40.049,
+       "target_raw": 40.0,
+       "beyond_earth": false,
+       "share_of_gap": 0.001,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "slope_mean",
+       "name": "Mean slope",
+       "unit": "°",
+       "site": 1.215,
+       "target": 2.0,
+       "target_raw": 2.0,
+       "beyond_earth": false,
+       "share_of_gap": 0.002,
+       "synthetic": false,
+       "proxy": false
+      }
+     ],
+     "worst": [
+      {
+       "feature": "temp_mean",
+       "name": "Mean temperature",
+       "unit": "°C",
+       "site": 21.58,
+       "target": -51.12,
+       "target_raw": -100.0,
+       "beyond_earth": true,
+       "share_of_gap": 0.232,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "solar",
+       "name": "Solar irradiance",
+       "unit": "kWh/m²/day",
+       "site": 5.795,
+       "target": 1.479,
+       "target_raw": 1.6,
+       "beyond_earth": false,
+       "share_of_gap": 0.194,
+       "synthetic": false,
+       "proxy": false
+      }
+     ]
+    }
+   ],
+   "best_target": "mars_jezero",
+   "best_percentile": 97.66
+  },
+  {
+   "id": "kalahari",
+   "name": "Central Kalahari",
+   "lat": -22.0,
+   "lon": 23.5,
+   "why": "Semi-arid sand basin; large, flat and remote.",
+   "results": [
+    {
+     "target": "moon_south_pole",
+     "target_name": "Moon – South Pole (Artemis)",
+     "score": 0.4534,
+     "percentile": 33.21,
+     "lat": -22.35,
+     "lon": 23.55,
+     "best": [
+      {
+       "feature": "temp_range",
+       "name": "Diurnal temp range",
+       "unit": "°C",
+       "site": 15.393,
+       "target": 19.462,
+       "target_raw": 100.0,
+       "beyond_earth": true,
+       "share_of_gap": 0.0,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "humidity",
+       "name": "Relative humidity",
+       "unit": "%",
+       "site": 38.502,
+       "target": 16.56,
+       "target_raw": 0.0,
+       "beyond_earth": true,
+       "share_of_gap": 0.001,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "elevation",
+       "name": "Elevation",
+       "unit": "m",
+       "site": 991.195,
+       "target": 6378.745,
+       "target_raw": null,
+       "beyond_earth": true,
+       "share_of_gap": 0.002,
+       "synthetic": false,
+       "proxy": false
+      }
+     ],
+     "worst": [
+      {
+       "feature": "temp_mean",
+       "name": "Mean temperature",
+       "unit": "°C",
+       "site": 23.214,
+       "target": -51.12,
+       "target_raw": -120.0,
+       "beyond_earth": true,
+       "share_of_gap": 0.153,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "solar",
+       "name": "Solar irradiance",
+       "unit": "kWh/m²/day",
+       "site": 6.085,
+       "target": 1.479,
+       "target_raw": 0.7,
+       "beyond_earth": true,
+       "share_of_gap": 0.13,
+       "synthetic": false,
+       "proxy": false
+      }
+     ]
+    },
+    {
+     "target": "moon_mare_lava_tube",
+     "target_name": "Moon – Mare / lava tube (Marius Hills)",
+     "score": 0.5415,
+     "percentile": 79.53,
+     "lat": -22.35,
+     "lon": 23.55,
+     "best": [
+      {
+       "feature": "temp_range",
+       "name": "Diurnal temp range",
+       "unit": "°C",
+       "site": 15.393,
+       "target": 19.462,
+       "target_raw": 290.0,
+       "beyond_earth": true,
+       "share_of_gap": 0.0,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "solar",
+       "name": "Solar irradiance",
+       "unit": "kWh/m²/day",
+       "site": 6.085,
+       "target": 7.35,
+       "target_raw": 10.4,
+       "beyond_earth": true,
+       "share_of_gap": 0.001,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "humidity",
+       "name": "Relative humidity",
+       "unit": "%",
+       "site": 38.502,
+       "target": 16.56,
+       "target_raw": 0.0,
+       "beyond_earth": true,
+       "share_of_gap": 0.002,
+       "synthetic": false,
+       "proxy": false
+      }
+     ],
+     "worst": [
+      {
+       "feature": "basalt",
+       "name": "Basaltic / volcanic",
+       "unit": "fraction",
+       "site": 0.0,
+       "target": 1.0,
+       "target_raw": 1.0,
+       "beyond_earth": false,
+       "share_of_gap": 0.188,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "precip",
+       "name": "Precipitation",
+       "unit": "mm/yr",
+       "site": 408.677,
+       "target": 0.932,
+       "target_raw": 0.0,
+       "beyond_earth": false,
+       "share_of_gap": 0.129,
+       "synthetic": false,
+       "proxy": false
+      }
+     ]
+    },
+    {
+     "target": "mars_jezero",
+     "target_name": "Mars – Jezero crater",
+     "score": 0.5295,
+     "percentile": 77.07,
+     "lat": -22.35,
+     "lon": 23.55,
+     "best": [
+      {
+       "feature": "temp_range",
+       "name": "Diurnal temp range",
+       "unit": "°C",
+       "site": 15.393,
+       "target": 19.462,
+       "target_raw": 80.0,
+       "beyond_earth": true,
+       "share_of_gap": 0.0,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "sand",
+       "name": "Sand / fine regolith",
+       "unit": "%",
+       "site": 79.857,
+       "target": 60.009,
+       "target_raw": 60.0,
+       "beyond_earth": false,
+       "share_of_gap": 0.001,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "humidity",
+       "name": "Relative humidity",
+       "unit": "%",
+       "site": 38.502,
+       "target": 16.56,
+       "target_raw": 5.0,
+       "beyond_earth": true,
+       "share_of_gap": 0.002,
+       "synthetic": false,
+       "proxy": false
+      }
+     ],
+     "worst": [
+      {
+       "feature": "temp_mean",
+       "name": "Mean temperature",
+       "unit": "°C",
+       "site": 23.214,
+       "target": -51.12,
+       "target_raw": -55.0,
+       "beyond_earth": true,
+       "share_of_gap": 0.16,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "precip",
+       "name": "Precipitation",
+       "unit": "mm/yr",
+       "site": 408.677,
+       "target": 0.932,
+       "target_raw": 0.0,
+       "beyond_earth": false,
+       "share_of_gap": 0.136,
+       "synthetic": false,
+       "proxy": false
+      }
+     ]
+    },
+    {
+     "target": "mars_gale",
+     "target_name": "Mars – Gale crater",
+     "score": 0.516,
+     "percentile": 74.81,
+     "lat": -22.35,
+     "lon": 23.55,
+     "best": [
+      {
+       "feature": "temp_range",
+       "name": "Diurnal temp range",
+       "unit": "°C",
+       "site": 15.393,
+       "target": 19.462,
+       "target_raw": 85.0,
+       "beyond_earth": true,
+       "share_of_gap": 0.0,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "humidity",
+       "name": "Relative humidity",
+       "unit": "%",
+       "site": 38.502,
+       "target": 16.56,
+       "target_raw": 5.0,
+       "beyond_earth": true,
+       "share_of_gap": 0.002,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "elevation",
+       "name": "Elevation",
+       "unit": "m",
+       "site": 991.195,
+       "target": 4688.431,
+       "target_raw": 4500.0,
+       "beyond_earth": false,
+       "share_of_gap": 0.003,
+       "synthetic": false,
+       "proxy": false
+      }
+     ],
+     "worst": [
+      {
+       "feature": "temp_mean",
+       "name": "Mean temperature",
+       "unit": "°C",
+       "site": 23.214,
+       "target": -51.032,
+       "target_raw": -50.0,
+       "beyond_earth": false,
+       "share_of_gap": 0.151,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "precip",
+       "name": "Precipitation",
+       "unit": "mm/yr",
+       "site": 408.677,
+       "target": 0.932,
+       "target_raw": 0.0,
+       "beyond_earth": false,
+       "share_of_gap": 0.128,
+       "synthetic": false,
+       "proxy": false
+      }
+     ]
+    },
+    {
+     "target": "mars_arcadia",
+     "target_name": "Mars – Arcadia Planitia (mid-latitude ice)",
+     "score": 0.5675,
+     "percentile": 69.42,
+     "lat": -22.35,
+     "lon": 23.55,
+     "best": [
+      {
+       "feature": "ice",
+       "name": "Permanent ice / snow",
+       "unit": "fraction",
+       "site": 0.0,
+       "target": 0.0,
+       "target_raw": 0.0,
+       "beyond_earth": false,
+       "share_of_gap": 0.0,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "temp_range",
+       "name": "Diurnal temp range",
+       "unit": "°C",
+       "site": 15.393,
+       "target": 19.462,
+       "target_raw": 60.0,
+       "beyond_earth": true,
+       "share_of_gap": 0.0,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "humidity",
+       "name": "Relative humidity",
+       "unit": "%",
+       "site": 38.502,
+       "target": 16.56,
+       "target_raw": 5.0,
+       "beyond_earth": true,
+       "share_of_gap": 0.002,
+       "synthetic": false,
+       "proxy": false
+      }
+     ],
+     "worst": [
+      {
+       "feature": "temp_mean",
+       "name": "Mean temperature",
+       "unit": "°C",
+       "site": 23.214,
+       "target": -51.12,
+       "target_raw": -70.0,
+       "beyond_earth": true,
+       "share_of_gap": 0.167,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "precip",
+       "name": "Precipitation",
+       "unit": "mm/yr",
+       "site": 408.677,
+       "target": 0.932,
+       "target_raw": 0.0,
+       "beyond_earth": false,
+       "share_of_gap": 0.142,
+       "synthetic": false,
+       "proxy": false
+      }
+     ]
+    },
+    {
+     "target": "mars_north_polar",
+     "target_name": "Mars – North polar layered deposits",
+     "score": 0.4877,
+     "percentile": 34.59,
+     "lat": -22.35,
+     "lon": 23.55,
+     "best": [
+      {
+       "feature": "temp_range",
+       "name": "Diurnal temp range",
+       "unit": "°C",
+       "site": 15.393,
+       "target": 19.462,
+       "target_raw": 25.0,
+       "beyond_earth": true,
+       "share_of_gap": 0.0,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "humidity",
+       "name": "Relative humidity",
+       "unit": "%",
+       "site": 38.502,
+       "target": 16.56,
+       "target_raw": 10.0,
+       "beyond_earth": true,
+       "share_of_gap": 0.002,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "elevation",
+       "name": "Elevation",
+       "unit": "m",
+       "site": 991.195,
+       "target": 4688.431,
+       "target_raw": 4500.0,
+       "beyond_earth": false,
+       "share_of_gap": 0.002,
+       "synthetic": false,
+       "proxy": false
+      }
+     ],
+     "worst": [
+      {
+       "feature": "temp_mean",
+       "name": "Mean temperature",
+       "unit": "°C",
+       "site": 23.214,
+       "target": -51.12,
+       "target_raw": -100.0,
+       "beyond_earth": true,
+       "share_of_gap": 0.173,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "solar",
+       "name": "Solar irradiance",
+       "unit": "kWh/m²/day",
+       "site": 6.085,
+       "target": 1.479,
+       "target_raw": 1.6,
+       "beyond_earth": false,
+       "share_of_gap": 0.147,
+       "synthetic": false,
+       "proxy": false
+      }
+     ]
+    }
+   ],
+   "best_target": "moon_mare_lava_tube",
+   "best_percentile": 79.53
+  },
+  {
+   "id": "vredefort",
+   "name": "Vredefort impact structure",
+   "lat": -27.0,
+   "lon": 27.5,
+   "why": "The largest verified impact structure on Earth (~2 Ga); an impact-geology analog, now deeply eroded.",
+   "results": [
+    {
+     "target": "moon_south_pole",
+     "target_name": "Moon – South Pole (Artemis)",
+     "score": 0.5353,
+     "percentile": 74.1,
+     "lat": -27.45,
+     "lon": 27.95,
+     "best": [
+      {
+       "feature": "basalt",
+       "name": "Basaltic / volcanic",
+       "unit": "fraction",
+       "site": 0.259,
+       "target": 0.046,
+       "target_raw": 0.05,
+       "beyond_earth": false,
+       "share_of_gap": 0.0,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "temp_range",
+       "name": "Diurnal temp range",
+       "unit": "°C",
+       "site": 15.693,
+       "target": 19.462,
+       "target_raw": 100.0,
+       "beyond_earth": true,
+       "share_of_gap": 0.0,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "elevation",
+       "name": "Elevation",
+       "unit": "m",
+       "site": 1590.39,
+       "target": 6378.745,
+       "target_raw": null,
+       "beyond_earth": true,
+       "share_of_gap": 0.0,
+       "synthetic": false,
+       "proxy": false
+      }
+     ],
+     "worst": [
+      {
+       "feature": "precip",
+       "name": "Precipitation",
+       "unit": "mm/yr",
+       "site": 539.673,
+       "target": 0.932,
+       "target_raw": 0.0,
+       "beyond_earth": false,
+       "share_of_gap": 0.179,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "temp_mean",
+       "name": "Mean temperature",
+       "unit": "°C",
+       "site": 16.292,
+       "target": -51.12,
+       "target_raw": -120.0,
+       "beyond_earth": true,
+       "share_of_gap": 0.161,
+       "synthetic": false,
+       "proxy": false
+      }
+     ]
+    },
+    {
+     "target": "moon_mare_lava_tube",
+     "target_name": "Moon – Mare / lava tube (Marius Hills)",
+     "score": 0.6398,
+     "percentile": 95.91,
+     "lat": -27.45,
+     "lon": 27.95,
+     "best": [
+      {
+       "feature": "temp_range",
+       "name": "Diurnal temp range",
+       "unit": "°C",
+       "site": 15.693,
+       "target": 19.462,
+       "target_raw": 290.0,
+       "beyond_earth": true,
+       "share_of_gap": 0.0,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "elevation",
+       "name": "Elevation",
+       "unit": "m",
+       "site": 1590.39,
+       "target": 6378.745,
+       "target_raw": null,
+       "beyond_earth": true,
+       "share_of_gap": 0.001,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "basalt",
+       "name": "Basaltic / volcanic",
+       "unit": "fraction",
+       "site": 0.259,
+       "target": 1.0,
+       "target_raw": 1.0,
+       "beyond_earth": false,
+       "share_of_gap": 0.002,
+       "synthetic": false,
+       "proxy": false
+      }
+     ],
+     "worst": [
+      {
+       "feature": "precip",
+       "name": "Precipitation",
+       "unit": "mm/yr",
+       "site": 539.673,
+       "target": 0.932,
+       "target_raw": 0.0,
+       "beyond_earth": false,
+       "share_of_gap": 0.312,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "ndvi",
+       "name": "Vegetation (NDVI)",
+       "unit": "",
+       "site": 0.379,
+       "target": 0.0,
+       "target_raw": 0.0,
+       "beyond_earth": false,
+       "share_of_gap": 0.206,
+       "synthetic": false,
+       "proxy": false
+      }
+     ]
+    },
+    {
+     "target": "mars_jezero",
+     "target_name": "Mars – Jezero crater",
+     "score": 0.5984,
+     "percentile": 90.87,
+     "lat": -27.45,
+     "lon": 27.95,
+     "best": [
+      {
+       "feature": "temp_range",
+       "name": "Diurnal temp range",
+       "unit": "°C",
+       "site": 15.693,
+       "target": 19.462,
+       "target_raw": 80.0,
+       "beyond_earth": true,
+       "share_of_gap": 0.0,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "basalt",
+       "name": "Basaltic / volcanic",
+       "unit": "fraction",
+       "site": 0.259,
+       "target": 0.772,
+       "target_raw": 0.8,
+       "beyond_earth": false,
+       "share_of_gap": 0.0,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "elevation",
+       "name": "Elevation",
+       "unit": "m",
+       "site": 1590.39,
+       "target": 4688.431,
+       "target_raw": 4500.0,
+       "beyond_earth": false,
+       "share_of_gap": 0.0,
+       "synthetic": false,
+       "proxy": false
+      }
+     ],
+     "worst": [
+      {
+       "feature": "precip",
+       "name": "Precipitation",
+       "unit": "mm/yr",
+       "site": 539.673,
+       "target": 0.932,
+       "target_raw": 0.0,
+       "beyond_earth": false,
+       "share_of_gap": 0.278,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "ndvi",
+       "name": "Vegetation (NDVI)",
+       "unit": "",
+       "site": 0.379,
+       "target": 0.0,
+       "target_raw": 0.0,
+       "beyond_earth": false,
+       "share_of_gap": 0.183,
+       "synthetic": false,
+       "proxy": false
+      }
+     ]
+    },
+    {
+     "target": "mars_gale",
+     "target_name": "Mars – Gale crater",
+     "score": 0.5945,
+     "percentile": 90.65,
+     "lat": -27.45,
+     "lon": 27.95,
+     "best": [
+      {
+       "feature": "sand",
+       "name": "Sand / fine regolith",
+       "unit": "%",
+       "site": 56.19,
+       "target": 55.004,
+       "target_raw": 55.0,
+       "beyond_earth": false,
+       "share_of_gap": 0.0,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "basalt",
+       "name": "Basaltic / volcanic",
+       "unit": "fraction",
+       "site": 0.259,
+       "target": 0.563,
+       "target_raw": 0.6,
+       "beyond_earth": false,
+       "share_of_gap": 0.0,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "temp_range",
+       "name": "Diurnal temp range",
+       "unit": "°C",
+       "site": 15.693,
+       "target": 19.462,
+       "target_raw": 85.0,
+       "beyond_earth": true,
+       "share_of_gap": 0.0,
+       "synthetic": false,
+       "proxy": false
+      }
+     ],
+     "worst": [
+      {
+       "feature": "precip",
+       "name": "Precipitation",
+       "unit": "mm/yr",
+       "site": 539.673,
+       "target": 0.932,
+       "target_raw": 0.0,
+       "beyond_earth": false,
+       "share_of_gap": 0.273,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "ndvi",
+       "name": "Vegetation (NDVI)",
+       "unit": "",
+       "site": 0.379,
+       "target": 0.0,
+       "target_raw": 0.0,
+       "beyond_earth": false,
+       "share_of_gap": 0.18,
+       "synthetic": false,
+       "proxy": false
+      }
+     ]
+    },
+    {
+     "target": "mars_arcadia",
+     "target_name": "Mars – Arcadia Planitia (mid-latitude ice)",
+     "score": 0.6188,
+     "percentile": 88.44,
+     "lat": -27.45,
+     "lon": 27.95,
+     "best": [
+      {
+       "feature": "relief",
+       "name": "Local relief",
+       "unit": "m",
+       "site": 148.824,
+       "target": 149.824,
+       "target_raw": 150.0,
+       "beyond_earth": false,
+       "share_of_gap": 0.0,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "ice",
+       "name": "Permanent ice / snow",
+       "unit": "fraction",
+       "site": 0.0,
+       "target": 0.0,
+       "target_raw": 0.0,
+       "beyond_earth": false,
+       "share_of_gap": 0.0,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "slope_mean",
+       "name": "Mean slope",
+       "unit": "°",
+       "site": 1.019,
+       "target": 1.0,
+       "target_raw": 1.0,
+       "beyond_earth": false,
+       "share_of_gap": 0.0,
+       "synthetic": false,
+       "proxy": false
+      }
+     ],
+     "worst": [
+      {
+       "feature": "precip",
+       "name": "Precipitation",
+       "unit": "mm/yr",
+       "site": 539.673,
+       "target": 0.932,
+       "target_raw": 0.0,
+       "beyond_earth": false,
+       "share_of_gap": 0.273,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "ndvi",
+       "name": "Vegetation (NDVI)",
+       "unit": "",
+       "site": 0.379,
+       "target": 0.0,
+       "target_raw": 0.0,
+       "beyond_earth": false,
+       "share_of_gap": 0.18,
+       "synthetic": false,
+       "proxy": false
+      }
+     ]
+    },
+    {
+     "target": "mars_north_polar",
+     "target_name": "Mars – North polar layered deposits",
+     "score": 0.5464,
+     "percentile": 67.38,
+     "lat": -27.45,
+     "lon": 27.95,
+     "best": [
+      {
+       "feature": "basalt",
+       "name": "Basaltic / volcanic",
+       "unit": "fraction",
+       "site": 0.259,
+       "target": 0.276,
+       "target_raw": 0.3,
+       "beyond_earth": false,
+       "share_of_gap": 0.0,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "temp_range",
+       "name": "Diurnal temp range",
+       "unit": "°C",
+       "site": 15.693,
+       "target": 19.462,
+       "target_raw": 25.0,
+       "beyond_earth": true,
+       "share_of_gap": 0.0,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "elevation",
+       "name": "Elevation",
+       "unit": "m",
+       "site": 1590.39,
+       "target": 4688.431,
+       "target_raw": 4500.0,
+       "beyond_earth": false,
+       "share_of_gap": 0.0,
+       "synthetic": false,
+       "proxy": false
+      }
+     ],
+     "worst": [
+      {
+       "feature": "precip",
+       "name": "Precipitation",
+       "unit": "mm/yr",
+       "site": 539.673,
+       "target": 0.932,
+       "target_raw": 0.0,
+       "beyond_earth": false,
+       "share_of_gap": 0.186,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "temp_mean",
+       "name": "Mean temperature",
+       "unit": "°C",
+       "site": 16.292,
+       "target": -51.12,
+       "target_raw": -100.0,
+       "beyond_earth": true,
+       "share_of_gap": 0.167,
+       "synthetic": false,
+       "proxy": false
+      }
+     ]
+    }
+   ],
+   "best_target": "moon_mare_lava_tube",
+   "best_percentile": 95.91
+  },
+  {
+   "id": "karoo_dolerite",
+   "name": "Karoo dolerites (Valley of Desolation)",
+   "lat": -32.27,
+   "lon": 24.5,
+   "why": "Jurassic dolerite sills and columns, mafic igneous rock like lunar and Martian basalt.",
+   "results": [
+    {
+     "target": "moon_south_pole",
+     "target_name": "Moon – South Pole (Artemis)",
+     "score": 0.5904,
+     "percentile": 90.86,
+     "lat": -31.85,
+     "lon": 24.35,
+     "best": [
+      {
+       "feature": "basalt",
+       "name": "Basaltic / volcanic",
+       "unit": "fraction",
+       "site": 0.196,
+       "target": 0.046,
+       "target_raw": 0.05,
+       "beyond_earth": false,
+       "share_of_gap": 0.0,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "temp_range",
+       "name": "Diurnal temp range",
+       "unit": "°C",
+       "site": 15.693,
+       "target": 19.462,
+       "target_raw": 100.0,
+       "beyond_earth": true,
+       "share_of_gap": 0.0,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "elevation",
+       "name": "Elevation",
+       "unit": "m",
+       "site": 1549.603,
+       "target": 6378.745,
+       "target_raw": null,
+       "beyond_earth": true,
+       "share_of_gap": 0.001,
+       "synthetic": false,
+       "proxy": false
+      }
+     ],
+     "worst": [
+      {
+       "feature": "solar",
+       "name": "Solar irradiance",
+       "unit": "kWh/m²/day",
+       "site": 5.914,
+       "target": 1.479,
+       "target_raw": 0.7,
+       "beyond_earth": true,
+       "share_of_gap": 0.219,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "temp_mean",
+       "name": "Mean temperature",
+       "unit": "°C",
+       "site": 14.006,
+       "target": -51.12,
+       "target_raw": -120.0,
+       "beyond_earth": true,
+       "share_of_gap": 0.194,
+       "synthetic": false,
+       "proxy": false
+      }
+     ]
+    },
+    {
+     "target": "moon_mare_lava_tube",
+     "target_name": "Moon – Mare / lava tube (Marius Hills)",
+     "score": 0.6959,
+     "percentile": 99.54,
+     "lat": -31.75,
+     "lon": 24.35,
+     "best": [
+      {
+       "feature": "slope_p90",
+       "name": "Slope p90",
+       "unit": "°",
+       "site": 5.258,
+       "target": 6.001,
+       "target_raw": 6.0,
+       "beyond_earth": false,
+       "share_of_gap": 0.0,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "temp_range",
+       "name": "Diurnal temp range",
+       "unit": "°C",
+       "site": 15.781,
+       "target": 19.462,
+       "target_raw": 290.0,
+       "beyond_earth": true,
+       "share_of_gap": 0.0,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "tri",
+       "name": "Roughness (TRI)",
+       "unit": "m",
+       "site": 57.088,
+       "target": 45.016,
+       "target_raw": 45.0,
+       "beyond_earth": false,
+       "share_of_gap": 0.0,
+       "synthetic": false,
+       "proxy": false
+      }
+     ],
+     "worst": [
+      {
+       "feature": "precip",
+       "name": "Precipitation",
+       "unit": "mm/yr",
+       "site": 387.402,
+       "target": 0.932,
+       "target_raw": 0.0,
+       "beyond_earth": false,
+       "share_of_gap": 0.275,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "ndvi",
+       "name": "Vegetation (NDVI)",
+       "unit": "",
+       "site": 0.3,
+       "target": 0.0,
+       "target_raw": 0.0,
+       "beyond_earth": false,
+       "share_of_gap": 0.198,
+       "synthetic": false,
+       "proxy": false
+      }
+     ]
+    },
+    {
+     "target": "mars_jezero",
+     "target_name": "Mars – Jezero crater",
+     "score": 0.6376,
+     "percentile": 95.99,
+     "lat": -31.85,
+     "lon": 24.35,
+     "best": [
+      {
+       "feature": "temp_range",
+       "name": "Diurnal temp range",
+       "unit": "°C",
+       "site": 15.693,
+       "target": 19.462,
+       "target_raw": 80.0,
+       "beyond_earth": true,
+       "share_of_gap": 0.0,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "relief",
+       "name": "Local relief",
+       "unit": "m",
+       "site": 623.235,
+       "target": 499.9,
+       "target_raw": 500.0,
+       "beyond_earth": false,
+       "share_of_gap": 0.0,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "basalt",
+       "name": "Basaltic / volcanic",
+       "unit": "fraction",
+       "site": 0.196,
+       "target": 0.772,
+       "target_raw": 0.8,
+       "beyond_earth": false,
+       "share_of_gap": 0.0,
+       "synthetic": false,
+       "proxy": false
+      }
+     ],
+     "worst": [
+      {
+       "feature": "precip",
+       "name": "Precipitation",
+       "unit": "mm/yr",
+       "site": 403.653,
+       "target": 0.932,
+       "target_raw": 0.0,
+       "beyond_earth": false,
+       "share_of_gap": 0.225,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "temp_mean",
+       "name": "Mean temperature",
+       "unit": "°C",
+       "site": 14.006,
+       "target": -51.12,
+       "target_raw": -55.0,
+       "beyond_earth": true,
+       "share_of_gap": 0.191,
+       "synthetic": false,
+       "proxy": false
+      }
+     ]
+    },
+    {
+     "target": "mars_gale",
+     "target_name": "Mars – Gale crater",
+     "score": 0.6423,
+     "percentile": 96.42,
+     "lat": -31.85,
+     "lon": 24.35,
+     "best": [
+      {
+       "feature": "tri",
+       "name": "Roughness (TRI)",
+       "unit": "m",
+       "site": 76.713,
+       "target": 90.229,
+       "target_raw": 90.0,
+       "beyond_earth": false,
+       "share_of_gap": 0.0,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "basalt",
+       "name": "Basaltic / volcanic",
+       "unit": "fraction",
+       "site": 0.196,
+       "target": 0.563,
+       "target_raw": 0.6,
+       "beyond_earth": false,
+       "share_of_gap": 0.0,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "temp_range",
+       "name": "Diurnal temp range",
+       "unit": "°C",
+       "site": 15.693,
+       "target": 19.462,
+       "target_raw": 85.0,
+       "beyond_earth": true,
+       "share_of_gap": 0.0,
+       "synthetic": false,
+       "proxy": false
+      }
+     ],
+     "worst": [
+      {
+       "feature": "precip",
+       "name": "Precipitation",
+       "unit": "mm/yr",
+       "site": 403.653,
+       "target": 0.932,
+       "target_raw": 0.0,
+       "beyond_earth": false,
+       "share_of_gap": 0.231,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "temp_mean",
+       "name": "Mean temperature",
+       "unit": "°C",
+       "site": 14.006,
+       "target": -51.032,
+       "target_raw": -50.0,
+       "beyond_earth": false,
+       "share_of_gap": 0.196,
+       "synthetic": false,
+       "proxy": false
+      }
+     ]
+    },
+    {
+     "target": "mars_arcadia",
+     "target_name": "Mars – Arcadia Planitia (mid-latitude ice)",
+     "score": 0.6422,
+     "percentile": 93.41,
+     "lat": -31.95,
+     "lon": 24.35,
+     "best": [
+      {
+       "feature": "slope_p90",
+       "name": "Slope p90",
+       "unit": "°",
+       "site": 2.985,
+       "target": 2.999,
+       "target_raw": 3.0,
+       "beyond_earth": false,
+       "share_of_gap": 0.0,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "ice",
+       "name": "Permanent ice / snow",
+       "unit": "fraction",
+       "site": 0.0,
+       "target": 0.0,
+       "target_raw": 0.0,
+       "beyond_earth": false,
+       "share_of_gap": 0.0,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "temp_range",
+       "name": "Diurnal temp range",
+       "unit": "°C",
+       "site": 15.61,
+       "target": 19.462,
+       "target_raw": 60.0,
+       "beyond_earth": true,
+       "share_of_gap": 0.0,
+       "synthetic": false,
+       "proxy": false
+      }
+     ],
+     "worst": [
+      {
+       "feature": "precip",
+       "name": "Precipitation",
+       "unit": "mm/yr",
+       "site": 413.685,
+       "target": 0.932,
+       "target_raw": 0.0,
+       "beyond_earth": false,
+       "share_of_gap": 0.211,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "temp_mean",
+       "name": "Mean temperature",
+       "unit": "°C",
+       "site": 15.244,
+       "target": -51.12,
+       "target_raw": -70.0,
+       "beyond_earth": true,
+       "share_of_gap": 0.179,
+       "synthetic": false,
+       "proxy": false
+      }
+     ]
+    },
+    {
+     "target": "mars_north_polar",
+     "target_name": "Mars – North polar layered deposits",
+     "score": 0.5783,
+     "percentile": 82.26,
+     "lat": -31.85,
+     "lon": 24.05,
+     "best": [
+      {
+       "feature": "tri",
+       "name": "Roughness (TRI)",
+       "unit": "m",
+       "site": 40.976,
+       "target": 40.049,
+       "target_raw": 40.0,
+       "beyond_earth": false,
+       "share_of_gap": 0.0,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "temp_range",
+       "name": "Diurnal temp range",
+       "unit": "°C",
+       "site": 15.912,
+       "target": 19.462,
+       "target_raw": 25.0,
+       "beyond_earth": true,
+       "share_of_gap": 0.0,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "slope_mean",
+       "name": "Mean slope",
+       "unit": "°",
+       "site": 2.246,
+       "target": 2.0,
+       "target_raw": 2.0,
+       "beyond_earth": false,
+       "share_of_gap": 0.0,
+       "synthetic": false,
+       "proxy": false
+      }
+     ],
+     "worst": [
+      {
+       "feature": "solar",
+       "name": "Solar irradiance",
+       "unit": "kWh/m²/day",
+       "site": 5.939,
+       "target": 1.479,
+       "target_raw": 1.6,
+       "beyond_earth": false,
+       "share_of_gap": 0.206,
+       "synthetic": false,
+       "proxy": false
+      },
+      {
+       "feature": "temp_mean",
+       "name": "Mean temperature",
+       "unit": "°C",
+       "site": 13.63,
+       "target": -51.12,
+       "target_raw": -100.0,
+       "beyond_earth": true,
+       "share_of_gap": 0.179,
+       "synthetic": false,
+       "proxy": false
+      }
+     ]
+    }
+   ],
+   "best_target": "moon_mare_lava_tube",
+   "best_percentile": 99.54
+  }
+ ],
+ "region_best": [
+  {
+   "target": "moon_south_pole",
+   "target_name": "Moon – South Pole (Artemis)",
+   "lat": -27.75,
+   "lon": 17.15,
+   "country": "Namibia",
+   "score": 0.6045,
+   "percentile": 93.85,
+   "best": [
+    {
+     "feature": "temp_range",
+     "name": "Diurnal temp range",
+     "unit": "°C",
+     "site": 19.462,
+     "target": 19.462,
+     "target_raw": 100.0,
+     "beyond_earth": true,
+     "share_of_gap": 0.0,
+     "synthetic": false,
+     "proxy": false
+    },
+    {
+     "feature": "tri",
+     "name": "Roughness (TRI)",
+     "unit": "m",
+     "site": 126.486,
+     "target": 182.52,
+     "target_raw": 180.0,
+     "beyond_earth": false,
+     "share_of_gap": 0.0,
+     "synthetic": false,
+     "proxy": false
+    },
+    {
+     "feature": "slope_mean",
+     "name": "Mean slope",
+     "unit": "°",
+     "site": 6.364,
+     "target": 10.018,
+     "target_raw": 10.0,
+     "beyond_earth": false,
+     "share_of_gap": 0.001,
+     "synthetic": false,
+     "proxy": false
+    }
+   ],
+   "worst": [
+    {
+     "feature": "solar",
+     "name": "Solar irradiance",
+     "unit": "kWh/m²/day",
+     "site": 6.483,
+     "target": 1.479,
+     "target_raw": 0.7,
+     "beyond_earth": true,
+     "share_of_gap": 0.279,
+     "synthetic": false,
+     "proxy": false
+    },
+    {
+     "feature": "temp_mean",
+     "name": "Mean temperature",
+     "unit": "°C",
+     "site": 16.634,
+     "target": -51.12,
+     "target_raw": -120.0,
+     "beyond_earth": true,
+     "share_of_gap": 0.225,
+     "synthetic": false,
+     "proxy": false
+    }
+   ]
+  },
+  {
+   "target": "moon_mare_lava_tube",
+   "target_name": "Moon – Mare / lava tube (Marius Hills)",
+   "lat": -28.05,
+   "lon": 18.05,
+   "country": "Namibia",
+   "score": 0.7395,
+   "percentile": 99.96,
+   "best": [
+    {
+     "feature": "temp_range",
+     "name": "Diurnal temp range",
+     "unit": "°C",
+     "site": 19.462,
+     "target": 19.462,
+     "target_raw": 290.0,
+     "beyond_earth": true,
+     "share_of_gap": 0.0,
+     "synthetic": false,
+     "proxy": false
+    },
+    {
+     "feature": "relief",
+     "name": "Local relief",
+     "unit": "m",
+     "site": 381.765,
+     "target": 350.42,
+     "target_raw": 350.0,
+     "beyond_earth": false,
+     "share_of_gap": 0.0,
+     "synthetic": false,
+     "proxy": false
+    },
+    {
+     "feature": "solar",
+     "name": "Solar irradiance",
+     "unit": "kWh/m²/day",
+     "site": 6.483,
+     "target": 7.35,
+     "target_raw": 10.4,
+     "beyond_earth": true,
+     "share_of_gap": 0.0,
+     "synthetic": false,
+     "proxy": false
+    }
+   ],
+   "worst": [
+    {
+     "feature": "temp_mean",
+     "name": "Mean temperature",
+     "unit": "°C",
+     "site": 19.854,
+     "target": -51.12,
+     "target_raw": -58.0,
+     "beyond_earth": true,
+     "share_of_gap": 0.302,
+     "synthetic": false,
+     "proxy": false
+    },
+    {
+     "feature": "temp_min",
+     "name": "Annual min temperature",
+     "unit": "°C",
+     "site": -1.345,
+     "target": -78.583,
+     "target_raw": -178.0,
+     "beyond_earth": true,
+     "share_of_gap": 0.209,
+     "synthetic": false,
+     "proxy": false
+    }
+   ]
+  },
+  {
+   "target": "mars_jezero",
+   "target_name": "Mars – Jezero crater",
+   "lat": -21.15,
+   "lon": 14.25,
+   "country": "Namibia",
+   "score": 0.6783,
+   "percentile": 99.29,
+   "best": [
+    {
+     "feature": "basalt",
+     "name": "Basaltic / volcanic",
+     "unit": "fraction",
+     "site": 0.808,
+     "target": 0.772,
+     "target_raw": 0.8,
+     "beyond_earth": false,
+     "share_of_gap": 0.0,
+     "synthetic": false,
+     "proxy": false
+    },
+    {
+     "feature": "tri",
+     "name": "Roughness (TRI)",
+     "unit": "m",
+     "site": 51.46,
+     "target": 55.052,
+     "target_raw": 55.0,
+     "beyond_earth": false,
+     "share_of_gap": 0.0,
+     "synthetic": false,
+     "proxy": false
+    },
+    {
+     "feature": "slope_mean",
+     "name": "Mean slope",
+     "unit": "°",
+     "site": 2.733,
+     "target": 3.001,
+     "target_raw": 3.0,
+     "beyond_earth": false,
+     "share_of_gap": 0.0,
+     "synthetic": false,
+     "proxy": false
+    }
+   ],
+   "worst": [
+    {
+     "feature": "temp_mean",
+     "name": "Mean temperature",
+     "unit": "°C",
+     "site": 20.162,
+     "target": -51.12,
+     "target_raw": -55.0,
+     "beyond_earth": true,
+     "share_of_gap": 0.294,
+     "synthetic": false,
+     "proxy": false
+    },
+    {
+     "feature": "temp_min",
+     "name": "Annual min temperature",
+     "unit": "°C",
+     "site": 2.782,
+     "target": -78.583,
+     "target_raw": -100.0,
+     "beyond_earth": true,
+     "share_of_gap": 0.266,
+     "synthetic": false,
+     "proxy": false
+    }
+   ]
+  },
+  {
+   "target": "mars_gale",
+   "target_name": "Mars – Gale crater",
+   "lat": -21.15,
+   "lon": 14.45,
+   "country": "Namibia",
+   "score": 0.6827,
+   "percentile": 99.34,
+   "best": [
+    {
+     "feature": "temp_range",
+     "name": "Diurnal temp range",
+     "unit": "°C",
+     "site": 19.462,
+     "target": 19.462,
+     "target_raw": 85.0,
+     "beyond_earth": true,
+     "share_of_gap": 0.0,
+     "synthetic": false,
+     "proxy": false
+    },
+    {
+     "feature": "basalt",
+     "name": "Basaltic / volcanic",
+     "unit": "fraction",
+     "site": 0.538,
+     "target": 0.563,
+     "target_raw": 0.6,
+     "beyond_earth": false,
+     "share_of_gap": 0.0,
+     "synthetic": false,
+     "proxy": false
+    },
+    {
+     "feature": "relief",
+     "name": "Local relief",
+     "unit": "m",
+     "site": 1550.765,
+     "target": 1208.898,
+     "target_raw": 1200.0,
+     "beyond_earth": false,
+     "share_of_gap": 0.0,
+     "synthetic": false,
+     "proxy": false
+    }
+   ],
+   "worst": [
+    {
+     "feature": "temp_mean",
+     "name": "Mean temperature",
+     "unit": "°C",
+     "site": 18.588,
+     "target": -51.032,
+     "target_raw": -50.0,
+     "beyond_earth": false,
+     "share_of_gap": 0.287,
+     "synthetic": false,
+     "proxy": false
+    },
+    {
+     "feature": "temp_min",
+     "name": "Annual min temperature",
+     "unit": "°C",
+     "site": -0.546,
+     "target": -78.583,
+     "target_raw": -95.0,
+     "beyond_earth": true,
+     "share_of_gap": 0.241,
+     "synthetic": false,
+     "proxy": false
+    }
+   ]
+  },
+  {
+   "target": "mars_arcadia",
+   "target_name": "Mars – Arcadia Planitia (mid-latitude ice)",
+   "lat": -28.35,
+   "lon": 18.35,
+   "country": "Namibia",
+   "score": 0.6739,
+   "percentile": 98.01,
+   "best": [
+    {
+     "feature": "temp_range",
+     "name": "Diurnal temp range",
+     "unit": "°C",
+     "site": 19.462,
+     "target": 19.462,
+     "target_raw": 60.0,
+     "beyond_earth": true,
+     "share_of_gap": 0.0,
+     "synthetic": false,
+     "proxy": false
+    },
+    {
+     "feature": "ice",
+     "name": "Permanent ice / snow",
+     "unit": "fraction",
+     "site": 0.0,
+     "target": 0.0,
+     "target_raw": 0.0,
+     "beyond_earth": false,
+     "share_of_gap": 0.0,
+     "synthetic": false,
+     "proxy": false
+    },
+    {
+     "feature": "basalt",
+     "name": "Basaltic / volcanic",
+     "unit": "fraction",
+     "site": 0.715,
+     "target": 0.91,
+     "target_raw": 0.9,
+     "beyond_earth": false,
+     "share_of_gap": 0.0,
+     "synthetic": false,
+     "proxy": false
+    }
+   ],
+   "worst": [
+    {
+     "feature": "temp_mean",
+     "name": "Mean temperature",
+     "unit": "°C",
+     "site": 18.905,
+     "target": -51.12,
+     "target_raw": -70.0,
+     "beyond_earth": true,
+     "share_of_gap": 0.243,
+     "synthetic": false,
+     "proxy": false
+    },
+    {
+     "feature": "temp_min",
+     "name": "Annual min temperature",
+     "unit": "°C",
+     "site": -2.634,
+     "target": -78.583,
+     "target_raw": -125.0,
+     "beyond_earth": true,
+     "share_of_gap": 0.188,
+     "synthetic": false,
+     "proxy": false
+    }
+   ]
+  },
+  {
+   "target": "mars_north_polar",
+   "target_name": "Mars – North polar layered deposits",
+   "lat": -21.15,
+   "lon": 14.55,
+   "country": "Namibia",
+   "score": 0.5925,
+   "percentile": 87.15,
+   "best": [
+    {
+     "feature": "temp_range",
+     "name": "Diurnal temp range",
+     "unit": "°C",
+     "site": 19.462,
+     "target": 19.462,
+     "target_raw": 25.0,
+     "beyond_earth": true,
+     "share_of_gap": 0.0,
+     "synthetic": false,
+     "proxy": false
+    },
+    {
+     "feature": "basalt",
+     "name": "Basaltic / volcanic",
+     "unit": "fraction",
+     "site": 0.337,
+     "target": 0.276,
+     "target_raw": 0.3,
+     "beyond_earth": false,
+     "share_of_gap": 0.0,
+     "synthetic": false,
+     "proxy": false
+    },
+    {
+     "feature": "elevation",
+     "name": "Elevation",
+     "unit": "m",
+     "site": 2081.757,
+     "target": 4688.431,
+     "target_raw": 4500.0,
+     "beyond_earth": false,
+     "share_of_gap": 0.0,
+     "synthetic": false,
+     "proxy": false
+    }
+   ],
+   "worst": [
+    {
+     "feature": "solar",
+     "name": "Solar irradiance",
+     "unit": "kWh/m²/day",
+     "site": 6.239,
+     "target": 1.479,
+     "target_raw": 1.6,
+     "beyond_earth": false,
+     "share_of_gap": 0.244,
+     "synthetic": false,
+     "proxy": false
+    },
+    {
+     "feature": "temp_mean",
+     "name": "Mean temperature",
+     "unit": "°C",
+     "site": 13.256,
+     "target": -51.12,
+     "target_raw": -100.0,
+     "beyond_earth": true,
+     "share_of_gap": 0.189,
+     "synthetic": false,
+     "proxy": false
+    }
+   ]
+  }
+ ]
+}

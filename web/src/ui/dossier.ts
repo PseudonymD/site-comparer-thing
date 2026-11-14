@@ -6,12 +6,22 @@ import { esc, flag, fmtKm, fmtLatLon, fmtValue, GROUP_COLORS } from '../format';
 import { runDrill } from '../drill';
 import { fingerprint } from './fingerprint';
 import { rail } from './rail';
+import { planetPanel, watchPlanetTiles } from './planet';
+
+// The side-by-side stays open while stepping through candidates.
+let pmOpen = false;
+/** Used by the tour to put the side-by-side open state back after the demo. */
+export const planetOpen = () => pmOpen;
+export const setPlanetOpen = (v: boolean) => {
+  pmOpen = v;
+};
 
 export interface DossierNav {
   rank?: number; // 1-based position in the candidate list, when opened from it
   total: number;
   onBack(): void;
   onStep(delta: number): void;
+  onCopy(): void;
 }
 
 const el = () => document.getElementById('dossier')!;
@@ -26,7 +36,7 @@ export function renderDossier(app: App, info: CellInfo, lat: number, lon: number
   const total = contrib.reduce((a, b) => a + b, 0);
   const s = scoreCell(info.q, t.vector, w);
   const filtered = info.score === 0 && s > 0;
-  const pctl = app.percentileOf(info.blended || s);
+  const pctl = filtered ? NaN : app.percentileOf(info.blended);
   const country = app.countryName(info.country);
   const near = app.nearestAnalog(lat, lon);
   const z = info.q.map((q) => q / 255);
@@ -73,6 +83,7 @@ export function renderDossier(app: App, info: CellInfo, lat: number, lon: number
         <button class="icon-btn" id="d-prev" aria-label="Previous candidate" ${nav.rank <= 1 ? 'disabled' : ''}>↑</button>
         <button class="icon-btn" id="d-next" aria-label="Next candidate" ${nav.rank >= nav.total ? 'disabled' : ''}>↓</button></div>` : '<div class="d-step"><span>Picked on the map</span></div>'}
     </div>
+    <div class="d-share"><nav class="d-jump" aria-label="Jump to a section"><button class="text-btn" data-jump="d-ev">Evidence</button><button class="text-btn" data-jump="d-pm">Side by side</button><button class="text-btn" data-jump="d-dr">Terrain close-up</button></nav><button class="text-btn" id="d-copy" title="Copy a link that opens this exact view">Copy link</button></div>
     <div class="d-scroll">
       <div class="d-head">
         ${fingerprint(meta.features, t.vector, z, 104, `Fingerprint of this site against ${t.name}`)}
@@ -91,7 +102,7 @@ export function renderDossier(app: App, info: CellInfo, lat: number, lon: number
         ${bad.length ? `<p><b>Biggest gaps:</b> ${bad.map((r) => `${esc(lower(r.f.name))} (${fmtValue(r.here, r.f)} vs ${targetText(r)})`).join(', ')}.</p>` : ''}
         <p class="note">Nearest known analog: ${esc(near.name)}, ${fmtKm(near.km)} away.${filtered ? ' This cell is excluded by one of your filters.' : ''}</p>
       </div>
-      <div class="d-sec">
+      <div class="d-sec" id="d-ev">
         <h3>Where it differs</h3>
         <div class="rail-key"><span><i class="k-t"></i>target</span><span><i class="k-s"></i>this site</span><span>rank among all land, low → high</span><span class="k-share">share of gap</span></div>
         ${rails}
@@ -101,7 +112,13 @@ export function renderDossier(app: App, info: CellInfo, lat: number, lon: number
           <p class="note">Percentiles rank this value among all land on Earth (0–100). Highlighted targets lie beyond anything on Earth and were clamped before comparison.</p>
         </details>
       </div>
-      <div class="d-sec">
+      <div class="d-sec" id="d-pm">
+        <h3>Side by side with ${esc(t.body)}</h3>
+        <p class="note">The target's real terrain next to this candidate, at a similar ground scale.</p>
+        <button class="btn" id="pm-btn">Show ${esc(t.body)} beside Earth</button>
+        <div id="pm-out"></div>
+      </div>
+      <div class="d-sec" id="d-dr">
         <h3>Terrain close-up</h3>
         <p class="note">Fetches ~30 m elevation for a 20 km box around this cell and compares its slopes with the target's.</p>
         <button class="btn" id="drill-btn">Run terrain close-up</button>
@@ -115,7 +132,27 @@ export function renderDossier(app: App, info: CellInfo, lat: number, lon: number
     document.getElementById('drill-out')!.replaceWith(oldDrill);
     document.getElementById('drill-btn')!.textContent = 'Run again';
   }
+  el().querySelectorAll<HTMLButtonElement>('[data-jump]').forEach((b) => {
+    b.onclick = () => document.getElementById(b.dataset.jump!)?.scrollIntoView({ block: 'start' });
+  });
   document.getElementById('d-back')!.onclick = nav.onBack;
+  document.getElementById('d-copy')!.onclick = nav.onCopy;
+  const pmBtn = document.getElementById('pm-btn') as HTMLButtonElement;
+  const pmOut = document.getElementById('pm-out')!;
+  const showPm = () => {
+    pmOut.innerHTML = planetPanel(t, lat, lon);
+    watchPlanetTiles(pmOut);
+    pmBtn.textContent = `Hide ${t.body}`;
+    pmOpen = true;
+  };
+  pmBtn.onclick = () => {
+    if (pmOpen) {
+      pmOut.innerHTML = '';
+      pmBtn.textContent = `Show ${t.body} beside Earth`;
+      pmOpen = false;
+    } else showPm();
+  };
+  if (pmOpen) showPm();
   const prev = document.getElementById('d-prev');
   const next = document.getElementById('d-next');
   if (prev) prev.onclick = () => nav.onStep(-1);

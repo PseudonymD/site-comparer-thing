@@ -3,6 +3,7 @@
 // Web-Mercator score image and extracts the top-N candidate sites.
 import { blend, buildLut, haversineKm, scoreAll, type Filter } from './scoring';
 import { buildColormap } from './colormap';
+import { isSelected } from './population';
 import type { ScoreRequest, ScoreResult, Site, WorkerInit, CellInfo } from './types';
 
 let F = 18;
@@ -20,6 +21,7 @@ let rowMap: Int32Array; // mercator output row -> grid row (-1 = outside)
 let imgW = 0;
 let imgH = 0;
 let lut32: Uint32Array;
+let included: Uint8Array;
 let satKm = 2000;
 const MAX_MERC_LAT = 85.0511287798;
 
@@ -35,6 +37,7 @@ function init(msg: WorkerInit) {
   const n = cells.length;
   scores = new Float32Array(n);
   blended = new Float32Array(n);
+  included = new Uint8Array(n);
   colorIdx = new Uint8Array(nLon * nLat);
   // Novelty distances (once).
   dist = new Float32Array(n);
@@ -96,13 +99,27 @@ function score(req: ScoreRequest): ScoreResult {
   const a = req.alpha;
   const HB = 2048;
   const hist = new Uint32Array(HB);
+  const bbox = req.bbox ?? null;
+  const countryIds = req.countryIds === null || req.countryIds === undefined ? null : new Set(req.countryIds);
   let valid = 0;
   for (let i = 0; i < n; i++) {
+    const c = cells[i];
+    const r = (c / nLon) | 0;
+    const lat = 90 - (r + 0.5) * res;
+    const lon = -180 + (c - r * nLon + 0.5) * res;
+    const selected = isSelected(lat, lon, countries[i], bbox, countryIds);
+    included[i] = selected ? 1 : 0;
+    if (!selected) {
+      scores[i] = 0;
+      blended[i] = 0;
+      continue;
+    }
     const s = scores[i];
     const b = a > 0 ? blend(s, dist[i], a, satKm) : s;
     blended[i] = b;
     if (s > 0) {
-      hist[Math.min(HB - 1, Math.max(0, Math.round(b * (HB - 1))))]++;
+      const bin = Math.min(HB - 1, Math.max(0, Math.round(b * (HB - 1))));
+      hist[bin]++;
       valid++;
     }
   }
@@ -116,6 +133,7 @@ function score(req: ScoreRequest): ScoreResult {
   for (let i = 0; i < n; i++) {
     const b = blended[i];
     if (b <= 0) continue;
+    if (!included[i]) continue;
     let v = Math.round((b - lo) * scale);
     if (v < 0) {
       if (req.hideBelow) continue;
@@ -137,7 +155,7 @@ function score(req: ScoreRequest): ScoreResult {
   }
   const tImg = performance.now();
 
-  const sites = topSites(hist, valid, req.topN);
+  const sites = topSites(hist, valid, req.topN, included);
   const t1 = performance.now();
   return {
     type: 'scored', id: req.id, image: img, width: imgW, height: imgH, sites,
@@ -148,7 +166,7 @@ function score(req: ScoreRequest): ScoreResult {
   };
 }
 
-function topSites(hist: Uint32Array, valid: number, topN: number): Site[] {
+function topSites(hist: Uint32Array, valid: number, topN: number, population: Uint8Array): Site[] {
   // Candidate cells: roughly the best 6000 (threshold from the histogram).
   const want = Math.min(6000, valid);
   let acc = 0;
@@ -161,7 +179,7 @@ function topSites(hist: Uint32Array, valid: number, topN: number): Site[] {
     }
   }
   const cand: number[] = [];
-  for (let i = 0; i < blended.length; i++) if (blended[i] >= thr && scores[i] > 0) cand.push(i);
+  for (let i = 0; i < blended.length; i++) if (population[i] && blended[i] >= thr && scores[i] > 0) cand.push(i);
   cand.sort((x, y) => blended[y] - blended[x]);
   if (cand.length > 8000) cand.length = 8000;
   // Union-find over 8-neighbour adjacency (longitude wraps).
@@ -237,7 +255,7 @@ function cellInfo(gridIndex: number): CellInfo | null {
     if (v === gridIndex) {
       return {
         pos: mid, cell: v, q: Array.from(q.subarray(mid * F, mid * F + F)), noveltyKm: dist[mid],
-        country: countries[mid], score: scores ? scores[mid] : 0, blended: blended ? blended[mid] : 0,
+        country: countries[mid], score: scores ? scores[mid] : 0, blended: blended ? blended[mid] : 0, included: !!included[mid],
       };
     }
     if (v < gridIndex) lo = mid + 1;

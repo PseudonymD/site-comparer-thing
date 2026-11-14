@@ -176,6 +176,30 @@ def test_glim_fraction():
     assert out[g.row_of_lat(0.5), g.col_of_lon(0.5)] == pytest.approx(0.6, abs=0.11)
 
 
+def test_glim_pangaea_grid_archive(tmp_path):
+    from pipeline.sources import glim
+
+    archive = tmp_path / "glim.zip"
+    asc = """ncols 4
+nrows 2
+xllcorner -2
+yllcorner -1
+cellsize 1
+NODATA_value -9999
+2 4 1 -9999
+16 1 1 2
+"""
+    import zipfile
+
+    with zipfile.ZipFile(archive, "w") as zf:
+        zf.writestr("glim_wgs84_0point5deg.txt.asc", asc)
+    values, lat, lon = glim._read_grid(archive)
+    assert values.shape == (2, 4)
+    assert lat[0] == pytest.approx(0.5)
+    assert lon[0] == pytest.approx(-1.5)
+    assert glim._is_grid_archive(archive)
+
+
 # ------------------------------------------------------------------ synthetic
 def test_synthetic_layers_complete_and_finite():
     from pipeline.config import FEATURE_IDS
@@ -185,3 +209,72 @@ def test_synthetic_layers_complete_and_finite():
     assert set(FEATURE_IDS) <= set(L)
     for k in FEATURE_IDS:
         assert np.isfinite(L[k]).all(), k
+
+
+# ------------------------------------------------------------------ macrostrat (basalt fallback)
+def test_macrostrat_parser_and_major_lith():
+    from pipeline.sources import macrostrat as m
+
+    fc = {"success": {"data": {"type": "FeatureCollection", "features": [
+        {"type": "Feature", "geometry": {"type": "Polygon", "coordinates": [[[0, 0], [1, 0], [1, 1], [0, 1], [0, 0]]]},
+         "properties": {"lith": "Major:{basalt}, Minor:{tuff}"}},
+        {"type": "Feature", "geometry": {"type": "Polygon", "coordinates": [[[2, 0], [3, 0], [3, 1], [2, 1], [2, 0]]]},
+         "properties": {"lith": "Major:{sandstone}, Minor:{basalt}"}},
+    ]}}}
+    feats = m.parse_features(fc)
+    assert len(feats) == 2
+    assert m.is_major_mafic(feats[0]["properties"])
+    assert not m.is_major_mafic(feats[1]["properties"])  # basalt only as a minor component
+    assert m.is_major_mafic({"liths": [{"lith": "gabbro"}]})
+    assert m.parse_features([{"a": 1}]) == [{"a": 1}]
+
+
+def test_macrostrat_vector_tile_decoder():
+    import mapbox_vector_tile
+    from pipeline.sources import macrostrat as m
+
+    raw = mapbox_vector_tile.encode({
+        "name": "units",
+        "features": [{
+            "geometry": {"type": "Polygon", "coordinates": [[[0, 0], [100, 0], [100, 100], [0, 100], [0, 0]]]},
+            "properties": {"lith": "mafic volcanic rocks"},
+        }],
+    })
+    features = m._decode_tile(raw, (0, 0, 1))
+    assert len(features) == 1
+    assert features[0]["geometry"]["type"] == "Polygon"
+    assert -85.1 <= features[0]["geometry"]["coordinates"][0][0][1] <= 85.1
+
+
+def test_macrostrat_to_grid_from_cache(tmp_path, monkeypatch):
+    """to_grid rasterises cached tiles without network."""
+    from pipeline.sources import macrostrat as m
+
+    grid = Grid(0.5, (0.0, 0.0, 2.0, 2.0))
+    poly = {"type": "Feature", "geometry": {"type": "Polygon", "coordinates": [[[0, 0], [1, 0], [1, 1], [0, 1], [0, 0]]]},
+            "properties": {"lith": "Major:{basalt}"}}
+    monkeypatch.setattr(m, "fetch", lambda cache_dir, grid=None: [poly])
+    monkeypatch.setattr(m, "is_done", lambda name: False)
+    monkeypatch.setattr(m, "save_grid", lambda p, a: None)
+    monkeypatch.setattr(m, "mark_done", lambda *a, **k: None)
+    a = m.to_grid(grid, tmp_path)
+    r, c = grid.row_of_lat(0.5), grid.col_of_lon(0.5)
+    assert a[r, c] > 0.99 and a[grid.row_of_lat(1.5), grid.col_of_lon(1.5)] < 0.01
+
+
+def test_soilgrids_gap_policy():
+    from pipeline.sources.soilgrids import fill_gaps
+
+    grid = Grid(10.0)  # 18 x 36
+    a = np.full(grid.shape, np.nan, np.float32)
+    a[:9] = 50.0  # northern hemisphere mapped
+    land = np.ones(grid.shape, bool)
+    ice = np.zeros(grid.shape, np.float32)
+    ice[-2:] = 1.0  # southern ice cap
+    soc, info = fill_gaps(a, land, "soc", grid, ice)
+    assert np.isfinite(soc).all()
+    assert (soc[9:12] == 50.0).all()          # within 3 cells: nearest fill
+    assert (soc[-3:] == 0.0).all()            # far + south of 60°S / ice: no soil
+    sand, _ = fill_gaps(a, land, "sand", grid, ice)
+    assert (sand[-2:] == 0.0).all() and (sand[12:16] == 50.0).all()  # ice-free far gaps keep nearest fill
+    assert info["no_soil_zero"] > 0

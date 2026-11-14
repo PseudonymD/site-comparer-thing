@@ -1,6 +1,7 @@
 import maplibregl, { type StyleSpecification } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import type { KnownAnalog, Site } from './types';
+import { esc } from './format';
 
 const MERC = 85.0511287798;
 
@@ -53,6 +54,8 @@ export interface MapApi {
   setProjection(kind: 'globe' | 'mercator'): void;
   setPadding(p: { top: number; right: number; bottom: number; left: number }): void;
   pulseSite(i: number | null): void;
+  /** Site focus: hide (or re-show) the score layer and show the imagery in full colour. */
+  setFocus(on: boolean, showScore: boolean): void;
   onCellClick(cb: (lat: number, lon: number) => void): void;
 }
 
@@ -131,7 +134,7 @@ export function createMap(container: HTMLElement): MapApi {
       el.className = 'analog-marker';
       el.title = `${a.name} (known ${a.bodies.join('/')} analog)`;
       const popup = new maplibregl.Popup({ offset: 10, closeButton: false }).setHTML(
-        `<b>${a.name}</b><br><span class="popup-sub">Known ${a.bodies.join(' & ')} analog · ${a.country}</span><br>${a.note}`,
+        `<b>${esc(a.name)}</b><br><span class="popup-sub">Known ${esc(a.bodies.join(' & '))} analog · ${esc(a.country)}</span><br>${esc(a.note)}`,
       );
       const m = new maplibregl.Marker({ element: el }).setLngLat([a.lon, a.lat]).setPopup(popup).addTo(map);
       el.addEventListener('click', (e) => e.stopPropagation());
@@ -185,6 +188,11 @@ export function createMap(container: HTMLElement): MapApi {
     },
     pulseSite(i) {
       siteMarkers.forEach((m, k) => m.getElement().classList.toggle('pulse', k === i));
+    },
+    setFocus(on, showScore) {
+      if (map.getLayer('score')) map.setLayoutProperty('score', 'visibility', !on || showScore ? 'visible' : 'none');
+      map.setPaintProperty('satellite', 'raster-saturation', on ? 0 : -0.35);
+      map.setPaintProperty('satellite', 'raster-brightness-max', on ? 1 : 0.75);
     },
     onCellClick(cb) {
       map.on('click', (e) => cb(e.lngLat.lat, ((e.lngLat.lng + 540) % 360) - 180));

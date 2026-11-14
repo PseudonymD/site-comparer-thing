@@ -188,7 +188,10 @@ If the proxy inspects TLS, also point `REQUESTS_CA_BUNDLE` at your organisation'
 
 **`pyhdf` failed to install (Intel Macs).** This is fine. MODIS needs it, so those features fall back to NASA POWER and GIBS automatically.
 
-**GLiM download fails.** Download "LiMW_GIS 2015.gdb.zip" manually from https://doi.org/10.1594/PANGAEA.788537 and put it in `pipeline/cache/glim/`. Then run again.
+**GLiM download fails.** The PANGAEA record currently publishes the official 0.5° grid as
+`glim_wgs84_0point5deg.zip`. Open https://doi.org/10.1594/PANGAEA.788537, download the dataset,
+and put the archive in `pipeline/cache/glim/`. Polygon GLiM archives (`.gdb`, `.shp`, or `.gpkg`)
+remain supported for local use.
 
 **The run crashed or the computer slept.** Run the same command again. It resumes from where it stopped.
 
@@ -201,3 +204,65 @@ python -m pipeline run --only climate --force
 **Output files are bigger than 50 MB.** `publish` warns about this. Push the other files, then run the **Release data files** workflow from the GitHub Actions tab. The site build fetches the data from the latest release instead.
 
 When asking for help, include the latest log file from `pipeline/logs/` and the output of `python -m pipeline status`.
+
+---
+
+## Basalt hot-fix
+
+The published data still has a **synthetic** basalt layer, because PANGAEA (the GLiM host) was having a file-archive outage during the first run. These steps replace **only** basalt and republish. Nothing else is recomputed, and you don't need the rest of the cache. Run them from the repository root after `git pull`, with the virtual environment active.
+
+**1. Check whether PANGAEA is back** (prints `None` if the file can be downloaded, otherwise the reason):
+
+```bash
+python -c "from pipeline.sources import glim; print(glim.archive_status())"
+```
+
+**2a. If it prints `None`:** patch basalt from GLiM (the published archive is about 40 kB; rasterisation is quick):
+
+```bash
+python -m pipeline patch --features basalt
+```
+
+**2b. If PANGAEA is still down:** first try the Macrostrat fallback on a small region. This only checks that it works, and the result isn't published:
+
+```bash
+python -c "from pipeline.grid import Grid; from pipeline.sources import macrostrat as m; from pipeline.config import CACHE_DIR; a=m.to_grid(Grid(0.5,(-160,18,-154,23)),CACHE_DIR); print('Hawaii max basalt fraction', float(a.max()))"
+```
+
+A value well above 0 means it works. In that case run the global patch. It tries GLiM first, then Macrostrat:
+
+```bash
+python -m pipeline patch --features basalt
+```
+
+If the smoke test errors or prints 0, send us the error text. Or download GLiM by hand from
+https://doi.pangaea.de/10.1594/PANGAEA.788537, put the published zip in `pipeline/cache/glim/`,
+and run the patch command above.
+
+**3. Check the summary.** The log shows `patched basalt <- glim` (or `macrostrat`) and a new validation table. If it says `<- synthetic`, nothing improved, so stop here and send us the log from `pipeline/logs/`.
+
+**4. Publish and push:**
+
+```bash
+python -m pipeline publish
+```
+
+```bash
+git checkout -b data/basalt
+```
+
+```bash
+git add web/public/data pipeline/report.md
+```
+
+```bash
+git commit -m "data: real basalt layer"
+```
+
+```bash
+git push -u origin data/basalt
+```
+
+Then open a pull request. Vercel builds a preview for it, so you can check the site before merging.
+
+If you'd rather use your full cache: `python -m pipeline run --only basalt` followed by `python -m pipeline publish` does the same thing.

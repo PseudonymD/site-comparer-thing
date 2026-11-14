@@ -1,146 +1,144 @@
 {
- "generated": "2026-11-13T15:59:56",
+ "generated": "2026-11-14T11:48:32",
  "n_random": 1000,
- "synthetic_features": [
-  "basalt"
- ],
+ "synthetic_features": [],
  "results": [
   {
    "target": "moon_south_pole",
    "name": "Moon – South Pole (Artemis)",
-   "auc": 0.749,
-   "median_analog_percentile": 87.9,
-   "random_median_score": 0.5047,
+   "auc": 0.724,
+   "median_analog_percentile": 85.2,
+   "random_median_score": 0.5117,
    "analogs": [
     {
      "id": "haughton",
      "name": "Haughton Crater, Devon Island",
-     "score": 0.5418,
-     "percentile": 79.69,
-     "rank": 435391
+     "score": 0.5396,
+     "percentile": 75.7,
+     "rank": 520699
     },
     {
      "id": "mcmurdo",
      "name": "McMurdo Dry Valleys",
-     "score": 0.6544,
-     "percentile": 99.46,
-     "rank": 11578
+     "score": 0.7209,
+     "percentile": 100.0,
+     "rank": 26
     },
     {
      "id": "svalbard",
      "name": "Svalbard (Bockfjord, AMASE)",
-     "score": 0.4839,
-     "percentile": 54.75,
-     "rank": 969897
+     "score": 0.4853,
+     "percentile": 49.34,
+     "rank": 1085697
     },
     {
      "id": "meteor_crater",
      "name": "Meteor Crater (Barringer)",
-     "score": 0.6058,
-     "percentile": 96.07,
-     "rank": 84242
+     "score": 0.6085,
+     "percentile": 94.6,
+     "rank": 115826
     }
    ]
   },
   {
    "target": "moon_mare_lava_tube",
    "name": "Moon – Mare / lava tube (Marius Hills)",
-   "auc": 0.63,
-   "median_analog_percentile": 74.5,
-   "random_median_score": 0.4652,
+   "auc": 0.682,
+   "median_analog_percentile": 80.0,
+   "random_median_score": 0.4761,
    "analogs": [
     {
      "id": "hawaii_lava_tubes",
      "name": "Hawaiian lava tubes (Kazumura)",
-     "score": 0.4521,
-     "percentile": 56.22,
-     "rank": 938343
+     "score": 0.4839,
+     "percentile": 63.86,
+     "rank": 774625
     },
     {
      "id": "kilauea",
      "name": "Kīlauea",
-     "score": 0.5118,
-     "percentile": 74.51,
-     "rank": 546282
+     "score": 0.5445,
+     "percentile": 80.17,
+     "rank": 424921
     },
     {
      "id": "black_point",
      "name": "Black Point Lava Flow",
-     "score": 0.6641,
-     "percentile": 98.63,
-     "rank": 29448
+     "score": 0.7246,
+     "percentile": 99.89,
+     "rank": 2284
     },
     {
      "id": "lanzarote",
      "name": "Lanzarote (Timanfaya)",
-     "score": 0.5684,
-     "percentile": 85.84,
-     "rank": 303401
+     "score": 0.5602,
+     "percentile": 83.29,
+     "rank": 358215
     },
     {
      "id": "askja",
      "name": "Askja, Iceland",
-     "score": 0.436,
-     "percentile": 51.07,
-     "rank": 1048777
+     "score": 0.4803,
+     "percentile": 62.64,
+     "rank": 800714
     },
     {
      "id": "holuhraun",
      "name": "Holuhraun lava field",
-     "score": 0.4305,
-     "percentile": 49.4,
-     "rank": 1084526
+     "score": 0.4782,
+     "percentile": 61.93,
+     "rank": 815936
     },
     {
      "id": "mauna_kea",
      "name": "Mauna Kea",
-     "score": 0.5116,
-     "percentile": 74.47,
-     "rank": 547175
+     "score": 0.544,
+     "percentile": 80.05,
+     "rank": 427605
     }
    ]
   },
   {
    "target": "mars_jezero",
    "name": "Mars – Jezero crater",
-   "auc": 0.92,
-   "median_analog_percentile": 98.8,
-   "random_median_score": 0.4554,
+   "auc": 0.915,
+   "median_analog_percentile": 98.1,
+   "random_median_score": 0.4712,
    "analogs": [
     {
      "id": "atacama",
      "name": "Atacama Desert (Yungay)",
-     "score": 0.6745,
-     "percentile": 99.39,
-     "rank": 13093
+     "score": 0.6672,
+     "percentile": 98.71,
+     "rank": 27667
     },
     {
      "id": "death_valley",
      "name": "Death Valley",
-     "score": 0.6714,
-     "percentile": 99.25,
-     "rank": 16083
+     "score": 0.6651,
+     "percentile": 98.58,
+     "rank": 30492
     },
     {
      "id": "pilbara",
      "name": "Pilbara Craton",
-     "score": 0.5854,
-     "percentile": 89.94,
-     "rank": 215576
+     "score": 0.5931,
+     "percentile": 90.07,
+     "rank": 212763
     },
     {
      "id": "utah_mdrs",
      "name": "Mars Desert Research Station",
-     "score": 0.6634,
-     "percentile": 98.78,
-     "rank": 26086
+     "score": 0.658,
+     "percentile": 98.07,
+     "rank": 41274
     },
     {
      "id": "rio_tinto",
      "name": "Río Tinto",
-     "score": 0.5724,
-     "percentile": 87.98,
-     "rank": 257517
+     "score": 0.5735,
+     "percentile": 86.83,
+     "rank": 282287
     }
    ]
   },
@@ -148,110 +146,111 @@
    "target": "mars_gale",
    "name": "Mars – Gale crater",
    "auc": 0.944,
-   "median_analog_percentile": 99.0,
-   "random_median_score": 0.453,
+   "median_analog_percentile": 98.6,
+   "random_median_score": 0.4682,
    "analogs": [
     {
      "id": "atacama",
      "name": "Atacama Desert (Yungay)",
-     "score": 0.6789,
-     "percentile": 99.34,
-     "rank": 14177
+     "score": 0.6724,
+     "percentile": 98.88,
+     "rank": 23939
     },
     {
      "id": "utah_mdrs",
      "name": "Mars Desert Research Station",
-     "score": 0.6666,
-     "percentile": 98.7,
-     "rank": 27959
+     "score": 0.6621,
+     "percentile": 98.24,
+     "rank": 37696
     },
     {
      "id": "death_valley",
      "name": "Death Valley",
-     "score": 0.6783,
-     "percentile": 99.31,
-     "rank": 14750
+     "score": 0.6724,
+     "percentile": 98.88,
+     "rank": 23897
     },
     {
      "id": "pilbara",
      "name": "Pilbara Craton",
-     "score": 0.5817,
-     "percentile": 89.77,
-     "rank": 219237
+     "score": 0.5923,
+     "percentile": 90.33,
+     "rank": 207305
     }
    ]
   },
   {
+   "auc_v1_list": 0.382,
+   "validation_v1": [
+    "haughton",
+    "svalbard",
+    "mcmurdo",
+    "askja",
+    "holuhraun"
+   ],
    "target": "mars_arcadia",
    "name": "Mars – Arcadia Planitia (mid-latitude ice)",
-   "auc": 0.343,
-   "median_analog_percentile": 24.4,
-   "random_median_score": 0.5391,
+   "auc": 0.632,
+   "median_analog_percentile": 77.4,
+   "random_median_score": 0.554,
    "analogs": [
     {
      "id": "haughton",
      "name": "Haughton Crater, Devon Island",
-     "score": 0.5364,
-     "percentile": 60.02,
-     "rank": 856905
+     "score": 0.5419,
+     "percentile": 56.0,
+     "rank": 943025
     },
     {
      "id": "svalbard",
      "name": "Svalbard (Bockfjord, AMASE)",
-     "score": 0.4668,
-     "percentile": 24.36,
-     "rank": 1621051
+     "score": 0.4761,
+     "percentile": 22.2,
+     "rank": 1667321
     },
     {
      "id": "mcmurdo",
      "name": "McMurdo Dry Valleys",
-     "score": 0.6102,
-     "percentile": 89.26,
-     "rank": 230207
+     "score": 0.6862,
+     "percentile": 98.85,
+     "rank": 24546
     },
     {
-     "id": "askja",
-     "name": "Askja, Iceland",
-     "score": 0.4597,
-     "percentile": 21.4,
-     "rank": 1684610
-    },
-    {
-     "id": "holuhraun",
-     "name": "Holuhraun lava field",
-     "score": 0.4508,
-     "percentile": 17.98,
-     "rank": 1757871
+     "id": "university_valley",
+     "name": "University Valley (Dry Valleys)",
+     "score": 0.6965,
+     "percentile": 99.3,
+     "rank": 15089
     }
    ]
   },
   {
    "target": "mars_north_polar",
    "name": "Mars – North polar layered deposits",
-   "auc": 0.636,
-   "median_analog_percentile": 75.8,
-   "random_median_score": 0.5195,
+   "auc": 0.566,
+   "median_analog_percentile": 61.8,
+   "random_median_score": 0.5412,
    "analogs": [
     {
      "id": "mcmurdo",
      "name": "McMurdo Dry Valleys",
-     "score": 0.6217,
-     "percentile": 97.23,
-     "rank": 59419
+     "score": 0.6787,
+     "percentile": 99.97,
+     "rank": 728
     },
     {
      "id": "svalbard",
      "name": "Svalbard (Bockfjord, AMASE)",
-     "score": 0.4834,
-     "percentile": 42.1,
-     "rank": 1240867
+     "score": 0.4783,
+     "percentile": 31.14,
+     "rank": 1475897
     },
     {
      "id": "haughton",
      "name": "Haughton Crater, Devon Island",
-     "score": 0.5432,
-     "percentile": 75.85,
-     "rank": 517541
+     "score": 0.5382,
+     "percentile": 61.79,
+     "rank": 818869
     }
    ]
   }

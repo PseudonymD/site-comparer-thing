@@ -14,14 +14,23 @@ from .config import NOVELTY_SATURATION_KM
 from .grid import haversine_km
 
 
+def _validated_weights(weights: np.ndarray, expected: int | None = None) -> tuple[np.ndarray, float]:
+    w = np.asarray(weights, dtype=np.float64)
+    if expected is not None and w.shape != (expected,):
+        raise ValueError(f"weights must have shape ({expected},)")
+    if not np.all(np.isfinite(w)) or np.any(w < 0):
+        raise ValueError("weights must be finite and non-negative")
+    wsum = float(w.sum())
+    if wsum <= 0:
+        raise ValueError("at least one weight must be greater than zero")
+    return w, wsum
+
+
 def score(q: np.ndarray, target: np.ndarray, weights: np.ndarray,
           filters: list[tuple[int, float]] | None = None) -> np.ndarray:
     """q: uint8 (n, F); target: (F,) in [0,1]; weights: (F,) >= 0;
     filters: [(feature_index, z_threshold)] -> exclude cells with z > z_threshold. Returns float64 (n,)."""
-    w = np.asarray(weights, dtype=np.float64)
-    wsum = w.sum()
-    if wsum <= 0:
-        return np.zeros(q.shape[0])
+    w, wsum = _validated_weights(weights, q.shape[1])
     z = q.astype(np.float64) / 255.0
     d2 = (z - np.asarray(target, dtype=np.float64)[None, :]) ** 2
     s = 1.0 - np.sqrt((d2 * w[None, :]).sum(axis=1) / wsum)
@@ -31,9 +40,9 @@ def score(q: np.ndarray, target: np.ndarray, weights: np.ndarray,
 
 
 def contributions(qrow: np.ndarray, target: np.ndarray, weights: np.ndarray) -> np.ndarray:
-    w = np.asarray(weights, dtype=np.float64)
+    w, wsum = _validated_weights(weights, qrow.shape[-1])
     z = qrow.astype(np.float64) / 255.0
-    return w * (z - target) ** 2 / max(w.sum(), 1e-12)
+    return w * (z - target) ** 2 / wsum
 
 
 def novelty(lat: np.ndarray, lon: np.ndarray, analogs: list[dict]) -> np.ndarray:

@@ -3,8 +3,17 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Terrestrial Analog Finder</title>
+    <title>Terrestrial Analog Finder: Earth's best stand-ins for the Moon and Mars</title>
     <meta name="description" content="Find places on Earth that best resemble Moon and Mars base sites, re-scored live from 18 open NASA and partner datasets. NASA Space Apps 2026." />
+    <meta name="theme-color" content="#05070b" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Terrestrial Analog Finder" />
+    <meta property="og:description" content="Where on Earth is most like the Moon or Mars? 2.1 million land cells scored live against six Moon and Mars base sites with 18 open NASA and partner datasets." />
+    <meta property="og:url" content="https://site-comparer-thing.vercel.app/" />
+    <meta property="og:image" content="https://site-comparer-thing.vercel.app/og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%23e8eaed'/%3E%3Ccircle cx='11' cy='12' r='3' fill='%2314181f'/%3E%3Ccircle cx='20' cy='20' r='4' fill='%2314181f'/%3E%3C/svg%3E" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -17,6 +26,11 @@
         <div class="loader-title">Where on Earth is most like the Moon and Mars?</div>
         <div class="progress"><div class="progress-bar" id="progress-bar"></div></div>
         <div class="loader-label" id="progress-label">Loading 18 Earth-observation layers</div>
+        <ol class="loader-steps">
+          <li id="ls-meta">Targets, known analogs and validation (~100 kB)</li>
+          <li id="ls-grid">18 layers × 2.1 million land cells: terrain, climate, soil, rock, ice, night lights, dust (~30 MB, cached after the first visit)</li>
+          <li id="ls-engine">Scoring engine: rank every cell against the Moon or Mars</li>
+        </ol>
       </div>
     </div>
 
@@ -26,7 +40,11 @@
       <div class="brand"><span class="brand-mark" aria-hidden="true"></span>Analog Finder</div>
       <nav class="targets" id="targets" aria-label="Target site"></nav>
       <select id="target-select" aria-label="Target site"></select>
-      <button class="text-btn" id="btn-about">How it works</button>
+      <div class="guide" role="group" aria-label="Guide">
+        <button class="text-btn" id="btn-tour">Take the tour</button>
+        <button class="text-btn" id="btn-about">How it works</button>
+        <button class="text-btn" id="btn-limits">Data and limitations</button>
+      </div>
     </header>
 
     <aside id="left" class="panel sheet" aria-label="Target and controls"></aside>
@@ -34,11 +52,19 @@
 
     <aside id="right" class="panel sheet" aria-label="Candidate sites">
       <div id="list-view">
-        <div class="panel-head">
-          <h2>Candidates</h2>
-          <div class="note" id="sites-sub"></div>
+        <div class="tabs rtabs" role="tablist">
+          <button role="tab" id="rtab-cand" aria-controls="rv-cand" data-r="cand" aria-selected="true">Candidates</button>
+          <button role="tab" id="rtab-disc" aria-controls="rv-disc" data-r="disc" aria-selected="false">Discoveries</button>
         </div>
-        <ol id="sites"></ol>
+        <div id="rv-cand" class="rv" role="tabpanel" aria-labelledby="rtab-cand">
+          <div class="panel-head">
+            <div class="note" id="sites-sub"></div>
+            <button class="vbadge hidden" id="sites-valid" title="How well do known analogs score? Click for the method."></button>
+            <div id="region-chip" class="hidden"></div>
+          </div>
+          <ol id="sites"></ol>
+        </div>
+        <div id="rv-disc" class="rv rv-scroll hidden" role="tabpanel" aria-labelledby="rtab-disc"></div>
       </div>
       <section id="dossier" class="hidden" aria-live="polite"></section>
     </aside>
@@ -50,7 +76,24 @@
       <div class="legend-ticks"><span id="legend-lo"></span><span id="legend-mid"></span><span id="legend-hi"></span></div>
       <div class="legend-foot" id="legend-foot"></div>
       <div class="legend-key"><span><i class="k-site"></i>candidate</span><span><i class="k-analog"></i>known analog site</span></div>
+      <div class="legend-more"><button class="text-btn legend-limits" id="legend-limits" type="button">Limitations</button></div>
     </div>
+
+    <button id="heat-toggle" class="sheet" aria-pressed="false">Show heatmap</button>
+
+    <div id="guide-sheet" class="sheet hidden" role="region" aria-label="Guide">
+      <div class="eyebrow">Guide</div>
+      <button class="guide-item" id="guide-tour" type="button"><b>Take the tour</b><span>A step-by-step walk through the controls</span></button>
+      <button class="guide-item" id="guide-about" type="button"><b>How it works</b><span>The method, step by step</span></button>
+      <button class="guide-item" id="guide-limits" type="button"><b>Data and limitations</b><span>Validation, data sources and caveats</span></button>
+    </div>
+
+    <nav id="mnav" class="sheet" aria-label="Panels">
+      <button id="mnav-map" type="button" aria-pressed="true">Map</button>
+      <button id="mnav-cand" type="button" aria-pressed="false">Candidates</button>
+      <button id="mnav-ctrl" type="button" aria-pressed="false">Controls<span class="count" id="mnav-ctrl-n"></span></button>
+      <button id="mnav-guide" type="button" aria-pressed="false">Guide</button>
+    </nav>
 
     <div id="about" class="hidden"></div>
     <div id="toast" class="hidden sheet" role="status"></div>

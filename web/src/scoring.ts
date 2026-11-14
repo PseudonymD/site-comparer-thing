@@ -10,19 +10,29 @@ export interface Filter {
   zThreshold: number; // exclude cells with z > zThreshold
 }
 
+function validateWeights(weights: ArrayLike<number>, expected: number): number {
+  if (weights.length !== expected) throw new RangeError(`weights must have length ${expected}`);
+  let sum = 0;
+  for (let i = 0; i < expected; i++) {
+    const w = weights[i];
+    if (!Number.isFinite(w) || w < 0) throw new RangeError('weights must be finite and non-negative');
+    sum += w;
+  }
+  if (sum <= 0) throw new RangeError('at least one weight must be greater than zero');
+  return sum;
+}
+
 /** Per-feature lookup table: lut[f*256 + q] = w_f (q/255 - t_f)^2 / W  (Infinity = filtered). */
 export function buildLut(target: ArrayLike<number>, weights: ArrayLike<number>, filters: Filter[] = []): Float64Array {
   const F = target.length;
   const lut = new Float64Array(F * 256);
-  let wsum = 0;
-  for (let f = 0; f < F; f++) wsum += Math.max(0, weights[f]);
-  if (wsum <= 0) wsum = Infinity; // all weights zero -> every score 1 - sqrt(0)... handled below
+  const wsum = validateWeights(weights, F);
   for (let f = 0; f < F; f++) {
-    const w = Math.max(0, weights[f]);
+    const w = weights[f];
     const t = target[f];
     for (let q = 0; q < 256; q++) {
       const d = q / 255 - t;
-      lut[f * 256 + q] = wsum === Infinity ? 0 : (w * d * d) / wsum;
+      lut[f * 256 + q] = (w * d * d) / wsum;
     }
   }
   for (const flt of filters) {
@@ -50,12 +60,11 @@ export function scoreCell(qrow: ArrayLike<number>, target: ArrayLike<number>, we
 }
 
 export function contributions(qrow: ArrayLike<number>, target: ArrayLike<number>, weights: ArrayLike<number>): number[] {
-  let wsum = 0;
-  for (let f = 0; f < target.length; f++) wsum += Math.max(0, weights[f]);
+  const wsum = validateWeights(weights, target.length);
   const out: number[] = [];
   for (let f = 0; f < target.length; f++) {
     const d = qrow[f] / 255 - target[f];
-    out.push(wsum > 0 ? (Math.max(0, weights[f]) * d * d) / wsum : 0);
+    out.push((weights[f] * d * d) / wsum);
   }
   return out;
 }

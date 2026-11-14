@@ -28,7 +28,8 @@ c_if = w_f (z_if − t_f)² / Σ_f w_f            (per-feature contribution; Σ_
 ```
 
 `S_i ∈ [0, 1]`: 1 means the cell matches the target percentile on every weighted feature, 0 means maximally different.
-If every weight is 0, the score is undefined: Python returns 0 and the TS implementation returns 1 for all cells.
+If every weight is 0, the configuration is invalid and both implementations reject it.
+The web UI prevents submitting an all-zero vector; negative, non-finite, or incorrectly sized vectors are also rejected.
 
 ## Hard filters
 
@@ -50,6 +51,8 @@ B_i = (1 − α) S_i + α N_i      (B_i = 0 when S_i = 0, i.e. filtered cells st
 ```
 
 α is the "novelty weight" slider (0–0.6). The map colours, the top-N list and the ranking use `B_i`. The site card shows `S_i`.
+When a regional or country population is selected, histograms, stretch values,
+counts, percentiles, and candidate extraction all use that same population.
 
 ## Real units
 
@@ -60,3 +63,10 @@ real-unit values for cells and targets.
 
 The worker takes roughly the best 6000 cells by `B_i` and merges 8-neighbour adjacent cells (longitude wraps) with
 union-find. Each site is represented by its best cell, and sites are ranked by that cell's `B_i`.
+
+## Data quality
+
+`meta.json` records the source used for every feature, whether it is the
+preferred source or a fallback, coverage, proxy/synthetic status, and the
+source attempts that preceded a fallback. These indicators describe data
+provenance and completeness; they are not numerical uncertainty estimates.

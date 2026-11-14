@@ -40,10 +40,10 @@
     0.0,
     0.0,
     0.15561,
-    0.0,
-    0.41302,
-    0.95882,
-    0.68031,
+    0.15211,
+    0.67049,
+    0.9329,
+    0.70206,
     0.00059,
     0.00078
    ],
@@ -143,8 +143,8 @@
     },
     "soc": {
      "value": 0.0,
-     "clamped": 1.0968,
-     "beyond_earth": true,
+     "clamped": 0.0,
+     "beyond_earth": false,
      "refs": []
     },
     "sand": {
@@ -308,10 +308,10 @@
     0.0,
     1.0,
     0.15561,
-    0.0,
-    0.41302,
-    0.99794,
-    0.33986,
+    0.15211,
+    0.67049,
+    0.99318,
+    0.35092,
     0.00059,
     0.00078
    ],
@@ -408,8 +408,8 @@
     },
     "soc": {
      "value": 0.0,
-     "clamped": 1.0968,
-     "beyond_earth": true,
+     "clamped": 0.0,
+     "beyond_earth": false,
      "refs": []
     },
     "sand": {
@@ -577,10 +577,10 @@
     0.0,
     0.3184,
     0.15561,
-    0.0,
-    0.87476,
-    0.99297,
-    0.33986,
+    0.15211,
+    0.91502,
+    0.97882,
+    0.35092,
     0.00059,
     0.99782
    ],
@@ -679,8 +679,8 @@
     },
     "soc": {
      "value": 0.0,
-     "clamped": 1.0968,
-     "beyond_earth": true,
+     "clamped": 0.0,
+     "beyond_earth": false,
      "refs": []
     },
     "sand": {
@@ -849,10 +849,10 @@
     0.0,
     0.4401,
     0.15561,
-    0.0,
-    0.78605,
-    0.98829,
-    0.33986,
+    0.15211,
+    0.85882,
+    0.97013,
+    0.35092,
     0.00059,
     0.99899
    ],
@@ -952,8 +952,8 @@
     },
     "soc": {
      "value": 0.0,
-     "clamped": 1.0968,
-     "beyond_earth": true,
+     "clamped": 0.0,
+     "beyond_earth": false,
      "refs": []
     },
     "sand": {
@@ -1120,10 +1120,10 @@
     0.0,
     0.11972,
     0.15561,
-    0.0,
-    0.27258,
-    0.99462,
-    0.68336,
+    0.15211,
+    0.56263,
+    0.98551,
+    0.35092,
     0.00059,
     0.96047
    ],
@@ -1222,8 +1222,8 @@
     },
     "soc": {
      "value": 0.0,
-     "clamped": 1.0968,
-     "beyond_earth": true,
+     "clamped": 0.0,
+     "beyond_earth": false,
      "refs": []
     },
     "sand": {
@@ -1243,8 +1243,8 @@
      ]
     },
     "ice": {
-     "value": 0.3,
-     "clamped": 0.3,
+     "value": 0.0,
+     "clamped": 0.0,
      "beyond_earth": false,
      "refs": [
       "bramson2015",
@@ -1365,6 +1365,12 @@
     "haughton",
     "svalbard",
     "mcmurdo",
+    "university_valley"
+   ],
+   "validation_v1": [
+    "haughton",
+    "svalbard",
+    "mcmurdo",
     "askja",
     "holuhraun"
    ],
@@ -1390,10 +1396,10 @@
     0.0,
     1e-05,
     0.15561,
-    0.0,
-    0.0875,
-    0.9763,
-    0.69034,
+    0.15211,
+    0.39029,
+    0.9538,
+    0.72285,
     0.00059,
     0.90991
    ],
@@ -1492,8 +1498,8 @@
     },
     "soc": {
      "value": 0.0,
-     "clamped": 1.0968,
-     "beyond_earth": true,
+     "clamped": 0.0,
+     "beyond_earth": false,
      "refs": []
     },
     "sand": {
@@ -1662,6 +1668,8 @@
   "byrne2009": "Byrne S. (2009) The polar deposits of Mars. Annu. Rev. Earth Planet. Sci. 37, 535-560.",
   "horgan2009": "Horgan B.H. et al. (2009) Distribution of hydrated minerals in the north polar region of Mars. JGR 114, E01005.",
   "kopp2011": "Kopp G. & Lean J.L. (2011) A new, lower value of total solar irradiance. GRL 38, L01706.",
+  "heldmann2013": "Heldmann J.L. et al. (2013) The high elevation Dry Valleys in Antarctica as analog sites for subsurface ice on Mars. Planet. Space Sci. 85, 53-58.",
+  "burkins2000": "Burkins M.B. et al. (2000) Origin and distribution of soil organic matter in Taylor Valley, Antarctica. Ecology 81, 2377-2391.",
   "appelbaum1990": "Appelbaum J. & Flood D.J. (1990) Solar radiation on Mars. Solar Energy 45, 353-363."
  }
 }
