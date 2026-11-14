@@ -1,7 +1,6 @@
 /// <reference lib="webworker" />
 // Scoring worker: holds the uint8 feature matrix, re-scores every land cell on demand, paints the
-// Web-Mercator score image and extracts the top-N candidate sites. Ranges and weights are supplied
-// in normalized percentile/percentage space by the application.
+// Web-Mercator score image and extracts the top-N candidate sites.
 import { blend, buildLut, haversineKm, scoreAll, type Filter } from './scoring';
 import { buildColormap } from './colormap';
 import { isSelected } from './population';
@@ -95,7 +94,7 @@ function score(req: ScoreRequest): ScoreResult {
   const t0 = performance.now();
   const n = cells.length;
   const filters: Filter[] = req.filters;
-  const lut = buildLut(req.target, req.weights, filters, req.targetRanges);
+  const lut = buildLut(req.target, req.weights, filters);
   scoreAll(q, F, lut, scores);
   const a = req.alpha;
   const HB = 2048;

@@ -200,18 +200,12 @@ def run(opts: RunOptions) -> dict:
         u = used[f.id]
         cdf = cdfs[f.id]
         desc, url = sources.DESCRIPTIONS.get(u["source"], (u["source"], ""))
-        source_meta = sources.SOURCE_METADATA.get(u["source"], {})
         meta["features"].append({
             "id": f.id, "name": f.name, "unit": u.get("unit", f.unit), "group": f.group, "ui_group": f.ui_group,
             "description": f.description, "log_display": f.log_display,
             "source": u["source"], "source_name": desc, "source_url": url,
             "synthetic": u["source"] == "synthetic", "proxy": f.id in proxy,
             "fallback": u["source"] != f.sources[0], "attempts": u.get("attempts", []),
-            "coverage": u.get("coverage"), "notes": (u.get("gap_fill") or {                "resolution": source_meta.get("resolution"),
-                "temporal_coverage": source_meta.get("temporal_coverage"),
-                "data_quality": source_meta.get("data_quality"),
-                "uncertainty": source_meta.get("uncertainty"),
-                "measurement_class": source_meta.get("measurement_class"),
             "coverage": u.get("coverage"), "notes": (u.get("gap_fill") or {}).get("note"), "min": round(cdf.min, 4), "max": round(cdf.max, 4),
             "breakpoints": cdf.breakpoints(),
         })

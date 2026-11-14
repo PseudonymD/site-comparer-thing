@@ -1,8 +1,7 @@
 """Reference implementation of the analog score (spec: docs/scoring.md). Mirrored in web/src/scoring.ts.
 
-    S_i  = 1 - sqrt( sum_f w_f d_if^2 / sum_f w_f )
-    c_if = w_f d_if^2 / sum_f w_f
-    d_if = max(L_f - z_if, 0, z_if - U_f), with L_f = U_f = t_f by default
+    S_i  = 1 - sqrt( sum_f w_f (z_if - t_f)^2 / sum_f w_f )
+    c_if = w_f (z_if - t_f)^2 / sum_f w_f
     z_if = q_if / 255   (q = stored uint8)
 
 Hard filters set S_i = 0. Novelty N_i = min(d_i / D0, 1); blended B_i = (1 - a) S_i + a N_i (0 if filtered).
@@ -27,52 +26,23 @@ def _validated_weights(weights: np.ndarray, expected: int | None = None) -> tupl
     return w, wsum
 
 
-def _validated_ranges(target: np.ndarray, target_ranges: np.ndarray | None) -> np.ndarray:
-    t = np.asarray(target, dtype=np.float64)
-    if t.ndim != 1:
-        raise ValueError("target must be one-dimensional")
-    if target_ranges is None:
-        ranges = np.column_stack((t, t))
-    else:
-        ranges = np.asarray(target_ranges, dtype=np.float64)
-        if ranges.shape != (t.size, 2):
-            raise ValueError(f"target_ranges must have shape ({t.size}, 2)")
-    if not np.all(np.isfinite(ranges)) or np.any(ranges < 0) or np.any(ranges > 1) or np.any(ranges[:, 0] > ranges[:, 1]):
-        raise ValueError("target ranges must be finite, ordered, and within [0, 1]")
-    return ranges
-
-
-def _interval_distance(z: np.ndarray, ranges: np.ndarray) -> np.ndarray:
-    return np.maximum(ranges[:, 0][None, :] - z, 0) + np.maximum(z - ranges[:, 1][None, :], 0)
-
-
 def score(q: np.ndarray, target: np.ndarray, weights: np.ndarray,
-          filters: list[tuple[int, float]] | None = None,
-          target_ranges: np.ndarray | None = None) -> np.ndarray:
+          filters: list[tuple[int, float]] | None = None) -> np.ndarray:
     """q: uint8 (n, F); target: (F,) in [0,1]; weights: (F,) >= 0;
     filters: [(feature_index, z_threshold)] -> exclude cells with z > z_threshold. Returns float64 (n,)."""
     w, wsum = _validated_weights(weights, q.shape[1])
-    ranges = _validated_ranges(target, target_ranges)
     z = q.astype(np.float64) / 255.0
-    valid = np.isfinite(z).all(axis=1)
-    d2 = _interval_distance(z, ranges) ** 2
+    d2 = (z - np.asarray(target, dtype=np.float64)[None, :]) ** 2
     s = 1.0 - np.sqrt((d2 * w[None, :]).sum(axis=1) / wsum)
-    s = np.clip(s, 0.0, 1.0)
-    s[~valid] = 0.0
     for j, thr in filters or []:
         s[z[:, j] > thr] = 0.0
     return s
 
 
-def contributions(qrow: np.ndarray, target: np.ndarray, weights: np.ndarray,
-                  target_ranges: np.ndarray | None = None) -> np.ndarray:
+def contributions(qrow: np.ndarray, target: np.ndarray, weights: np.ndarray) -> np.ndarray:
     w, wsum = _validated_weights(weights, qrow.shape[-1])
     z = qrow.astype(np.float64) / 255.0
-    ranges = _validated_ranges(target, target_ranges)
-    if not np.isfinite(z).all():
-        return np.full(qrow.shape[-1], np.nan)
-    d = _interval_distance(z[None, :], ranges)[0]
-    return w * d ** 2 / wsum
+    return w * (z - target) ** 2 / wsum
 
 
 def novelty(lat: np.ndarray, lon: np.ndarray, analogs: list[dict]) -> np.ndarray:

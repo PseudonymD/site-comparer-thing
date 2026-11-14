@@ -9,9 +9,7 @@
    "bodies": [
     "Mars"
    ],
-   "note": "Hyper-arid, near-sterile soils; NASA rover and life-detection tests.",
-   "validation_class": "development",
-   "documentation_status": "incomplete"
+   "note": "Hyper-arid, near-sterile soils; NASA rover and life-detection tests."
   },
   {
    "id": "haughton",
@@ -23,9 +21,7 @@
     "Mars",
     "Moon"
    ],
-   "note": "Polar-desert impact crater; NASA Haughton-Mars Project.",
-   "validation_class": "development",
-   "documentation_status": "incomplete"
+   "note": "Polar-desert impact crater; NASA Haughton-Mars Project."
   },
   {
    "id": "death_valley",
@@ -36,9 +32,7 @@
    "bodies": [
     "Mars"
    ],
-   "note": "Evaporites, alluvial fans, extreme aridity; rover field tests.",
-   "validation_class": "development",
-   "documentation_status": "incomplete"
+   "note": "Evaporites, alluvial fans, extreme aridity; rover field tests."
   },
   {
    "id": "mcmurdo",
@@ -49,9 +43,7 @@
    "bodies": [
     "Mars"
    ],
-   "note": "Coldest, driest ice-free terrain on Earth; Mars polar analog.",
-   "validation_class": "development",
-   "documentation_status": "incomplete"
+   "note": "Coldest, driest ice-free terrain on Earth; Mars polar analog."
   },
   {
    "id": "university_valley",
@@ -62,9 +54,7 @@
    "bodies": [
     "Mars"
    ],
-   "note": "High, dry valley with ice-cemented ground under a dry surface; Mars subsurface-ice analog (Heldmann et al. 2013).",
-   "validation_class": "parameter-tuning",
-   "documentation_status": "complete"
+   "note": "High, dry valley with ice-cemented ground under a dry surface; Mars subsurface-ice analog (Heldmann et al. 2013)."
   },
   {
    "id": "askja",
@@ -76,9 +66,7 @@
     "Moon",
     "Mars"
    ],
-   "note": "Apollo astronaut geology training (1965, 1967).",
-   "validation_class": "development",
-   "documentation_status": "incomplete"
+   "note": "Apollo astronaut geology training (1965, 1967)."
   },
   {
    "id": "holuhraun",
@@ -89,9 +77,7 @@
    "bodies": [
     "Mars"
    ],
-   "note": "Fresh 2014-15 basalt flow; Mars rover and spectroscopy tests.",
-   "validation_class": "development",
-   "documentation_status": "incomplete"
+   "note": "Fresh 2014-15 basalt flow; Mars rover and spectroscopy tests."
   },
   {
    "id": "mauna_kea",
@@ -103,9 +89,7 @@
     "Moon",
     "Mars"
    ],
-   "note": "PISCES regolith and ISRU tests on volcanic tephra.",
-   "validation_class": "development",
-   "documentation_status": "incomplete"
+   "note": "PISCES regolith and ISRU tests on volcanic tephra."
   },
   {
    "id": "hawaii_lava_tubes",
@@ -117,9 +101,7 @@
     "Moon",
     "Mars"
    ],
-   "note": "Longest known lava tube; cave-habitat and robotics analog.",
-   "validation_class": "development",
-   "documentation_status": "incomplete"
+   "note": "Longest known lava tube; cave-habitat and robotics analog."
   },
   {
    "id": "rio_tinto",
@@ -130,9 +112,7 @@
    "bodies": [
     "Mars"
    ],
-   "note": "Acidic, iron-rich river; jarosite like Meridiani Planum.",
-   "validation_class": "development",
-   "documentation_status": "incomplete"
+   "note": "Acidic, iron-rich river; jarosite like Meridiani Planum."
   },
   {
    "id": "svalbard",
@@ -143,9 +123,7 @@
    "bodies": [
     "Mars"
    ],
-   "note": "Arctic Mars Analog Svalbard Expedition: volcanic + permafrost.",
-   "validation_class": "development",
-   "documentation_status": "incomplete"
+   "note": "Arctic Mars Analog Svalbard Expedition: volcanic + permafrost."
   },
   {
    "id": "utah_mdrs",
@@ -156,9 +134,7 @@
    "bodies": [
     "Mars"
    ],
-   "note": "Mars Society habitat; Jurassic red-bed sediments.",
-   "validation_class": "development",
-   "documentation_status": "incomplete"
+   "note": "Mars Society habitat; Jurassic red-bed sediments."
   },
   {
    "id": "black_point",
@@ -169,9 +145,7 @@
    "bodies": [
     "Moon"
    ],
-   "note": "NASA Desert RATS rover and EVA trials.",
-   "validation_class": "development",
-   "documentation_status": "incomplete"
+   "note": "NASA Desert RATS rover and EVA trials."
   },
   {
    "id": "meteor_crater",
@@ -182,9 +156,7 @@
    "bodies": [
     "Moon"
    ],
-   "note": "Apollo crater-geology training site.",
-   "validation_class": "development",
-   "documentation_status": "incomplete"
+   "note": "Apollo crater-geology training site."
   },
   {
    "id": "lanzarote",
@@ -196,9 +168,7 @@
     "Moon",
     "Mars"
    ],
-   "note": "ESA PANGAEA astronaut geology training; lava tubes.",
-   "validation_class": "development",
-   "documentation_status": "incomplete"
+   "note": "ESA PANGAEA astronaut geology training; lava tubes."
   },
   {
    "id": "pilbara",
@@ -209,9 +179,7 @@
    "bodies": [
     "Mars"
    ],
-   "note": "3.5 Ga stromatolites; biosignature analog for Jezero.",
-   "validation_class": "development",
-   "documentation_status": "incomplete"
+   "note": "3.5 Ga stromatolites; biosignature analog for Jezero."
   },
   {
    "id": "kilauea",
@@ -223,9 +191,7 @@
     "Moon",
     "Mars"
    ],
-   "note": "Active basaltic volcanism; lava-flow and tube studies.",
-   "validation_class": "development",
-   "documentation_status": "incomplete"
+   "note": "Active basaltic volcanism; lava-flow and tube studies."
   }
  ]
 }

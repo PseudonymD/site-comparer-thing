@@ -143,12 +143,7 @@
     2808.7083,
     4217.2179,
     6378.7446
-   ],
-   "resolution": "Native DEM tiles, aggregated to the application cell",
-   "temporal_coverage": "Static elevation product",
-   "data_quality": "DEM-derived; coverage and gap filling reported per feature",
-   "uncertainty": "No site-level uncertainty supplied by the source",
-   "measurement_class": "Derived observation"
+   ]
   },
   {
    "id": "slope_mean",
@@ -269,12 +264,7 @@
     11.4274,
     13.8753,
     30.8522
-   ],
-   "resolution": "Native DEM tiles, aggregated to the application cell",
-   "temporal_coverage": "Static elevation product",
-   "data_quality": "DEM-derived; coverage and gap filling reported per feature",
-   "uncertainty": "No site-level uncertainty supplied by the source",
-   "measurement_class": "Derived observation"
+   ]
   },
   {
    "id": "slope_p90",
@@ -395,12 +385,7 @@
     19.1932,
     22.8648,
     72.6644
-   ],
-   "resolution": "Native DEM tiles, aggregated to the application cell",
-   "temporal_coverage": "Static elevation product",
-   "data_quality": "DEM-derived; coverage and gap filling reported per feature",
-   "uncertainty": "No site-level uncertainty supplied by the source",
-   "measurement_class": "Derived observation"
+   ]
   },
   {
    "id": "tri",
@@ -521,12 +506,7 @@
     171.5434,
     218.4507,
     707.9243
-   ],
-   "resolution": "Native DEM tiles, aggregated to the application cell",
-   "temporal_coverage": "Static elevation product",
-   "data_quality": "DEM-derived; coverage and gap filling reported per feature",
-   "uncertainty": "No site-level uncertainty supplied by the source",
-   "measurement_class": "Derived observation"
+   ]
   },
   {
    "id": "relief",
@@ -647,12 +627,7 @@
     1307.0,
     1603.0,
     7675.0
-   ],
-   "resolution": "Native DEM tiles, aggregated to the application cell",
-   "temporal_coverage": "Static elevation product",
-   "data_quality": "DEM-derived; coverage and gap filling reported per feature",
-   "uncertainty": "No site-level uncertainty supplied by the source",
-   "measurement_class": "Derived observation"
+   ]
   },
   {
    "id": "temp_mean",
@@ -773,12 +748,7 @@
     28.2019,
     28.7769,
     34.2061
-   ],
-   "resolution": "0.5° x 0.625° meteorology; 1° solar, interpolated to the application grid",
-   "temporal_coverage": "Climatology",
-   "data_quality": "Modelled/satellite-derived climatology; coverage and gap filling reported per feature",
-   "uncertainty": "No site-level uncertainty supplied by the source",
-   "measurement_class": "Modelled estimate"
+   ]
   },
   {
    "id": "temp_range",
@@ -899,12 +869,7 @@
     15.768,
     16.1012,
     19.462
-   ],
-   "resolution": "0.5° x 0.625° meteorology; 1° solar, interpolated to the application grid",
-   "temporal_coverage": "Climatology",
-   "data_quality": "Modelled/satellite-derived climatology; coverage and gap filling reported per feature",
-   "uncertainty": "No site-level uncertainty supplied by the source",
-   "measurement_class": "Modelled estimate"
+   ]
   },
   {
    "id": "temp_min",
@@ -1025,12 +990,7 @@
     18.2626,
     19.5913,
     25.5415
-   ],
-   "resolution": "0.5° x 0.625° meteorology; 1° solar, interpolated to the application grid",
-   "temporal_coverage": "Climatology",
-   "data_quality": "Modelled/satellite-derived climatology; coverage and gap filling reported per feature",
-   "uncertainty": "No site-level uncertainty supplied by the source",
-   "measurement_class": "Modelled estimate"
+   ]
   },
   {
    "id": "precip",
@@ -1151,12 +1111,7 @@
     2237.7546,
     2627.2788,
     6179.3286
-   ],
-   "resolution": "0.5° x 0.625° meteorology; 1° solar, interpolated to the application grid",
-   "temporal_coverage": "Climatology",
-   "data_quality": "Modelled/satellite-derived climatology; coverage and gap filling reported per feature",
-   "uncertainty": "No site-level uncertainty supplied by the source",
-   "measurement_class": "Modelled estimate"
+   ]
   },
   {
    "id": "humidity",
@@ -1277,12 +1232,7 @@
     95.409,
     95.9951,
     98.6947
-   ],
-   "resolution": "0.5° x 0.625° meteorology; 1° solar, interpolated to the application grid",
-   "temporal_coverage": "Climatology",
-   "data_quality": "Modelled/satellite-derived climatology; coverage and gap filling reported per feature",
-   "uncertainty": "No site-level uncertainty supplied by the source",
-   "measurement_class": "Modelled estimate"
+   ]
   },
   {
    "id": "solar",
@@ -1403,12 +1353,7 @@
     6.4761,
     6.6543,
     7.35
-   ],
-   "resolution": "0.5° x 0.625° meteorology; 1° solar, interpolated to the application grid",
-   "temporal_coverage": "Climatology",
-   "data_quality": "Modelled/satellite-derived climatology; coverage and gap filling reported per feature",
-   "uncertainty": "No site-level uncertainty supplied by the source",
-   "measurement_class": "Modelled estimate"
+   ]
   },
   {
    "id": "ndvi",
@@ -1650,12 +1595,7 @@
     238.9432,
     258.9709,
     457.0
-   ],
-   "resolution": "250 m source maps; 5 km aggregate used by this pipeline",
-   "temporal_coverage": "Static prediction product",
-   "data_quality": "Global soil prediction; gap policy documented per feature",
-   "uncertainty": "Source uncertainty is not propagated to the grid",
-   "measurement_class": "Modelled estimate"
+   ]
   },
   {
    "id": "sand",
@@ -1776,12 +1716,7 @@
     70.8797,
     75.4869,
     95.7478
-   ],
-   "resolution": "250 m source maps; 5 km aggregate used by this pipeline",
-   "temporal_coverage": "Static prediction product",
-   "data_quality": "Global soil prediction; gap policy documented per feature",
-   "uncertainty": "Source uncertainty is not propagated to the grid",
-   "measurement_class": "Modelled estimate"
+   ]
   },
   {
    "id": "basalt",
@@ -1902,12 +1837,7 @@
     0.8,
     1.0,
     1.0
-   ],
-   "resolution": "Global geological map, aggregated to the application grid",
-   "temporal_coverage": "Static geological mapping",
-   "data_quality": "Regional mapped lithology; not an exposure survey",
-   "uncertainty": "Map-class uncertainty is not propagated",
-   "measurement_class": "Mapped observation"
+   ]
   },
   {
    "id": "ice",
@@ -2028,12 +1958,7 @@
     1.0,
     1.0,
     1.0
-   ],
-   "resolution": "Global geological map, aggregated to the application grid",
-   "temporal_coverage": "Static geological mapping",
-   "data_quality": "Mapped ice/glacier class; not a subsurface-ice product",
-   "uncertainty": "Map-class uncertainty is not propagated",
-   "measurement_class": "Mapped observation"
+   ]
   },
   {
    "id": "lights",
@@ -2154,12 +2079,7 @@
     0.3414,
     0.5164,
     0.9846
-   ],
-   "resolution": "NASA GIBS raster, aggregated to the application grid",
-   "temporal_coverage": "Product imagery period",
-   "data_quality": "Brightness proxy rather than calibrated radiance",
-   "uncertainty": "Not provided; proxy decoding adds uncertainty",
-   "measurement_class": "Proxy"
+   ]
   },
   {
    "id": "aod",
@@ -2280,12 +2200,7 @@
     0.45,
     0.4837,
     0.7244
-   ],
-   "resolution": "NASA GIBS raster, aggregated to the application grid",
-   "temporal_coverage": "Product imagery period",
-   "data_quality": "Colormap-decoded aerosol proxy",
-   "uncertainty": "Not provided; proxy decoding adds uncertainty",
-   "measurement_class": "Proxy"
+   ]
   }
  ],
  "countries": [

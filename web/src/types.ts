@@ -15,11 +15,6 @@ export interface FeatureMeta {
   attempts?: { source: string; error_type?: string; skipped?: string; coverage?: number }[];
   coverage: number | null;
   notes?: string | null;
-  resolution?: string;
-  temporal_coverage?: string;
-  data_quality?: string;
-  uncertainty?: string;
-  measurement_class?: string;
   min: number;
   max: number;
   breakpoints: number[];
@@ -78,8 +73,6 @@ export interface KnownAnalog {
   lon: number;
   bodies: string[];
   note: string;
-  validation_class?: 'held-out' | 'development' | 'parameter-tuning';
-  documentation_status?: 'complete' | 'incomplete';
 }
 
 export interface ValidationFile {
@@ -115,7 +108,6 @@ export interface ScoreRequest {
   type: 'score';
   id: number;
   target: number[];
-  targetRanges: { min: number; max: number }[];
   weights: number[];
   filters: { feature: number; zThreshold: number }[];
   alpha: number;

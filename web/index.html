@@ -40,8 +40,6 @@
       <div class="brand"><span class="brand-mark" aria-hidden="true"></span>Analog Finder</div>
       <nav class="targets" id="targets" aria-label="Target site"></nav>
       <select id="target-select" aria-label="Target site"></select>
-      <div id="mode-selector" class="mode-selector" role="tablist" aria-label="Scientific map mode"></div>
-      <select id="mode-select" aria-label="Scientific map mode"></select>
       <button class="text-btn" id="btn-tour">Take the tour</button>
       <button class="text-btn" id="btn-about">How it works</button>
     </header>
@@ -54,25 +52,22 @@
         <div class="tabs rtabs" role="tablist">
           <button role="tab" data-r="cand" aria-selected="true">Candidates</button>
           <button role="tab" data-r="disc" aria-selected="false">Discoveries</button>
-          <button role="tab" data-r="validation" aria-selected="false">Validation</button>
         </div>
         <div id="rv-cand" class="rv">
           <div class="panel-head">
-            <h2>Best matches</h2>
             <div class="note" id="sites-sub"></div>
             <div id="region-chip" class="hidden"></div>
           </div>
           <ol id="sites"></ol>
         </div>
         <div id="rv-disc" class="rv rv-scroll hidden"></div>
-        <div id="rv-validation" class="rv rv-scroll hidden"></div>
       </div>
       <section id="dossier" class="hidden" aria-live="polite"></section>
     </aside>
     <button class="panel-toggle sheet" id="toggle-right" aria-label="Hide candidates" title="Hide or show candidates"></button>
 
     <div id="legend" class="sheet">
-      <div class="legend-title-row"><div class="eyebrow" id="legend-title">Analog score</div><span class="legend-direction" id="legend-direction">higher is more similar</span></div>
+      <div class="eyebrow" id="legend-title">Analog score</div>
       <div class="legend-hist" id="legend-hist"></div>
       <div class="legend-ticks"><span id="legend-lo"></span><span id="legend-mid"></span><span id="legend-hi"></span></div>
       <div class="legend-foot" id="legend-foot"></div>
@@ -82,7 +77,6 @@
     <button id="heat-toggle" class="sheet" aria-pressed="false">Show heatmap</button>
 
     <div id="about" class="hidden"></div>
-    <div id="report" class="hidden"></div>
     <div id="toast" class="hidden sheet" role="status"></div>
     <script type="module" src="/src/main.ts"></script>
   </body>

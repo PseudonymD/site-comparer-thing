@@ -1,7 +1,6 @@
 // Analog score - TypeScript mirror of pipeline/scoring.py. Spec: docs/scoring.md
 //
-//   S_i  = 1 - sqrt( sum_f w_f d_if^2 / sum_f w_f ),   z_if = q_if / 255
-//   d_if = max(L_f - z_if, 0, z_if - U_f), with L_f = U_f = t_f for point scoring
+//   S_i  = 1 - sqrt( sum_f w_f (z_if - t_f)^2 / sum_f w_f ),   z_if = q_if / 255
 //   c_if = w_f (z_if - t_f)^2 / sum_f w_f
 //   hard filter (f, zthr): S_i = 0 when z_if > zthr
 //   novelty N_i = min(d_i / D0, 1);  blended B_i = (1 - a) S_i + a N_i  (0 if S_i == 0)
@@ -23,34 +22,16 @@ function validateWeights(weights: ArrayLike<number>, expected: number): number {
   return sum;
 }
 
-export interface TargetRange {
-  min: number;
-  max: number;
-}
-
-function validateRanges(target: ArrayLike<number>, ranges?: readonly TargetRange[]): TargetRange[] {
-  const out = ranges ?? Array.from({ length: target.length }, (_, f) => ({ min: target[f], max: target[f] }));
-  if (out.length !== target.length) throw new RangeError(`target ranges must have length ${target.length}`);
-  for (const range of out) {
-    if (!Number.isFinite(range.min) || !Number.isFinite(range.max) || range.min < 0 || range.max > 1 || range.min > range.max) {
-      throw new RangeError('target ranges must be finite, ordered, and within [0, 1]');
-    }
-  }
-  return out.map((range) => ({ min: range.min, max: range.max }));
-}
-
-/** Per-feature lookup table: lut[f*256 + q] = w_f * intervalDistance(q/255)^2 / W. */
-export function buildLut(target: ArrayLike<number>, weights: ArrayLike<number>, filters: Filter[] = [], ranges?: readonly TargetRange[]): Float64Array {
+/** Per-feature lookup table: lut[f*256 + q] = w_f (q/255 - t_f)^2 / W  (Infinity = filtered). */
+export function buildLut(target: ArrayLike<number>, weights: ArrayLike<number>, filters: Filter[] = []): Float64Array {
   const F = target.length;
   const lut = new Float64Array(F * 256);
   const wsum = validateWeights(weights, F);
-  const targetRanges = validateRanges(target, ranges);
   for (let f = 0; f < F; f++) {
     const w = weights[f];
-    const range = targetRanges[f];
+    const t = target[f];
     for (let q = 0; q < 256; q++) {
-      const z = q / 255;
-      const d = Math.max(range.min - z, 0, z - range.max);
+      const d = q / 255 - t;
       lut[f * 256 + q] = (w * d * d) / wsum;
     }
   }
@@ -70,23 +51,19 @@ export function scoreAll(q: Uint8Array, F: number, lut: Float64Array, out: Float
   }
 }
 
-export function scoreCell(qrow: ArrayLike<number>, target: ArrayLike<number>, weights: ArrayLike<number>, filters: Filter[] = [], ranges?: readonly TargetRange[]): number {
-  if (Array.from(qrow).some((value) => !Number.isFinite(value))) return 0;
-  const c = contributions(qrow, target, weights, ranges);
+export function scoreCell(qrow: ArrayLike<number>, target: ArrayLike<number>, weights: ArrayLike<number>, filters: Filter[] = []): number {
+  const c = contributions(qrow, target, weights);
   for (const f of filters) if (qrow[f.feature] / 255 > f.zThreshold) return 0;
   let s = 0;
   for (const v of c) s += v;
-  return Math.min(1, Math.max(0, 1 - Math.sqrt(s)));
+  return 1 - Math.sqrt(s);
 }
 
-export function contributions(qrow: ArrayLike<number>, target: ArrayLike<number>, weights: ArrayLike<number>, ranges?: readonly TargetRange[]): number[] {
+export function contributions(qrow: ArrayLike<number>, target: ArrayLike<number>, weights: ArrayLike<number>): number[] {
   const wsum = validateWeights(weights, target.length);
-  const targetRanges = validateRanges(target, ranges);
   const out: number[] = [];
   for (let f = 0; f < target.length; f++) {
-    const z = qrow[f] / 255;
-    const range = targetRanges[f];
-    const d = Math.max(range.min - z, 0, z - range.max);
+    const d = qrow[f] / 255 - target[f];
     out.push((weights[f] * d * d) / wsum);
   }
   return out;

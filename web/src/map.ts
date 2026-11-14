@@ -44,7 +44,6 @@ export interface MapApi {
   map: maplibregl.Map;
   ready: Promise<void>;
   setScoreImage(img: Uint8ClampedArray, w: number, h: number, blob: Blob | null): Promise<void>;
-  setScoreVisible(visible: boolean): void;
   setOpacity(o: number): void;
   setSites(sites: Site[], label: (s: Site) => string, onClick: (s: Site, i: number) => void): void;
   setAnalogs(analogs: KnownAnalog[]): void;
@@ -164,9 +163,6 @@ export function createMap(container: HTMLElement): MapApi {
     map,
     ready,
     setScoreImage,
-    setScoreVisible(visible) {
-      if (map.getLayer('score')) map.setLayoutProperty('score', 'visibility', visible ? 'visible' : 'none');
-    },
     setOpacity(o: number) {
       opacity = o;
       if (map.getLayer('score')) map.setPaintProperty('score', 'raster-opacity', o);

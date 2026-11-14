@@ -41,11 +41,4 @@ KNOWN_ANALOGS = [
 
 
 def build_known_analogs() -> dict:
-    sites = []
-    for site in KNOWN_ANALOGS:
-        sites.append({
-            **site,
-            "validation_class": "parameter-tuning" if site["id"] == "university_valley" else "development",
-            "documentation_status": "complete" if site["id"] == "university_valley" else "incomplete",
-        })
-    return {"analogs": sites}
+    return {"analogs": KNOWN_ANALOGS}

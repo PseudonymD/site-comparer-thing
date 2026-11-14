@@ -5,7 +5,7 @@ describe('deep links', () => {
   it('round-trips the full view state', () => {
     const s = {
       t: 'mars_jezero', w: Array.from({ length: 18 }, (_, i) => (i % 4) * 0.75), f: [{ id: 'ice', tau: 0.5 }, { id: 'ndvi', tau: 0.35 }],
-      m: 'earth-complications' as const, activity: 'solar-power' as const, x: [{ min: 0.2, max: 0.4 }, { min: 0.8, max: 0.9 }], c: ['NA', 'ZA'], g: ['africa' as const], a: 0.3, r: 'safrica', v: { lat: -24.08, lon: -69.93, zoom: 9.5 }, s: { lat: -24.1, lon: -69.9 }, p: 'globe' as const, b: 'dark' as const,
+      c: ['NA', 'ZA'], g: ['africa' as const], a: 0.3, r: 'safrica', v: { lat: -24.08, lon: -69.93, zoom: 9.5 }, s: { lat: -24.1, lon: -69.9 }, p: 'globe' as const, b: 'dark' as const,
     };
     expect(parseHash(buildHash(s))).toEqual(s);
   });
@@ -16,12 +16,5 @@ describe('deep links', () => {
   });
   it('ignores malformed values', () => {
     expect(parseHash('#w=1_2_x&a=9&v=1,2&s=a,b')).toEqual({ a: 0.6 });
-  });
-  it('keeps old links in direct comparison and validates modes', () => {
-    expect(parseHash('#t=moon_south_pole')).toEqual({ t: 'moon_south_pole' });
-    expect(parseHash('#m=radiation')).toEqual({});
-    expect(parseHash('#m=unknown')).toEqual({});
-    expect(buildHash({ t: 'mars_jezero', m: 'direct' })).toBe('#t=mars_jezero');
-    expect(parseHash('#act=not-an-activity')).toEqual({});
   });
 });

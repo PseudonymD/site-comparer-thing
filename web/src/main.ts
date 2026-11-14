@@ -2,31 +2,21 @@ import './style.css';
 import { loadDataset, type Dataset } from './data';
 import { createMap, type MapApi } from './map';
 import { cssGradient, infernoRgb } from './colormap';
-import { valueFromZ, zThresholdFromValue, type TargetRange } from './scoring';
+import { zThresholdFromValue } from './scoring';
 import { esc, flag, fmtKm, fmtLatLon, fmtValue, GROUP_COLORS } from './format';
 import { renderDossier, hideDossier } from './ui/dossier';
 import { fingerprint } from './ui/fingerprint';
 import { renderAbout } from './about';
-import { buildHash, copyText, parseHash, type LinkState, type MapMode } from './links';
+import { buildHash, copyText, parseHash, type LinkState } from './links';
 import { renderDiscoveries } from './ui/discoveries';
-import { renderValidation } from './ui/validation';
 import { createTour } from './ui/tour';
 import { REGIONS as GEO_REGIONS, matchesGeography, validRegion, type RegionId } from './geography';
-import { hasPositiveWeight, normalizeWeights, redistributeWeight, totalWeight } from './weights';
-import { ACTIVITIES, activityById, type ActivityId } from './activities';
+import { validWeightVector } from './population';
 import type { CellInfo, Discovery, ScoreRequest, ScoreResult, Site, Target } from './types';
 
 export const REGIONS: Record<string, { name: string; bbox: [number, number, number, number] }> = {
   safrica: { name: 'southern Africa', bbox: [11.0, -35.5, 33.0, -16.5] },
 };
-
-const MODES: { id: MapMode; name: string; description: string }[] = [
-  { id: 'direct', name: 'Direct comparison', description: 'Compare Earth conditions with the selected planetary target.' },
-  { id: 'exploration', name: 'Exploration', description: 'Find promising and novel Earth locations for research.' },
-  { id: 'earth-complications', name: 'Comparison + Earth complications', description: 'Keep physical similarity visible while checking practical Earth constraints.' },
-];
-
-const modeInfo = (id: MapMode) => MODES.find((mode) => mode.id === id)!;
 
 interface FilterState {
   id: string; // feature id
@@ -43,10 +33,7 @@ interface GeographyState {
 
 export interface AppState {
   t: number;
-  mode: MapMode;
-  activity: ActivityId;
   weights: number[];
-  ranges: TargetRange[];
   filters: FilterState[];
   alpha: number;
   stretchLow: number;
@@ -134,10 +121,7 @@ async function main() {
   const t0 = Math.max(0, targets.targets.findIndex((t) => t.id === link.t));
   const state: AppState = {
     t: t0,
-    mode: link.m ?? 'direct',
-    activity: link.activity ?? 'rover-mobility',
-    weights: normalizeWeights(targets.targets[t0].weights)!,
-    ranges: targets.targets[t0].vector.map((value) => ({ min: value, max: value })),
+    weights: [...targets.targets[t0].weights],
     filters: [
       { id: 'ndvi', label: 'Exclude vegetation: NDVI >', on: false, tau: 0.35, step: 0.05 },
       { id: 'ice', label: 'Exclude ice cover: fraction >', on: false, tau: 0.5, step: 0.05 },
@@ -212,22 +196,15 @@ async function main() {
   };
 
   // ---------------------------------------------------------------- deep links
-  function defaultWeights(target: Target = app.target()): number[] {
-    return normalizeWeights(target.weights) ?? [];
-  }
-  function rangesChanged(): boolean {
-    return state.ranges.some((range, j) => range.min !== app.target().vector[j] || range.max !== app.target().vector[j]);
-  }
   function linkState(site?: { lat: number; lon: number }): LinkState {
     const t = app.target();
-    const defaults = defaultWeights(t);
-    const wChanged = state.weights.some((w, j) => Math.abs(w - defaults[j]) > 0.005);
+    const wChanged = state.weights.some((w, j) => w !== t.weights[j]);
     const on = state.filters.filter((f) => f.on).map((f) => ({ id: f.id, tau: f.tau }));
     const def = (t.default_filters || []).map((f) => ({ id: f.feature, tau: f.max }));
     const fChanged = JSON.stringify(on) !== JSON.stringify(def);
     const c = mapApi.map.getCenter();
     return {
-      t: t.id, m: state.mode, activity: state.activity, w: wChanged ? state.weights : undefined, x: rangesChanged() ? state.ranges : undefined, f: fChanged ? on : undefined, a: state.alpha || undefined,
+      t: t.id, w: wChanged ? state.weights : undefined, f: fChanged ? on : undefined, a: state.alpha || undefined,
       c: state.geography.countries.length ? state.geography.countries : undefined,
       g: state.geography.regions.length ? state.geography.regions : undefined,
       r: state.region, v: { lat: c.lat, lon: c.lng, zoom: mapApi.map.getZoom() }, s: site,
@@ -249,7 +226,7 @@ async function main() {
   function buildRequest(): ScoreRequest {
     const t = app.target();
     return {
-      type: 'score', id: ++reqId, target: t.vector, targetRanges: state.ranges, weights: state.weights,
+      type: 'score', id: ++reqId, target: t.vector, weights: state.weights,
       filters: state.filters.filter((f) => f.on).map((f) => {
         const fm = meta.features[featIndex(f.id)];
         return { feature: featIndex(f.id), zThreshold: zThresholdFromValue(fm.breakpoints, f.tau) };
@@ -261,17 +238,6 @@ async function main() {
   }
   function requestScore() {
     updateHash();
-    if (!hasPositiveWeight(state.weights)) {
-      dirty = false;
-      mapApi.setScoreVisible(false);
-      mapApi.setSites([], siteLabel, () => {});
-      $('#sites').innerHTML = '<li class="empty-state"><b>Scoring paused.</b><span>Choose at least one feature with a positive percentage weight.</span></li>';
-      $('#sites-sub').textContent = 'Invalid weight configuration.';
-      closeDossier();
-      showWeightValidity();
-      return;
-    }
-    mapApi.setScoreVisible(true);
     dirty = true;
     if (!inFlight) pump();
   }
@@ -328,35 +294,14 @@ async function main() {
   }
   select.onchange = () => selectTarget(+select.value);
 
-  const modeNav = $('#mode-selector');
-  const modeSelect = $<HTMLSelectElement>('#mode-select');
-  MODES.forEach((mode) => {
-    const button = document.createElement('button');
-    button.className = 'mode-option';
-    button.type = 'button';
-    button.role = 'tab';
-    button.textContent = mode.name;
-    button.title = mode.description;
-    button.dataset.mode = mode.id;
-    button.onclick = () => selectMode(mode.id);
-    modeNav.appendChild(button);
-    const option = document.createElement('option');
-    option.value = mode.id;
-    option.textContent = mode.name;
-    modeSelect.appendChild(option);
-  });
-  modeSelect.onchange = () => selectMode(modeSelect.value as MapMode);
-
   // ---------------------------------------------------------------- UI: left panel
   const left = $('#left');
   const sliders: HTMLInputElement[] = [];
   const sliderVals: HTMLElement[] = [];
   const targetLines: HTMLElement[] = [];
-  const rangeMins: HTMLInputElement[] = [];
-  const rangeMaxs: HTMLInputElement[] = [];
-  const rangeLabels: HTMLElement[] = [];
   const filterInputs: { flt: FilterState; cb: HTMLInputElement; num: HTMLInputElement }[] = [];
   const groups = ['Terrain', 'Climate', 'Surface', 'Remoteness'] as const;
+  const fmtW = (w: number) => w.toFixed(2).replace(/\.?0+$/, '');
   /** Paint the filled part of a range input (CSS reads --v). */
   const fill = (el: HTMLInputElement) => el.style.setProperty('--v', `${((+el.value - +el.min) / (+el.max - +el.min)) * 100}%`);
 
@@ -386,17 +331,8 @@ async function main() {
         sum += state.weights[j];
         n++;
       });
-      $(`#gsum-${g}`).textContent = `${n} layers · ${sum.toFixed(0)}%`;
+      $(`#gsum-${g}`).textContent = `${n} layers · weight ${fmtW(sum)}`;
     }
-    showWeightValidity();
-  }
-  function showWeightValidity() {
-    const total = totalWeight(state.weights);
-    const valid = hasPositiveWeight(state.weights);
-    const el = $('#weights-total');
-    el.textContent = valid ? `${total.toFixed(0)}% total` : 'Invalid: choose at least one feature';
-    el.classList.toggle('invalid', !valid);
-    $('#weights').classList.toggle('invalid-config', !valid);
   }
 
   const countryOptions = [...new Map(
@@ -424,27 +360,24 @@ async function main() {
           <div id="t-glyph"></div>
         </div>
         <p id="t-blurb"></p>
-        <p class="task-hint"><b>Explore:</b> adjust the model only when you want to test a different scientific emphasis.</p>
-        <div id="mode-summary" class="mode-summary"></div>
-        <div id="mode-tools"></div>
         <button class="vbadge" id="t-valid" title="How well do known analogs score? Click for the method."></button>
         <button class="text-btn" id="best-site">Fly to the best match</button>
       </div>
       ${synth.length ? `<div class="warn-box"><b>${synth.length} of ${F} layers ${synth.length > 1 ? 'are placeholders' : 'is a placeholder'}</b> in this build (${synth.map((s) => esc(meta.features[featIndex(s)].name)).join(', ')}). Treat rankings as illustrative.</div>` : ''}
       ${meta.bbox ? `<div class="warn-box">Regional build: only ${meta.bbox.join(', ')} is included.</div>` : ''}
       <div class="tabs" role="tablist">
-        <button role="tab" data-tab="weights" aria-selected="true" aria-controls="pane-weights">Adjust model</button>
-        <button role="tab" data-tab="filters" aria-selected="false" aria-controls="pane-filters">Limit results<span class="count" id="tab-filters-n"></span></button>
-        <button role="tab" data-tab="view" aria-selected="false" aria-controls="pane-view">Map</button>
+        <button role="tab" data-tab="weights" aria-selected="true">Weights</button>
+        <button role="tab" data-tab="filters" aria-selected="false">Filters<span class="count" id="tab-filters-n"></span></button>
+        <button role="tab" data-tab="view" aria-selected="false">View</button>
       </div>
       <div class="tab-body">
-        <div class="pane" id="pane-weights" role="tabpanel">
-          <div class="pane-intro"><p class="note">Set percentage importance and expand acceptable target ranges when scientifically justified. The default model is the recommended starting point.</p><span id="weights-total" class="weights-total" aria-live="polite"></span><button class="text-btn" id="reset-w">Reset model</button></div>
+        <div class="pane" id="pane-weights">
+          <div class="pane-intro"><p class="note">How much each layer counts, from 0 to 3. Under each name: the target's value and its Earth percentile (p0 lowest, p100 highest).</p><button class="text-btn" id="reset-w">Reset</button></div>
           <div id="weights"></div>
         </div>
-        <div class="pane hidden" id="pane-filters" role="tabpanel">
+        <div class="pane hidden" id="pane-filters">
           <h4>Leave out</h4>
-          <p class="note">Exclude places that do not meet a practical condition. Excluded cells score zero.</p>
+          <p class="note">Cells past these limits score zero.</p>
           <div id="filters"></div>
           <div class="geo-filter">
             <div class="geo-head"><h4>Geography</h4><button class="text-btn" id="reset-geo">Reset</button></div>
@@ -458,7 +391,7 @@ async function main() {
           <input type="range" id="alpha" min="0" max="0.6" step="0.02" value="${state.alpha}">
           <p class="note">Mixes in distance from the ${ds.analogs.length} known analog sites (levels off at ${meta.novelty_saturation_km.toLocaleString()} km), so candidates nobody has used yet rise.</p>
         </div>
-        <div class="pane hidden" id="pane-view" role="tabpanel">
+        <div class="pane hidden" id="pane-view">
           <div class="field"><span>Map shape</span><div class="seg" id="seg-proj"><button data-v="mercator">Flat</button><button data-v="globe">Globe</button></div></div>
           <div class="field"><span>Background</span><div class="seg" id="seg-base"><button data-v="satellite">Satellite</button><button data-v="dark">Plain dark</button></div></div>
           <h4>Start colour at Earth percentile <span class="mono" id="stretch-val"></span></h4>
@@ -475,11 +408,7 @@ async function main() {
     tabBtns.forEach((b) => {
       b.onclick = () => {
         tabBtns.forEach((o) => o.setAttribute('aria-selected', String(o === b)));
-        for (const id of ['weights', 'filters', 'view']) {
-          const pane = $(`#pane-${id}`);
-          pane.classList.toggle('hidden', id !== b.dataset.tab);
-          pane.setAttribute('aria-hidden', String(id !== b.dataset.tab));
-        }
+        for (const id of ['weights', 'filters', 'view']) $(`#pane-${id}`).classList.toggle('hidden', id !== b.dataset.tab);
       };
     });
 
@@ -488,53 +417,38 @@ async function main() {
     for (const g of groups) {
       const sec = document.createElement('details');
       sec.className = 'group';
-      sec.open = false;
+      sec.open = true;
       sec.innerHTML = `<summary><i class="swatch" style="background:${GROUP_COLORS[g]}"></i><span>${g}</span><em id="gsum-${g}"></em></summary>`;
       meta.features.forEach((f, j) => {
         if (f.ui_group !== g) return;
         const row = document.createElement('div');
         row.className = 'wrow';
-        row.dataset.feature = f.id;
         const badge = f.synthetic ? '<span class="badge synth">placeholder</span>' : f.proxy ? '<span class="badge proxy">proxy</span>' : '';
-        row.innerHTML = `<div class="wl"><label for="w-${f.id}">${esc(f.name)}${badge}</label><div class="tv"></div><details class="range-detail"><summary>Acceptable range <span class="range-label"></span></summary><div class="range-pair"><label>min <input class="range-min" type="range" min="0" max="1" step="0.01" aria-label="${esc(f.name)} minimum percentile"></label><label>max <input class="range-max" type="range" min="0" max="1" step="0.01" aria-label="${esc(f.name)} maximum percentile"></label></div><p class="range-note">Percentile boundaries use valid observed Earth data.</p></details></div><input type="range" id="w-${f.id}" min="0" max="100" step="1" aria-label="${esc(f.name)} percentage weight"><span class="val"></span>`;
-        const input = row.querySelector<HTMLInputElement>(`#w-${f.id}`)!;
+        row.innerHTML = `<div class="wl"><label for="w-${f.id}">${esc(f.name)}${badge}</label><div class="tv"></div></div><input type="range" id="w-${f.id}" min="0" max="3" step="0.25"><span class="val"></span>`;
+        const input = row.querySelector('input')!;
         input.addEventListener('input', () => {
-          state.weights = redistributeWeight(state.weights, j, +input.value);
-          syncSliders();
+          state.weights[j] = +input.value;
+          if (!validWeightVector(state.weights, F)) {
+            state.weights[j] = 0.25;
+            input.value = '0.25';
+            toast('At least one feature must have a positive weight.');
+          }
+          sliderVals[j].textContent = fmtW(state.weights[j]);
+          row.classList.toggle('off', state.weights[j] === 0);
           fill(input);
+          syncGroupSums();
           requestScore();
         });
-        const minInput = row.querySelector<HTMLInputElement>('.range-min')!;
-        const maxInput = row.querySelector<HTMLInputElement>('.range-max')!;
-        const rangeLabel = row.querySelector<HTMLElement>('.range-label')!;
-        const updateRange = () => {
-          const min = +minInput.value;
-          const max = +maxInput.value;
-          if (min > max) {
-            if (document.activeElement === minInput) maxInput.value = String(min);
-            else minInput.value = String(max);
-          }
-          state.ranges[j] = { min: +minInput.value, max: +maxInput.value };
-          syncRangeUI(j);
-          requestScore();
-        };
-        minInput.addEventListener('input', updateRange);
-        maxInput.addEventListener('input', updateRange);
         sliders[j] = input;
         sliderVals[j] = row.querySelector('.val')!;
         targetLines[j] = row.querySelector('.tv')!;
-        rangeMins[j] = minInput;
-        rangeMaxs[j] = maxInput;
-        rangeLabels[j] = rangeLabel;
         sec.appendChild(row);
       });
       wDiv.appendChild(sec);
     }
     $('#reset-w').onclick = () => {
-      state.weights = defaultWeights();
-      state.ranges = app.target().vector.map((value) => ({ min: value, max: value }));
+      state.weights = [...app.target().weights];
       syncSliders();
-      syncTargetUI();
       requestScore();
     };
     $('#best-site').onclick = () => {
@@ -700,18 +614,16 @@ async function main() {
     root.dataset.body = t.body.toLowerCase();
     targetBtns.forEach((el, i) => el.setAttribute('aria-pressed', String(i === state.t)));
     select.value = String(state.t);
-    $('#t-eyebrow').textContent = `${t.body} target`;
+    $('#t-eyebrow').textContent = `${t.body} · matching against`;
     $('#t-name').textContent = siteName(t);
     $('#t-blurb').textContent = t.blurb;
     $('#t-glyph').innerHTML = fingerprint(meta.features, t.vector, null, 84, `Fingerprint of ${t.name}: each spoke is one layer, longer means higher among Earth's land`);
     meta.features.forEach((f, j) => {
       const raw = t.raw[f.id];
       const pct = Math.round(t.vector[j] * 100);
-      const range = state.ranges[j];
-      const interval = `acceptable p${Math.round(range.min * 100)}–p${Math.round(range.max * 100)}`;
       targetLines[j].innerHTML = raw.value === null
         ? `<span class="beyond">beyond Earth</span>`
-        : raw.beyond_earth ? `${fmtValue(raw.value, f)} · <span class="beyond">beyond Earth</span> · ${interval}` : `${fmtValue(raw.value, f)} · p${pct} · ${interval}`;
+        : raw.beyond_earth ? `${fmtValue(raw.value, f)} · <span class="beyond">beyond Earth</span>` : `${fmtValue(raw.value, f)} · p${pct}`;
       const tv = raw.value === null ? `beyond Earth's max (clamped to ${fmtValue(raw.clamped, f)})` : fmtValue(raw.value, f) + (raw.beyond_earth ? ` → clamped ${fmtValue(raw.clamped, f)}` : '');
       const lbl = left.querySelector(`label[for="w-${f.id}"]`) as HTMLElement;
       const tip = `${f.description}\nSource: ${f.source_name}${f.synthetic ? ' (placeholder data)' : ''}\nTarget value: ${tv} (higher than ${pct}% of Earth's land)`;
@@ -721,55 +633,6 @@ async function main() {
     mapApi.setTargetBody(t.body);
     syncSliders();
     syncBadge();
-    syncModeUI();
-    updateHash();
-  }
-
-  function syncModeUI() {
-    const info = modeInfo(state.mode);
-    modeNav.querySelectorAll<HTMLButtonElement>('.mode-option').forEach((button) => {
-      const selected = button.dataset.mode === state.mode;
-      button.setAttribute('aria-selected', String(selected));
-      button.tabIndex = selected ? 0 : -1;
-    });
-    modeSelect.value = state.mode;
-    $('#mode-summary').innerHTML = `<div class="mode-label"><span class="mode-dot mode-${state.mode}"></span><b>${esc(info.name)}</b></div><p>${esc(info.description)}</p>`;
-    const tools = $('#mode-tools');
-    if (state.mode === 'direct') {
-      tools.innerHTML = '<div class="mode-note"><b>Similarity baseline</b><span>Higher scores mean the Earth location is closer to the target across the selected measurements.</span></div>';
-      syncActivityHighlights([]);
-    } else if (state.mode === 'exploration') {
-      const activity = activityById(state.activity);
-      tools.innerHTML = `<div class="mode-note activity-panel"><b>Research activity</b><label class="activity-select-label" for="activity-select">Evidence context<select id="activity-select" class="mode-activity">${ACTIVITIES.map((candidate) => `<option value="${candidate.id}" ${candidate.id === activity.id ? 'selected' : ''} ${candidate.availability === 'disabled' ? 'disabled' : ''}>${esc(candidate.name)}${candidate.availability === 'disabled' ? ' — unavailable' : ''}</option>`).join('')}</select></label><div class="activity-evidence"><span class="activity-status ${activity.availability}">${activity.availability}</span><span>${esc(activity.description)}</span><b>Relevant measurements</b><span>${activity.measurements.length ? activity.measurements.map((measurement) => esc(measurement)).join(' · ') : 'None available'}</span><b>Recommendation</b><span>${esc(activity.recommendation)}</span><details><summary>Limitations and data sources</summary><ul>${activity.datasets.map((dataset) => `<li>${esc(dataset)}</li>`).join('')}${activity.limitations.map((limitation) => `<li>${esc(limitation)}</li>`).join('')}</ul></details></div><span id="activity-note">Activity context changes the evidence shown here and does not change feature weights or the similarity score.</span></div>`;
-      const activitySelect = $<HTMLSelectElement>('#activity-select');
-      activitySelect.onchange = () => {
-        state.activity = activitySelect.value as ActivityId;
-        syncModeUI();
-        if (lastResult) onScored(lastResult);
-        updateHash();
-      };
-      syncActivityHighlights(activity.featureIds);
-    } else if (state.mode === 'earth-complications') {
-      tools.innerHTML = '<div class="mode-note mode-unavailable"><b>Earth complications</b><span>Complication measurements are not included in this dataset yet.</span><span>The map below remains the physical-similarity baseline; no complication values are being inferred.</span></div>';
-      syncActivityHighlights([]);
-    }
-    const legendDirection = $('#legend-direction');
-    legendDirection.textContent = 'higher is more similar';
-  }
-
-  function syncActivityHighlights(featureIds: string[]) {
-    const active = new Set(featureIds);
-    left.querySelectorAll<HTMLElement>('.wrow').forEach((row) => {
-      row.classList.toggle('activity-relevant', active.has(row.dataset.feature ?? ''));
-    });
-  }
-
-  function selectMode(mode: MapMode) {
-    if (!MODES.some((candidate) => candidate.id === mode)) return;
-    state.mode = mode;
-    syncModeUI();
-    if (lastResult) onScored(lastResult);
-    drawLegend(lastResult);
     updateHash();
   }
 
@@ -794,33 +657,18 @@ async function main() {
   function syncSliders() {
     meta.features.forEach((_, j) => {
       sliders[j].value = String(state.weights[j]);
-      sliderVals[j].textContent = `${state.weights[j].toFixed(0)}%`;
+      sliderVals[j].textContent = fmtW(state.weights[j]);
       sliders[j].closest('.wrow')!.classList.toggle('off', state.weights[j] === 0);
       fill(sliders[j]);
-      syncRangeUI(j);
     });
     syncGroupSums();
   }
 
-  function syncRangeUI(j: number) {
-    const f = meta.features[j];
-    const range = state.ranges[j];
-    if (!rangeMins[j] || !rangeMaxs[j]) return;
-    rangeMins[j].value = String(range.min);
-    rangeMaxs[j].value = String(range.max);
-    rangeLabels[j].textContent = `p${Math.round(range.min * 100)}–p${Math.round(range.max * 100)}`;
-    const minValue = valueFromZ(f.breakpoints, range.min);
-    const maxValue = valueFromZ(f.breakpoints, range.max);
-    rangeLabels[j].title = `${fmtValue(minValue, f)} to ${fmtValue(maxValue, f)}`;
-  }
-
   function selectTarget(i: number) {
     state.t = i;
-    state.weights = normalizeWeights(targets.targets[i].weights)!;
-    state.ranges = targets.targets[i].vector.map((value) => ({ min: value, max: value }));
+    state.weights = [...targets.targets[i].weights];
     applyDefaultFilters(targets.targets[i]);
     syncTargetUI();
-    if (!$('#rv-validation').classList.contains('hidden')) renderValidation($('#rv-validation'), ds, app.target().id, activityById(state.activity));
     closeDossier();
     requestScore();
   }
@@ -840,16 +688,6 @@ async function main() {
     });
   }
   function setPanel(side: 'left' | 'right', open: boolean) {
-    const narrow = window.innerWidth < 900;
-    if (narrow && open) {
-      const other = side === 'left' ? 'right' : 'left';
-      body.classList.add(`${other}-closed`);
-      const otherBtn = $(`#toggle-${other}`);
-      const otherWhat = other === 'left' ? 'controls' : 'candidates';
-      otherBtn.textContent = '›';
-      otherBtn.setAttribute('aria-label', `Show ${otherWhat}`);
-      otherBtn.title = `Show ${otherWhat}`;
-    }
     body.classList.toggle(`${side}-closed`, !open);
     const btn = $(`#toggle-${side}`);
     const what = side === 'left' ? 'controls' : 'candidates';
@@ -938,12 +776,7 @@ async function main() {
     updateHash();
   }
 
-  function drawLegend(res: ScoreResult | null) {
-    if (!res) {
-      $('#legend-title').textContent = state.mode === 'direct' ? 'Analog score' : `Similarity baseline · ${modeInfo(state.mode).name}`;
-      $('#legend-foot').textContent = 'Waiting for the scoring engine';
-      return;
-    }
+  function drawLegend(res: ScoreResult) {
     const { lo, hi } = res.stats;
     const h = res.hist;
     const N = 36;
@@ -962,24 +795,15 @@ async function main() {
     $('#legend-lo').textContent = (lo * 100).toFixed(1);
     $('#legend-mid').textContent = `99th percentile ${(res.stats.p99 * 100).toFixed(1)}`;
     $('#legend-hi').textContent = (hi * 100).toFixed(1);
-    const title = state.mode === 'direct' ? 'Analog score' : 'Similarity baseline';
-    $('#legend-title').textContent = `${title}${state.alpha > 0 ? ' + novelty' : ''} · ${shortName(app.target())}`;
+    $('#legend-title').textContent = state.alpha > 0 ? `Analog score + novelty · ${shortName(app.target())}` : `Analog score · ${shortName(app.target())}`;
     $('#legend-foot').textContent = `${res.stats.valid.toLocaleString()} cells re-scored in ${Math.round(res.timings.total)} ms`;
   }
 
   function onScored(res: ScoreResult) {
-    if (!hasPositiveWeight(state.weights)) return;
     void mapApi.setScoreImage(res.image, res.width, res.height, res.blob);
     const list = $('#sites');
-    list.innerHTML = res.sites.length ? '' : '<li class="empty-state"><b>No locations match these limits.</b><span>Remove a filter or reset the model to see candidates again.</span><button class="text-btn" id="empty-reset">Reset limits</button></li>';
-    $('#empty-reset')?.addEventListener('click', () => {
-      state.filters.forEach((f) => (f.on = false));
-      state.geography = { countries: [], regions: [] };
-      applyDefaultFilters(app.target());
-      requestScore();
-    });
+    list.innerHTML = '';
     const span = Math.max(1e-6, res.stats.hi - res.stats.lo);
-    const activityNote = state.mode === 'exploration' ? activityById(state.activity).candidateNote : '';
     let currentRank: number | undefined;
     res.sites.forEach((s, i) => {
       const c = app.countryName(s.country);
@@ -987,11 +811,11 @@ async function main() {
       const isNew = s.noveltyKm > 500;
       const frac = Math.min(1, Math.max(0.04, (s.blended - res.stats.lo) / span));
       if (current && s.cell === current.cell) currentRank = i + 1;
-      li.innerHTML = `<button class="site${currentRank === i + 1 ? ' active' : ''}" aria-label="${i + 1}. ${esc(c.name || 'Unknown')}, similarity ${(s.blended * 100).toFixed(1)} out of 100, ${fmtLatLon(s.lat, s.lon)}" title="${fmtKm(s.noveltyKm)} from the nearest known analog site">
+      li.innerHTML = `<button class="site${currentRank === i + 1 ? ' active' : ''}" title="${fmtKm(s.noveltyKm)} from the nearest known analog site">
         <span class="rank">${i + 1}</span>
         <span class="where"><span class="name">${flag(c.iso)} ${esc(c.name || 'Unknown')}${isNew ? '<span class="tag" title="More than 500 km from any known analog site">new</span>' : ''}</span>
-        <span class="sub">${fmtLatLon(s.lat, s.lon)} · ${s.nCells > 1 ? `${Math.round(s.areaKm2).toLocaleString()} km²` : '1 cell'}${activityNote ? `<span class="activity-context">${esc(activityNote)}</span>` : ''}</span></span>
-        <span class="score"><b>${(s.blended * 100).toFixed(1)}<small>/100</small></b><span class="score-bar"><i style="width:${(frac * 100).toFixed(0)}%"></i></span></span></button>`;
+        <span class="sub">${fmtLatLon(s.lat, s.lon)} · ${s.nCells > 1 ? `${Math.round(s.areaKm2).toLocaleString()} km²` : '1 cell'}</span></span>
+        <span class="score"><b>${(s.blended * 100).toFixed(1)}</b><span class="score-bar"><i style="width:${(frac * 100).toFixed(0)}%"></i></span></span></button>`;
       const btn = li.firstElementChild as HTMLButtonElement;
       btn.onclick = () => selectSite(s, i);
       btn.onmouseenter = btn.onfocus = () => mapApi.pulseSite(i);
@@ -999,8 +823,8 @@ async function main() {
       list.appendChild(li);
     });
     $('#sites-sub').textContent = res.sites.length
-      ? `Best ${res.sites.length} of ${res.stats.valid.toLocaleString()} land cells${state.region !== 'world' ? ` · ${REGIONS[state.region].name} only` : ''}. Similarity is scored from 0 to 100.`
-      : 'No cells pass the current limits.';
+      ? `Best ${res.sites.length} of ${res.stats.valid.toLocaleString()} land cells${state.region !== 'world' ? ` (shown: ${REGIONS[state.region].name} only)` : ''}. Score out of 100.`
+      : 'No cells pass the current filters. Loosen one in Filters.';
     syncRegionChip();
     mapApi.setSites(res.sites, siteLabel, (s, i) => selectSite(s, i));
     drawLegend(res);
@@ -1045,12 +869,11 @@ async function main() {
 
   // ---------------------------------------------------------------- right-panel tabs, discoveries, region
   const rtabs = document.querySelectorAll<HTMLButtonElement>('.rtabs button');
-  function showRightTab(id: 'cand' | 'disc' | 'validation') {
+  function showRightTab(id: 'cand' | 'disc') {
     rtabs.forEach((b) => b.setAttribute('aria-selected', String(b.dataset.r === id)));
-    for (const k of ['cand', 'disc', 'validation']) $(`#rv-${k}`).classList.toggle('hidden', k !== id);
-    if (id === 'validation') renderValidation($('#rv-validation'), ds, app.target().id, activityById(state.activity));
+    for (const k of ['cand', 'disc']) $(`#rv-${k}`).classList.toggle('hidden', k !== id);
   }
-  rtabs.forEach((b) => (b.onclick = () => showRightTab(b.dataset.r as 'cand' | 'disc' | 'validation')));
+  rtabs.forEach((b) => (b.onclick = () => showRightTab(b.dataset.r as 'cand' | 'disc')));
   function syncRegionChip() {
     const chip = $('#region-chip');
     chip.classList.toggle('hidden', state.region === 'world');
@@ -1124,14 +947,8 @@ async function main() {
   mapApi.setAnalogs(ds.analogs);
   // Apply a shared link (weights, filters, novelty, view) on top of the target defaults.
   if (link.w) {
-    const weights = normalizeWeights(link.w);
-    if (weights) state.weights = weights;
+    if (validWeightVector(link.w, F)) state.weights = [...link.w];
     else toast('The shared link contained invalid weights; target defaults were restored.');
-  }
-  if (link.x?.length === F && link.x.every((range) => range.min <= range.max)) {
-    state.ranges = link.x.map((range) => ({ min: range.min, max: range.max }));
-  } else if (link.x) {
-    toast('The shared link contained invalid target ranges; target points were restored.');
   }
   if (link.f) {
     for (const flt of state.filters) {
