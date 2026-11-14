@@ -69,7 +69,10 @@ export async function loadDataset(onProgress: Progress): Promise<Dataset> {
     getJson<{ analogs: KnownAnalog[] }>('known_analogs.json'),
     getJson<ValidationFile>('validation.json').catch(() => null),
   ]);
-  const files = [meta.files.features, meta.files.cells, meta.files.countries];
+  // The .gz files are served with a one-year immutable cache (web/vercel.json); the version query makes a
+  // new pipeline run (new meta.generated) fetch fresh copies.
+  const v = `?v=${encodeURIComponent(meta.generated)}`;
+  const files = [meta.files.features, meta.files.cells, meta.files.countries].map((f) => f + v);
   const sizes = await Promise.all(files.map((f) => headSize(BASE + f)));
   const fallbackSizes = [meta.n_cells * meta.n_features * 0.6, meta.n_cells * 1.4, meta.n_cells * 0.02];
   const total = sizes.reduce((a, s, i) => a + (s || fallbackSizes[i]), 0);

@@ -4,7 +4,7 @@
 
 Astronauts train, and rovers get tested, in places on Earth that resemble the Moon or Mars. Until now those analog sites have been chosen by expert intuition. Terrestrial Analog Finder describes **every one of Earth's ~2.1 million land cells (0.1°)** with **18 open data layers**: terrain, climate, surface, geology and remoteness, from NASA and partner agencies. It scores each cell against six planetary targets: the lunar south pole (Artemis), a lunar mare lava tube, and Mars' Jezero crater, Gale crater, Arcadia Planitia and the north polar deposits. Scoring runs live in your browser. You can reweight any factor, apply hard filters, and boost *novelty* to surface new candidates far from today's known analogs. Each candidate comes with an explanation and a 30 m terrain drill-down.
 
-**Live demo:** https://pseudonymd.github.io/site-comparer-thing/ (published by GitHub Actions on every push to `main`)
+**Live demo:** https://site-comparer-thing.vercel.app (hosted on Vercel, rebuilt on every push to `main`; pull requests get preview URLs)
 
 ![Screenshot](docs/screenshot.png)
 
@@ -56,7 +56,7 @@ npm install
 npm run dev
 ```
 
-Tests: `npm test` (web) and `python -m pytest pipeline/tests` (pipeline).
+Tests: `npm test` (web) and `python -m pytest pipeline/tests` (pipeline). **GitHub Actions is currently unavailable on this account (billing lock), so run the tests locally before opening a pull request.** Vercel still builds a preview for every pull request.
 
 ## Data sources
 
@@ -83,7 +83,8 @@ Tests: `npm test` (web) and `python -m pytest pipeline/tests` (pipeline).
 pipeline/   Python data pipeline (sources/, run.py, cli.py, tests/, README.md)
 web/        Vite + TypeScript + MapLibre web app (src/, public/data/)
 docs/       scoring spec, decisions log, demo script, fixtures
-.github/    deploy.yml (Pages), release-data.yml (data as release assets), tests.yml
+.github/    tests.yml, deploy.yml (legacy Pages, manual only), release-data.yml (manual)
+web/vercel.json  Vercel cache headers (hosting)
 ```
 
 ## Team

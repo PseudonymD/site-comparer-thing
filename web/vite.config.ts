@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite';
 
-// GitHub Pages serves the site from /<repo-name>/. Override with VITE_BASE if needed.
-const base = process.env.VITE_BASE ?? (process.env.GITHUB_ACTIONS ? '/site-comparer-thing/' : '/');
+// Hosted on Vercel at the domain root. Set VITE_BASE to serve from a sub-path (e.g. /site-comparer-thing/).
+const base = process.env.VITE_BASE ?? '/';
 
 export default defineConfig({
   base,
