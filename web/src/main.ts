@@ -13,6 +13,8 @@ import { createTour } from './ui/tour';
 import { groupTargets, type LeftTab, type RightTab, type TourSnapshot } from './ui/tourState';
 import { REGIONS as GEO_REGIONS, matchesGeography, validRegion, type RegionId } from './geography';
 import { validWeightVector } from './population';
+import { applyPrefs, initSettings } from './settings';
+import { initStart } from './start';
 import type { CellInfo, Discovery, ScoreRequest, ScoreResult, Site, Target } from './types';
 
 export const REGIONS: Record<string, { name: string; bbox: [number, number, number, number] }> = {
@@ -78,6 +80,11 @@ function toast(msg: string, ms = 3500) {
 }
 
 async function main() {
+  // Appearance and the start screen come first so they work while the data streams in.
+  applyPrefs();
+  const settings = initSettings();
+  const start = initStart((from) => settings.open(from));
+  document.getElementById('btn-start')!.onclick = () => start.show();
   // The map (and the known analog sites) appear while the 30 MB grid streams in.
   const mapApi = createMap($('#map'));
   let ds: Dataset;
@@ -970,6 +977,11 @@ async function main() {
   root.style.setProperty('--inferno', cssGradient());
   $('#btn-about').onclick = () => renderAbout(app, showPlace);
   $('#btn-limits').onclick = openLimits;
+  settings.attachAdvanced({
+    groups: groups.map((g) => ({ name: g, color: GROUP_COLORS[g], features: meta.features.filter((f) => f.ui_group === g).map((f) => ({ id: f.id, name: f.name })) })),
+    filterCount: state.filters.length,
+  });
+  $('#btn-settings').onclick = () => settings.open($('#btn-settings'));
   $('#legend-limits').onclick = openLimits;
   // Mobile bottom nav and Guide sheet: thin wrappers over the existing controls.
   $('#mnav-map').onclick = () => {
@@ -991,6 +1003,10 @@ async function main() {
   $('#guide-limits').onclick = () => {
     setGuide(false);
     openLimits();
+  };
+  $('#guide-settings').onclick = () => {
+    setGuide(false);
+    settings.open($('#mnav-guide'));
   };
   $('#toggle-left').onclick = () => setPanel('left', body.classList.contains('left-closed'));
   $('#heat-toggle').onclick = () => {
