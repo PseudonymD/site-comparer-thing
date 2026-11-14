@@ -20,7 +20,7 @@ interface Step {
 
 const STEPS: Step[] = [
   {
-    caption: 'Where on Earth is most like the Moon? Every one of 2.1 million land cells, scored against the lunar south pole.',
+    caption: 'Where on Earth is most like the Moon? 2.1 million land cells, scored live on 18 open data layers.',
     ms: 5000,
     run: (a) => {
       a.closeSite();
@@ -31,34 +31,34 @@ const STEPS: Step[] = [
     },
   },
   {
-    caption: 'Switch to Mars: Jezero crater. The known analogs (Atacama, Death Valley) light up, as validation expects.',
-    ms: 5000,
+    caption: 'Switch to Mars, Jezero crater: the known analogs light up.',
+    ms: 4500,
     run: (a) => {
       a.selectTarget('mars_jezero');
       a.worldView();
     },
   },
   {
-    caption: 'Favour new places: the novelty slider pushes up good matches far from every known analog site.',
-    ms: 4500,
+    caption: 'Favour new places: good matches far from any known site rise.',
+    ms: 4000,
     run: (a) => a.setAlpha(0.4),
   },
   {
-    caption: 'A discovery the scoring picked by itself, explained in real units: what matches, what doesn’t, what it is good for.',
-    ms: 6000,
+    caption: 'A discovery, explained in real units: what matches, what doesn’t, what it’s for.',
+    ms: 5500,
     run: (a) => {
       a.showTab('disc');
       a.openFirstDiscovery();
     },
   },
   {
-    caption: 'Zoom in: a live 30 m terrain close-up compares the site’s slopes with the real planetary terrain.',
-    ms: 5500,
+    caption: 'Zoom in: a live 30 m terrain close-up against the real Mars slopes.',
+    ms: 5000,
     run: (a) => a.runDrill(),
   },
   {
-    caption: 'Side by side: the planetary terrain next to its Earth stand-in. Terrestrial Analog Finder: open data, open source.',
-    ms: 6000,
+    caption: 'Mars side by side with its Earth stand-in. Terrestrial Analog Finder: open data, open source.',
+    ms: 5500,
     run: (a) => a.openPlanet(),
   },
 ];

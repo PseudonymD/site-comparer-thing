@@ -80,8 +80,14 @@ blended B_i = (1 − α) S_i + α N_i              hard filters set S_i = 0</spa
       <h2>Target references</h2>
       <ul class="refs">${refs}</ul>
 
+      <h2>Use of AI</h2>
+      <p>This project was built with Anthropic's Claude through the Claude Code coding assistant. Most of the code and much of the documentation was written by Claude under our direction, then reviewed and tested by us. We chose the challenge framing, the method, the target sites and default weights, and the validation design. Every literature value is cited above, and judgement calls are logged in <code>docs/decisions.md</code>. No AI-generated images or video are used.</p>
+
+      <h2>Credits</h2>
+      <p class="note">Data: NASA POWER, NASA GIBS (MODIS NDVI, MERRA-2 aerosols, VIIRS Black Marble), SRTM within AWS Terrain Tiles (Mapzen/Tilezen; also GMTED2010, ETOPO1, NED), NASA Moon Trek and Mars Trek imagery, ISRIC SoilGrids (CC-BY 4.0), Natural Earth (public domain), GLiM / Macrostrat when used for basalt (CC-BY), Esri basemaps. Software: MapLibre GL JS (BSD-3-Clause), Vite, TypeScript, NumPy, SciPy, rasterio, GeoPandas and other open-source libraries listed in the repository. No NASA logos or insignia are used.</p>
+
       <h2>Team</h2>
-      <p>Built for NASA Space Apps 2026. Code and pipeline are open source; see the repository README.</p>
+      <p>Built for NASA Space Apps 2026. Code and pipeline are open source: <a href="https://github.com/PseudonymD/site-comparer-thing" target="_blank" rel="noopener">github.com/PseudonymD/site-comparer-thing</a>.</p>
     </div>`;
   el.classList.remove('hidden');
   el.scrollTop = 0;
