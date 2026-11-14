@@ -1,7 +1,6 @@
 import maplibregl, { type StyleSpecification } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import type { KnownAnalog, Site } from './types';
-import { esc } from './format';
 
 const MERC = 85.0511287798;
 
@@ -47,6 +46,7 @@ export interface MapApi {
   setOpacity(o: number): void;
   setSites(sites: Site[], label: (s: Site) => string, onClick: (s: Site, i: number) => void): void;
   setAnalogs(analogs: KnownAnalog[]): void;
+  onAnalogClick(cb: (a: KnownAnalog) => void): void;
   setTargetBody(body: string): void;
   highlight(lat: number, lon: number): void;
   flyTo(lat: number, lon: number, zoom?: number): void;
@@ -82,6 +82,7 @@ export function createMap(container: HTMLElement): MapApi {
   let opacity = 0.85;
   let siteMarkers: maplibregl.Marker[] = [];
   let analogMarkers: { m: maplibregl.Marker; a: KnownAnalog }[] = [];
+  let analogCb: ((a: KnownAnalog) => void) | null = null;
   let hl: maplibregl.Marker | null = null;
   let padding = { top: 0, right: 0, bottom: 0, left: 0 };
 
@@ -133,11 +134,20 @@ export function createMap(container: HTMLElement): MapApi {
       const el = document.createElement('div');
       el.className = 'analog-marker';
       el.title = `${a.name} (known ${a.bodies.join('/')} analog)`;
-      const popup = new maplibregl.Popup({ offset: 10, closeButton: false }).setHTML(
-        `<b>${esc(a.name)}</b><br><span class="popup-sub">Known ${esc(a.bodies.join(' & '))} analog · ${esc(a.country)}</span><br>${esc(a.note)}`,
-      );
-      const m = new maplibregl.Marker({ element: el }).setLngLat([a.lon, a.lat]).setPopup(popup).addTo(map);
-      el.addEventListener('click', (e) => e.stopPropagation());
+      el.setAttribute('role', 'button');
+      el.tabIndex = 0;
+      el.setAttribute('aria-label', `${a.name}, known ${a.bodies.join(' and ')} analog. Open summary.`);
+      const m = new maplibregl.Marker({ element: el }).setLngLat([a.lon, a.lat]).addTo(map);
+      el.addEventListener('click', (e) => {
+        e.stopPropagation(); // do not also pick the cell underneath
+        analogCb?.(a);
+      });
+      el.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          analogCb?.(a);
+        }
+      });
       return { m, a };
     });
   }
@@ -169,6 +179,9 @@ export function createMap(container: HTMLElement): MapApi {
     },
     setSites,
     setAnalogs,
+    onAnalogClick(cb) {
+      analogCb = cb;
+    },
     setTargetBody,
     highlight,
     flyTo(lat, lon, zoom = 6) {

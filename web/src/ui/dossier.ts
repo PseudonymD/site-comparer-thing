@@ -1,6 +1,6 @@
 // Site dossier: rendered inside the right panel in place of the candidate list, so the map stays visible.
 import type { App } from '../main';
-import type { CellInfo, FeatureMeta } from '../types';
+import type { CellInfo, FeatureMeta, KnownAnalog } from '../types';
 import { contributions, scoreCell, valueFromQ } from '../scoring';
 import { esc, flag, fmtKm, fmtLatLon, fmtValue, GROUP_COLORS } from '../format';
 import { runDrill } from '../drill';
@@ -18,6 +18,7 @@ export const setPlanetOpen = (v: boolean) => {
 
 export interface DossierNav {
   rank?: number; // 1-based position in the candidate list, when opened from it
+  analog?: KnownAnalog; // set when opened from a known analog marker
   total: number;
   onBack(): void;
   onStep(delta: number): void;
@@ -73,13 +74,15 @@ export function renderDossier(app: App, info: CellInfo, lat: number, lon: number
     })
     .join('');
 
+  const an = nav.analog;
+  const anBodies = an ? an.bodies.join(' & ') : '';
   const rankTxt = Number.isFinite(pctl) ? `top ${Math.max(0.01, (1 - pctl) * 100).toFixed(pctl > 0.99 ? 2 : 1)}%` : '–';
   const prevScroll = keepScroll ? ((el().querySelector('.d-scroll') as HTMLElement | null)?.scrollTop ?? 0) : 0;
   const oldDrill = keepScroll ? document.getElementById('drill-out') : null;
   el().innerHTML = `
     <div class="d-nav">
       <button class="text-btn" id="d-back">← All candidates</button>
-      ${nav.rank ? `<div class="d-step"><span>${nav.rank} of ${nav.total}</span>
+      ${an ? '<div class="d-step"><span>Known analog site</span></div>' : nav.rank ? `<div class="d-step"><span>${nav.rank} of ${nav.total}</span>
         <button class="icon-btn" id="d-prev" aria-label="Previous candidate" ${nav.rank <= 1 ? 'disabled' : ''}>↑</button>
         <button class="icon-btn" id="d-next" aria-label="Next candidate" ${nav.rank >= nav.total ? 'disabled' : ''}>↓</button></div>` : '<div class="d-step"><span>Picked on the map</span></div>'}
     </div>
@@ -88,19 +91,20 @@ export function renderDossier(app: App, info: CellInfo, lat: number, lon: number
       <div class="d-head">
         ${fingerprint(meta.features, t.vector, z, 104, `Fingerprint of this site against ${t.name}`)}
         <div class="d-id">
-          <div class="eyebrow">${fmtLatLon(lat, lon)} · cell ${info.cell}</div>
-          <h2>${flag(country.iso)} ${esc(country.name || 'Unknown location')}</h2>
+          <div class="eyebrow">${an ? `Known ${esc(anBodies)} analog · ` : ''}${fmtLatLon(lat, lon)} · cell ${info.cell}</div>
+          <h2>${flag(country.iso)} ${esc(an ? an.name : country.name || 'Unknown location')}</h2>
           <div class="facts">
             <div class="big">${filtered ? '<span class="beyond">filtered</span>' : (s * 100).toFixed(1)}</div>
             <div><b>${rankTxt}</b>of Earth's land</div>
-            <div title="Nearest known analog: ${esc(near.name)}"><b>${fmtKm(info.noveltyKm)}</b>from a known analog</div>
+            ${an ? `<div title="Bodies this site is used to rehearse"><b>${esc(anBodies)}</b>known analog for</div>` : `<div title="Nearest known analog: ${esc(near.name)}"><b>${fmtKm(info.noveltyKm)}</b>from a known analog</div>`}
           </div>
         </div>
       </div>
       <div class="d-why">
+        ${an ? `<p><b>About this site</b> (${esc(an.country)}): ${esc(an.note)}</p>${an.bodies.includes(t.body) ? '' : `<p class="note">This site is listed as a ${esc(anBodies)} analog. The score below compares it with the ${esc(t.body)} target you have selected.</p>`}` : ''}
         ${good.length ? `<p><b>Matches ${t.body} on</b> ${good.map((r) => esc(lower(r.f.name))).join(', ')}.</p>` : ''}
         ${bad.length ? `<p><b>Biggest gaps:</b> ${bad.map((r) => `${esc(lower(r.f.name))} (${fmtValue(r.here, r.f)} vs ${targetText(r)})`).join(', ')}.</p>` : ''}
-        <p class="note">Nearest known analog: ${esc(near.name)}, ${fmtKm(near.km)} away.${filtered ? ' This cell is excluded by one of your filters.' : ''}</p>
+        <p class="note">${an ? '' : `Nearest known analog: ${esc(near.name)}, ${fmtKm(near.km)} away.`}${filtered ? ' This cell is excluded by one of your filters.' : ''}</p>
       </div>
       <div class="d-sec" id="d-ev">
         <h3>Where it differs</h3>

@@ -15,7 +15,7 @@ import { REGIONS as GEO_REGIONS, matchesGeography, validRegion, type RegionId } 
 import { validWeightVector } from './population';
 import { applyPrefs, initSettings } from './settings';
 import { initStart } from './start';
-import type { CellInfo, Discovery, ScoreRequest, ScoreResult, Site, Target } from './types';
+import type { CellInfo, Discovery, KnownAnalog, ScoreRequest, ScoreResult, Site, Target } from './types';
 
 export const REGIONS: Record<string, { name: string; bbox: [number, number, number, number] }> = {
   safrica: { name: 'southern Africa', bbox: [11.0, -35.5, 33.0, -16.5] },
@@ -871,7 +871,22 @@ async function main() {
   }
 
   const showPlace = (lat: number, lon: number) => void showCell(lat, lon, undefined, true);
-  async function showCell(lat: number, lon: number, rank?: number, fly = false, keepScroll = false, zoomIn = false) {
+  // The known analog whose summary is open (kept across re-scores, cleared by any other selection).
+  let currentAnalog: KnownAnalog | null = null;
+  async function showAnalog(a: KnownAnalog) {
+    // Analog coordinates can sit just off the 0.1° land mask (coast, small islands): try nearby cells.
+    const res = meta.grid.res;
+    for (const [dy, dx] of [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]]) {
+      const lat = a.lat + dy * res;
+      const lon = a.lon + dx * res;
+      if (await app.requestCell(lat, lon)) {
+        await showCell(lat, lon, undefined, true, false, true, a);
+        return;
+      }
+    }
+    toast(`${a.name}: no land cell in the dataset here. ${a.note}`, 6000);
+  }
+  async function showCell(lat: number, lon: number, rank?: number, fly = false, keepScroll = false, zoomIn = false, analog?: KnownAnalog) {
     const info = await app.requestCell(lat, lon);
     if (!info) {
       toast('No land here. Pick a spot on land inside the data.');
@@ -882,11 +897,13 @@ async function main() {
     const clat = 90 - (r + 0.5) * meta.grid.res;
     const clon = -180 + (c + 0.5) * meta.grid.res;
     current = { lat, lon, cell: info.cell };
+    currentAnalog = analog ?? (keepScroll ? currentAnalog : null);
     document.querySelectorAll('.site').forEach((el, k) => el.classList.toggle('active', k + 1 === rank));
     body.classList.add('dossier-open');
     $('#list-view').classList.add('hidden');
     renderDossier(app, info, clat, clon, {
       rank,
+      analog: currentAnalog ?? undefined,
       total: lastResult?.sites.length ?? 0,
       onBack: closeDossier,
       onCopy: () => app.copyLink({ lat, lon }),
@@ -907,6 +924,7 @@ async function main() {
   function closeDossier() {
     if (!current) return;
     current = null;
+    currentAnalog = null;
     hideDossier();
     $('#list-view').classList.remove('hidden');
     body.classList.remove('dossier-open');
@@ -1036,6 +1054,7 @@ async function main() {
     }
   });
   mapApi.onCellClick((lat, lon) => void showCell(lat, lon));
+  mapApi.onAnalogClick((a) => void showAnalog(a));
   mapApi.map.on('moveend', updateHash);
 
   // ---------------------------------------------------------------- right-panel tabs, discoveries, region
