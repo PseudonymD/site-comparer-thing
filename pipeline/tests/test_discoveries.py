@@ -17,3 +17,16 @@ def test_place_lookup():
     places = [{"name": "Box", "bbox": [0, 0, 10, 10], "literature": "ref"}]
     assert d._place(5, 5, places, "X") == ("Box", "ref")
     assert d._place(-5, 5, places, "X") == ("X site", None)
+
+
+def test_empty_spotlight_windows_are_skipped(monkeypatch):
+    meta = {"generated": "test", "synthetic_features": [], "grid": {"n_lon": 4, "res": 1.0}, "countries": [{"name": "", "iso": ""}]}
+    targets = {"targets": [{"id": "t", "name": "Target", "vector": [0.5], "weights": [1.0], "raw": {"f": {"value": 0, "beyond_earth": False}}}]}
+    q = np.zeros((1, 1), dtype=np.uint8)
+    cells = np.array([0], dtype=np.int64)
+    ctry = np.array([0], dtype=np.uint8)
+    scored = {"t": (np.array([0.5]), np.array([0.5]))}
+    monkeypatch.setattr(d, "LOCAL_PLACES", [{"id": "outside", "name": "Outside", "lat": -30, "lon": 20, "why": ""}])
+    out = d.spotlight(meta, targets, q, cells, ctry, scored, np.array([89.5]), np.array([-179.5]), [{"id": "f", "name": "F", "unit": "", "breakpoints": [0, 1], "synthetic": False, "proxy": False}])
+    assert out["places"] == []
+    assert out["region_best"] == []

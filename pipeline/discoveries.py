@@ -252,6 +252,9 @@ def spotlight(meta, targets, q, cells, ctry, scored, lat_all, lon_all, feats) ->
                for dr in range(-SPOTLIGHT_RADIUS_CELLS, SPOTLIGHT_RADIUS_CELLS + 1)
                for dc in range(-SPOTLIGHT_RADIUS_CELLS, SPOTLIGHT_RADIUS_CELLS + 1)
                if (r0 + dr) * n_lon + (c0 + dc) % n_lon in pos]
+        if not win:
+            log.warning("spotlight place %s has no land cells in the published dataset; skipping", p["name"])
+            continue
         rows = []
         for t in targets["targets"]:
             s, sorted_s = scored[t["id"]]
@@ -264,8 +267,12 @@ def spotlight(meta, targets, q, cells, ctry, scored, lat_all, lon_all, feats) ->
         best = max(rows, key=lambda r: r["percentile"])
         places_out.append({**p, "results": rows, "best_target": best["target"], "best_percentile": best["percentile"]})
     region_best = []
+    if not box_idx.size:
+        log.warning("Southern Africa spotlight bbox has no cells in the published dataset")
     for t in targets["targets"]:
         s, sorted_s = scored[t["id"]]
+        if not box_idx.size:
+            continue
         i = int(box_idx[np.argmax(s[box_idx])])
         lat, lon = _latlon(cells[i], meta)
         pct = float(np.searchsorted(sorted_s, s[i], side="right") / s.size * 100)

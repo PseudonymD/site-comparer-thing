@@ -11,6 +11,7 @@ import { buildHash, copyText, parseHash, type LinkState } from './links';
 import { renderDiscoveries } from './ui/discoveries';
 import { createTour } from './ui/tour';
 import { REGIONS as GEO_REGIONS, matchesGeography, validRegion, type RegionId } from './geography';
+import { validWeightVector } from './population';
 import type { CellInfo, Discovery, ScoreRequest, ScoreResult, Site, Target } from './types';
 
 export const REGIONS: Record<string, { name: string; bbox: [number, number, number, number] }> = {
@@ -427,6 +428,11 @@ async function main() {
         const input = row.querySelector('input')!;
         input.addEventListener('input', () => {
           state.weights[j] = +input.value;
+          if (!validWeightVector(state.weights, F)) {
+            state.weights[j] = 0.25;
+            input.value = '0.25';
+            toast('At least one feature must have a positive weight.');
+          }
           sliderVals[j].textContent = fmtW(state.weights[j]);
           row.classList.toggle('off', state.weights[j] === 0);
           fill(input);
@@ -940,7 +946,10 @@ async function main() {
   await Promise.all([workerReady, mapApi.ready]);
   mapApi.setAnalogs(ds.analogs);
   // Apply a shared link (weights, filters, novelty, view) on top of the target defaults.
-  if (link.w && link.w.length === F) state.weights = [...link.w];
+  if (link.w) {
+    if (validWeightVector(link.w, F)) state.weights = [...link.w];
+    else toast('The shared link contained invalid weights; target defaults were restored.');
+  }
   if (link.f) {
     for (const flt of state.filters) {
       const on = link.f.find((x) => x.id === flt.id);

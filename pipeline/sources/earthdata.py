@@ -16,6 +16,13 @@ log = logging.getLogger("pipeline.earthdata")
 
 CMR = "https://cmr.earthdata.nasa.gov/search/granules.json"
 HOST = "https://cmr.earthdata.nasa.gov"
+TRUSTED_REDIRECT_SUFFIXES = (".nasa.gov", ".nsidc.org")
+
+
+def trusted_redirect_host(hostname: str | None) -> bool:
+    """Return whether a redirect host is within a trusted Earthdata domain."""
+    host = (hostname or "").rstrip(".").lower()
+    return host == "nasa.gov" or host.endswith(TRUSTED_REDIRECT_SUFFIXES)
 
 
 class _EarthdataSession:
@@ -29,7 +36,7 @@ class _EarthdataSession:
             class S(requests.Session):
                 def rebuild_auth(self, prepared_request, response):
                     host = urlparse(prepared_request.url).hostname or ""
-                    if host.endswith("nasa.gov"):
+                    if trusted_redirect_host(host):
                         return  # keep the bearer token for NASA hosts
                     return super().rebuild_auth(prepared_request, response)
 

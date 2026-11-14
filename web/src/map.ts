@@ -1,6 +1,7 @@
 import maplibregl, { type StyleSpecification } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import type { KnownAnalog, Site } from './types';
+import { esc } from './format';
 
 const MERC = 85.0511287798;
 
@@ -133,7 +134,7 @@ export function createMap(container: HTMLElement): MapApi {
       el.className = 'analog-marker';
       el.title = `${a.name} (known ${a.bodies.join('/')} analog)`;
       const popup = new maplibregl.Popup({ offset: 10, closeButton: false }).setHTML(
-        `<b>${a.name}</b><br><span class="popup-sub">Known ${a.bodies.join(' & ')} analog · ${a.country}</span><br>${a.note}`,
+        `<b>${esc(a.name)}</b><br><span class="popup-sub">Known ${esc(a.bodies.join(' & '))} analog · ${esc(a.country)}</span><br>${esc(a.note)}`,
       );
       const m = new maplibregl.Marker({ element: el }).setLngLat([a.lon, a.lat]).setPopup(popup).addTo(map);
       el.addEventListener('click', (e) => e.stopPropagation());

@@ -569,6 +569,10 @@ export function mountHowItWorks(app: App, root: HTMLElement, onShow: (lat: numbe
   root.querySelectorAll<HTMLInputElement>('.hiw-sl input').forEach((inp) => {
     inp.oninput = () => {
       s.mult[inp.dataset.group as Group] = Number(inp.value);
+      if (!effWeights(s).some((w) => w > 0)) {
+        s.mult[inp.dataset.group as Group] = 0.25;
+        inp.value = '0.25';
+      }
       if (s.info) update6(s, true);
     };
   });

@@ -31,7 +31,7 @@ export function renderDossier(app: App, info: CellInfo, lat: number, lon: number
   const total = contrib.reduce((a, b) => a + b, 0);
   const s = scoreCell(info.q, t.vector, w);
   const filtered = info.score === 0 && s > 0;
-  const pctl = app.percentileOf(info.blended || s);
+  const pctl = filtered ? NaN : app.percentileOf(info.blended);
   const country = app.countryName(info.country);
   const near = app.nearestAnalog(lat, lon);
   const z = info.q.map((q) => q / 255);

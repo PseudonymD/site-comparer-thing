@@ -11,6 +11,8 @@ export interface FeatureMeta {
   source_url: string;
   synthetic: boolean;
   proxy: boolean;
+  fallback?: boolean;
+  attempts?: { source: string; error_type?: string; skipped?: string; coverage?: number }[];
   coverage: number | null;
   notes?: string | null;
   min: number;
@@ -112,7 +114,7 @@ export interface ScoreRequest {
   stretchLow: number;
   hideBelow: boolean;
   topN: number;
-  /** Limit the heatmap and candidates to [minlon, minlat, maxlon, maxlat]; percentiles stay global. */
+  /** Limit the heatmap, candidates, and statistics to [minlon, minlat, maxlon, maxlat]. */
   bbox?: [number, number, number, number] | null;
   countryIds?: number[] | null;
 }
@@ -138,7 +140,7 @@ export interface ScoreResult {
   height: number;
   sites: Site[];
   stats: { lo: number; hi: number; valid: number; p50: number; p99: number };
-  hist: Uint32Array; // 2048-bin histogram of (blended) scores over unfiltered land cells
+  hist: Uint32Array; // 2048-bin histogram of (blended) scores over the selected population
   blob: Blob | null; // PNG of the image, encoded in the worker when OffscreenCanvas is available
   timings: { score: number; image: number; sites: number; encode: number; total: number };
 }
@@ -151,6 +153,7 @@ export interface CellInfo {
   country: number;
   score: number;
   blended: number;
+  included: boolean;
 }
 
 export interface FactorRow {

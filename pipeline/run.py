@@ -99,14 +99,14 @@ def compute_feature(fid: str, chain: tuple[str, ...], grid: Grid, land: np.ndarr
         try:
             arr = _call_to_grid(mod, grid, fid, ctx).astype(np.float32)
         except Exception as e:  # any failure -> try the next source in the chain
-            log.warning("  %-11s source %s failed: %s", fid, name, e)
+            log.warning("  %-11s source %s failed (%s); trying fallback", fid, name, type(e).__name__)
             log.debug("traceback", exc_info=True)
-            attempts.append({"source": name, "error": str(e)[:300]})
+            attempts.append({"source": name, "error_type": type(e).__name__})
             continue
         cov = float(np.isfinite(arr[land]).mean()) if land.any() else 0.0
         if cov < MIN_COVERAGE:
             log.warning("  %-11s source %s covers only %.0f%% of land - skipping", fid, name, cov * 100)
-            attempts.append({"source": name, "error": f"coverage {cov:.2f}"})
+            attempts.append({"source": name, "error_type": "insufficient_coverage", "coverage": round(cov, 4)})
             continue
         gap_info = None
         if hasattr(mod, "fill_gaps"):
@@ -205,6 +205,7 @@ def run(opts: RunOptions) -> dict:
             "description": f.description, "log_display": f.log_display,
             "source": u["source"], "source_name": desc, "source_url": url,
             "synthetic": u["source"] == "synthetic", "proxy": f.id in proxy,
+            "fallback": u["source"] != f.sources[0], "attempts": u.get("attempts", []),
             "coverage": u.get("coverage"), "notes": (u.get("gap_fill") or {}).get("note"), "min": round(cdf.min, 4), "max": round(cdf.max, 4),
             "breakpoints": cdf.breakpoints(),
         })

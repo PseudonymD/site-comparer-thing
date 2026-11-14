@@ -9,7 +9,7 @@ export function renderAbout(app: App, onShow: (lat: number, lon: number) => void
   const synth = meta.synthetic_features;
   const srcRows = meta.features
     .map((f) => {
-      const status = f.synthetic ? '<span class="badge synth">placeholder</span>' : f.proxy ? '<span class="badge proxy">proxy</span>' : '';
+      const status = f.synthetic ? '<span class="badge synth">placeholder</span>' : f.proxy ? '<span class="badge proxy">proxy</span>' : f.fallback ? '<span class="badge proxy">fallback</span>' : '';
       const src = f.source_url ? `<a href="${f.source_url}" target="_blank" rel="noopener">${esc(f.source_name)}</a>` : esc(f.source_name);
       const notes = f.notes ? `<div class="note">${esc(f.notes)}</div>` : '';
       return `<tr><td>${esc(f.name)}</td><td>${esc(f.unit || '–')}</td><td>${esc(f.ui_group)}</td><td>${src} ${status}${notes}</td></tr>`;
