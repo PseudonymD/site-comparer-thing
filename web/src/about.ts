@@ -7,6 +7,11 @@ export function renderAbout(app: App, onShow: (lat: number, lon: number) => void
   const { meta, targets, validation } = app.ds;
   const el = document.getElementById('about')!;
   const synth = meta.synthetic_features;
+  // The basalt clause follows this build's meta.json instead of assuming the layer is a placeholder.
+  const basalt = meta.features.find((f) => f.id === 'basalt');
+  const basaltNote = !basalt || basalt.synthetic
+    ? 'The lava-tube target is weak while the basalt layer is a placeholder.'
+    : `The lava-tube target is weak; in this build its basalt layer comes from ${esc(basalt.source_name)}, not a placeholder.`;
   const srcRows = meta.features
     .map((f) => {
       const status = f.synthetic ? '<span class="badge synth">placeholder</span>' : f.proxy ? '<span class="badge proxy">proxy</span>' : f.fallback ? '<span class="badge proxy">fallback</span>' : '';
@@ -45,8 +50,7 @@ ${stepsHTML(app)}
       scorer in your browser share one spec, and a shared test fixture checks that they give the same scores.</p>
       <p><b>Read these numbers honestly.</b> Mars Jezero and Gale work well: the classic desert analogs (Atacama, Death Valley, the MDRS) sit in Earth's top 2%.
       The polar and ice targets are weaker. They recognise the Antarctic Dry Valleys but rank the wetter Arctic sites (Svalbard, Devon Island) near or below the median,
-      because relative humidity, precipitation and soil carbon dominate and polar air is humid in <i>relative</i> terms. The lava-tube target is weak while the
-      basalt layer is a placeholder. Arcadia's analog list was corrected after we saw the first results (two volcanic sites with no ground ice were removed and
+      because relative humidity, precipitation and soil carbon dominate and polar air is humid in <i>relative</i> terms. ${basaltNote} Arcadia's analog list was corrected after we saw the first results (two volcanic sites with no ground ice were removed and
       University Valley, the standard Mars ground-ice analog, was added), so its number is not a blind test. The original list's score is shown beside it.</p>
       <p class="note"><b>What was seen when.</b> Target values and default weights were written from the literature before any validation on real data, and no weight
       has been tuned since. All analogs are famous sites known to us from the start, so none is a strict hold-out, but none was used to fit weights. Changes made after

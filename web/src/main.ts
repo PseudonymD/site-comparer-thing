@@ -4,12 +4,13 @@ import { createMap, type MapApi } from './map';
 import { cssGradient, infernoRgb } from './colormap';
 import { zThresholdFromValue } from './scoring';
 import { esc, flag, fmtKm, fmtLatLon, fmtValue, GROUP_COLORS } from './format';
-import { renderDossier, hideDossier } from './ui/dossier';
+import { renderDossier, hideDossier, planetOpen, setPlanetOpen } from './ui/dossier';
 import { fingerprint } from './ui/fingerprint';
 import { renderAbout } from './about';
 import { buildHash, copyText, parseHash, type LinkState } from './links';
 import { renderDiscoveries } from './ui/discoveries';
 import { createTour } from './ui/tour';
+import { groupTargets, type LeftTab, type RightTab, type TourSnapshot } from './ui/tourState';
 import { REGIONS as GEO_REGIONS, matchesGeography, validRegion, type RegionId } from './geography';
 import { validWeightVector } from './population';
 import type { CellInfo, Discovery, ScoreRequest, ScoreResult, Site, Target } from './types';
@@ -321,6 +322,20 @@ async function main() {
     const n = state.filters.filter((f) => f.on).length + (state.alpha > 0 ? 1 : 0) +
       state.geography.countries.length + state.geography.regions.length;
     $('#tab-filters-n').textContent = n ? String(n) : '';
+    $('#mnav-ctrl-n').textContent = n ? String(n) : ''; // the same count, on the mobile Controls button
+  }
+  /** Left/Right arrow keys move between the tabs of a tab bar (the click handler does the switching). */
+  function tabArrowKeys(btns: NodeListOf<HTMLButtonElement>) {
+    btns.forEach((b, i) => {
+      b.addEventListener('keydown', (e) => {
+        if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+        e.preventDefault();
+        e.stopPropagation(); // keep the guided tour's arrow-key stepping from also firing
+        const next = btns[(i + (e.key === 'ArrowRight' ? 1 : btns.length - 1)) % btns.length];
+        next.focus();
+        next.click();
+      });
+    });
   }
   function syncGroupSums() {
     for (const g of groups) {
@@ -351,31 +366,43 @@ async function main() {
   }
 
   let setAlphaUI: (a: number) => void = () => {};
+  // Repaint hooks used when the tour puts a snapshot back (set inside buildLeft).
+  let syncGeoUI: () => void = () => {};
+  let syncViewUI: () => void = () => {};
   function buildLeft() {
     const synth = meta.synthetic_features;
+    // Provenance summary for the Weights tab, derived only from the per-feature flags in meta.json.
+    const proxies = meta.features.filter((f) => f.proxy && !f.synthetic);
     left.innerHTML = `
       <div class="brief">
         <div class="brief-top">
           <div><div class="eyebrow" id="t-eyebrow"></div><h1 id="t-name"></h1></div>
           <div id="t-glyph"></div>
         </div>
-        <p id="t-blurb"></p>
-        <button class="vbadge" id="t-valid" title="How well do known analogs score? Click for the method."></button>
-        <button class="text-btn" id="best-site">Fly to the best match</button>
+        <p id="t-blurb" class="clamp"></p>
+        <button class="text-btn" id="t-more" aria-expanded="false" hidden>More</button>
+        <div class="evidence" id="evidence-row">
+          <button class="vbadge" id="t-valid" title="How well do known analogs score? Click for the method."></button>
+          <div class="ev-links">
+            <button class="text-btn" id="t-limits">Limitations</button>
+            <button class="text-btn" id="best-site">Fly to the best match</button>
+          </div>
+        </div>
       </div>
       ${synth.length ? `<div class="warn-box"><b>${synth.length} of ${F} layers ${synth.length > 1 ? 'are placeholders' : 'is a placeholder'}</b> in this build (${synth.map((s) => esc(meta.features[featIndex(s)].name)).join(', ')}). Treat rankings as illustrative.</div>` : ''}
       ${meta.bbox ? `<div class="warn-box">Regional build: only ${meta.bbox.join(', ')} is included.</div>` : ''}
-      <div class="tabs" role="tablist">
-        <button role="tab" data-tab="weights" aria-selected="true">Weights</button>
-        <button role="tab" data-tab="filters" aria-selected="false">Filters<span class="count" id="tab-filters-n"></span></button>
-        <button role="tab" data-tab="view" aria-selected="false">View</button>
+      <div class="tabs" role="tablist" aria-label="Controls">
+        <button role="tab" id="tab-weights" aria-controls="pane-weights" data-tab="weights" aria-selected="true">Weights</button>
+        <button role="tab" id="tab-filters" aria-controls="pane-filters" data-tab="filters" aria-selected="false">Filters<span class="count" id="tab-filters-n"></span></button>
+        <button role="tab" id="tab-view" aria-controls="pane-view" data-tab="view" aria-selected="false">View</button>
       </div>
       <div class="tab-body">
-        <div class="pane" id="pane-weights">
-          <div class="pane-intro"><p class="note">How much each layer counts, from 0 to 3. Under each name: the target's value and its Earth percentile (p0 lowest, p100 highest).</p><button class="text-btn" id="reset-w">Reset</button></div>
+        <div class="pane" id="pane-weights" role="tabpanel" aria-labelledby="tab-weights">
+          <div class="pane-intro"><p class="note">How much each layer counts, from 0 to 3. Under each name: the target's value and its Earth percentile (p0 lowest, p100 highest).</p><div class="pane-actions"><button class="text-btn" id="reset-w">Reset</button><button class="text-btn" id="w-all">Expand all</button></div></div>
+          ${proxies.length || synth.length ? `<p class="note proxy-note" id="proxy-note">${synth.length ? `${synth.length > 1 ? 'Placeholder layers' : 'Placeholder layer'}: ${synth.map((s) => esc(meta.features[featIndex(s)].name)).join(', ')}. ` : ''}${proxies.length ? `${proxies.length > 1 ? 'Proxy layers' : 'Proxy layer'}: ${proxies.map((f) => esc(f.name)).join(', ')}.` : ''}</p>` : ''}
           <div id="weights"></div>
         </div>
-        <div class="pane hidden" id="pane-filters">
+        <div class="pane hidden" id="pane-filters" role="tabpanel" aria-labelledby="tab-filters">
           <h4>Leave out</h4>
           <p class="note">Cells past these limits score zero.</p>
           <div id="filters"></div>
@@ -385,15 +412,17 @@ async function main() {
             <div id="geo-active" class="geo-active" aria-live="polite"></div>
             <div class="geo-section"><b>Regions</b><div id="geo-regions" class="geo-regions"></div></div>
             <div class="geo-section"><label for="geo-search"><b>Countries</b></label><input id="geo-search" class="geo-search" type="search" placeholder="Search countries" autocomplete="off"></div>
-            <div id="geo-countries" class="geo-countries"></div>
+            <details class="geo-list" id="geo-list"><summary>Country list</summary><div id="geo-countries" class="geo-countries"></div></details>
           </div>
           <h4>Favour new places <span class="mono" id="alpha-val"></span></h4>
           <input type="range" id="alpha" min="0" max="0.6" step="0.02" value="${state.alpha}">
           <p class="note">Mixes in distance from the ${ds.analogs.length} known analog sites (levels off at ${meta.novelty_saturation_km.toLocaleString()} km), so candidates nobody has used yet rise.</p>
         </div>
-        <div class="pane hidden" id="pane-view">
+        <div class="pane hidden" id="pane-view" role="tabpanel" aria-labelledby="tab-view">
+          <div class="eyebrow pane-sec">Map</div>
           <div class="field"><span>Map shape</span><div class="seg" id="seg-proj"><button data-v="mercator">Flat</button><button data-v="globe">Globe</button></div></div>
           <div class="field"><span>Background</span><div class="seg" id="seg-base"><button data-v="satellite">Satellite</button><button data-v="dark">Plain dark</button></div></div>
+          <div class="eyebrow pane-sec">Score layer</div>
           <h4>Start colour at Earth percentile <span class="mono" id="stretch-val"></span></h4>
           <input type="range" id="stretch" min="0" max="0.99" step="0.01" value="${state.stretchLow}">
           <label class="check"><input type="checkbox" id="hide-below"> Hide cells below that percentile</label>
@@ -411,14 +440,28 @@ async function main() {
         for (const id of ['weights', 'filters', 'view']) $(`#pane-${id}`).classList.toggle('hidden', id !== b.dataset.tab);
       };
     });
+    tabArrowKeys(tabBtns);
+
+    // brief: long blurbs are clamped to three lines; the full text stays in the DOM
+    const more = $('#t-more');
+    more.onclick = () => {
+      const open = $('#t-blurb').classList.toggle('clamp') === false;
+      more.textContent = open ? 'Less' : 'More';
+      more.setAttribute('aria-expanded', String(open));
+    };
+    $('#t-limits').onclick = openLimits;
 
     // weights
     const wDiv = $('#weights');
     for (const g of groups) {
       const sec = document.createElement('details');
       sec.className = 'group';
-      sec.open = true;
-      sec.innerHTML = `<summary><i class="swatch" style="background:${GROUP_COLORS[g]}"></i><span>${g}</span><em id="gsum-${g}"></em></summary>`;
+      sec.open = g === groups[0]; // the others start collapsed; "Expand all" opens every group
+      // Collapsed groups still show a provenance badge when any layer inside is a proxy or placeholder.
+      const inGroup = meta.features.filter((f) => f.ui_group === g);
+      const gBadge = inGroup.some((f) => f.synthetic) ? '<span class="badge synth">placeholder</span>' : inGroup.some((f) => f.proxy) ? '<span class="badge proxy">proxy</span>' : '';
+      sec.innerHTML = `<summary><i class="swatch" style="background:${GROUP_COLORS[g]}"></i><span>${g}</span>${gBadge}<em id="gsum-${g}"></em></summary>`;
+      sec.addEventListener('toggle', syncAllLabel);
       meta.features.forEach((f, j) => {
         if (f.ui_group !== g) return;
         const row = document.createElement('div');
@@ -446,6 +489,18 @@ async function main() {
       });
       wDiv.appendChild(sec);
     }
+    function groupEls() {
+      return [...wDiv.querySelectorAll<HTMLDetailsElement>('details.group')];
+    }
+    function syncAllLabel() {
+      $('#w-all').textContent = groupEls().every((d) => d.open) ? 'Collapse all' : 'Expand all';
+    }
+    $('#w-all').onclick = () => {
+      const open = !groupEls().every((d) => d.open);
+      groupEls().forEach((d) => (d.open = open));
+      syncAllLabel();
+    };
+    syncAllLabel();
     $('#reset-w').onclick = () => {
       state.weights = [...app.target().weights];
       syncSliders();
@@ -498,6 +553,7 @@ async function main() {
         ...state.geography.regions.map((id) => `<span class="geo-chip">${GEO_REGIONS[id]}<button type="button" data-remove-region="${id}" aria-label="Remove ${GEO_REGIONS[id]}">×</button></span>`),
         ...state.geography.countries.map((iso) => `<span class="geo-chip">${esc(meta.countries.find((c) => c.iso === iso)?.name ?? iso)}<button type="button" data-remove-country="${iso}" aria-label="Remove country">×</button></span>`),
       ];
+      if (state.geography.countries.length) ($('#geo-list') as HTMLDetailsElement).open = true;
       $('#geo-active').innerHTML = chips.length ? chips.join('') : '<span class="note">No geographic restrictions</span>';
       $('#geo-active').querySelectorAll<HTMLButtonElement>('[data-remove-region]').forEach((button) => {
         button.onclick = () => {
@@ -536,12 +592,15 @@ async function main() {
       geoCountries.querySelectorAll<HTMLElement>('.geo-option').forEach((option) => {
         option.hidden = !!query && !option.dataset.name!.includes(query);
       });
+      if (query) ($('#geo-list') as HTMLDetailsElement).open = true;
     });
+    $('#geo-search').addEventListener('focus', () => (($('#geo-list') as HTMLDetailsElement).open = true));
     $('#reset-geo').onclick = () => {
       state.geography = { countries: [], regions: [] };
       renderGeo(); requestScore();
     };
     renderGeo();
+    syncGeoUI = renderGeo;
 
     const alpha = $<HTMLInputElement>('#alpha');
     const updAlpha = () => {
@@ -607,6 +666,20 @@ async function main() {
       mapApi.setOpacity(state.opacity);
     });
     updOp();
+    syncViewUI = () => {
+      stretch.value = String(state.stretchLow);
+      updStretch();
+      $<HTMLInputElement>('#hide-below').checked = state.hideBelow;
+      op.value = String(state.opacity);
+      updOp();
+      mapApi.setOpacity(state.opacity);
+      for (const id of ['seg-proj', 'seg-base']) {
+        const cur = id === 'seg-proj' ? state.projection : state.basemap;
+        $(`#${id}`).querySelectorAll<HTMLButtonElement>('button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.v === cur)));
+      }
+      mapApi.setProjection(state.projection);
+      mapApi.setBasemap(state.basemap);
+    };
   }
 
   function syncTargetUI() {
@@ -617,7 +690,14 @@ async function main() {
     $('#t-eyebrow').textContent = `${t.body} · matching against`;
     $('#t-name').textContent = siteName(t);
     $('#t-blurb').textContent = t.blurb;
-    $('#t-glyph').innerHTML = fingerprint(meta.features, t.vector, null, 84, `Fingerprint of ${t.name}: each spoke is one layer, longer means higher among Earth's land`);
+    // Clamp long blurbs; short ones need no toggle. The full text is always in the DOM.
+    const long = t.blurb.length > 150;
+    $('#t-blurb').classList.toggle('clamp', long);
+    const moreBtn = $('#t-more');
+    moreBtn.hidden = !long;
+    moreBtn.textContent = 'More';
+    moreBtn.setAttribute('aria-expanded', 'false');
+    $('#t-glyph').innerHTML = fingerprint(meta.features, t.vector, null, 64, `Fingerprint of ${t.name}: each spoke is one layer, longer means higher among Earth's land`);
     meta.features.forEach((f, j) => {
       const raw = t.raw[f.id];
       const pct = Math.round(t.vector[j] * 100);
@@ -639,19 +719,26 @@ async function main() {
   function syncBadge() {
     const t = app.target();
     const v = ds.validation?.results.find((r) => r.target === t.id);
-    const b = $('#t-valid');
-    if (!v) {
-      b.classList.add('hidden');
-      return;
+    // The same badge appears in the left brief and, compactly, above the candidate list.
+    for (const b of [$('#t-valid'), $('#sites-valid')]) {
+      if (!v) {
+        b.classList.add('hidden');
+        continue;
+      }
+      const cls = v.auc >= 0.85 ? 'good' : v.auc >= 0.65 ? 'fair' : 'weak';
+      const word = cls === 'good' ? 'works well' : cls === 'fair' ? 'works moderately' : 'weak';
+      b.className = `vbadge ${cls}`;
+      b.innerHTML = `<i></i><span>How well does this work? <b>AUC ${v.auc.toFixed(2)}</b> · known analogs median p${v.median_analog_percentile.toFixed(0)} · ${word}</span>`;
+      b.onclick = () => {
+        renderAbout(app, showPlace);
+        document.getElementById(`val-${t.id}`)?.scrollIntoView({ block: 'center' });
+      };
     }
-    const cls = v.auc >= 0.85 ? 'good' : v.auc >= 0.65 ? 'fair' : 'weak';
-    const word = cls === 'good' ? 'works well' : cls === 'fair' ? 'works moderately' : 'weak';
-    b.className = `vbadge ${cls}`;
-    b.innerHTML = `<i></i><span>How well does this work? <b>AUC ${v.auc.toFixed(2)}</b> · known analogs median p${v.median_analog_percentile.toFixed(0)} · ${word}</span>`;
-    b.onclick = () => {
-      renderAbout(app, showPlace);
-      document.getElementById(`val-${t.id}`)?.scrollIntoView({ block: 'center' });
-    };
+  }
+  /** Open the About page at "Data, references and credits" (limitations, sources, validation). */
+  function openLimits() {
+    renderAbout(app, showPlace);
+    document.getElementById('about-ref')?.scrollIntoView({ block: 'start' });
   }
 
   function syncSliders() {
@@ -678,22 +765,67 @@ async function main() {
   let current: { lat: number; lon: number; cell: number } | null = null;
 
   /** Keep the map's visual centre in the area not covered by panels. */
-  function applyPadding() {
+  // Phones and small tablets (CSS max-width: 900px): the panels become bottom sheets, one at a time.
+  const isNarrow = () => window.innerWidth <= 900;
+  function panelPadding() {
     const g = 12;
-    mapApi.setPadding({
+    if (isNarrow()) {
+      // Keep the map's centre in the strip above the open sheet and the bottom nav.
+      const navH = $('#mnav').offsetHeight;
+      const open = !body.classList.contains('left-closed') ? left : !body.classList.contains('right-closed') ? right : null;
+      return { top: $('#topbar').offsetHeight + g * 2, bottom: navH + g + (open ? open.offsetHeight + g : 0), left: g, right: g };
+    }
+    return {
       top: $('#topbar').offsetHeight + g * 2,
       bottom: g,
       left: body.classList.contains('left-closed') ? g : left.offsetWidth + g * 2,
       right: body.classList.contains('right-closed') ? g : right.offsetWidth + g * 2,
-    });
+    };
+  }
+  function applyPadding() {
+    mapApi.setPadding(panelPadding());
   }
   function setPanel(side: 'left' | 'right', open: boolean) {
     body.classList.toggle(`${side}-closed`, !open);
+    if (open && isNarrow()) {
+      // One sheet at a time on narrow screens.
+      const other = side === 'left' ? 'right' : 'left';
+      body.classList.add(`${other}-closed`);
+      body.classList.remove('guide-open');
+      syncSideBtn(other);
+    }
+    syncSideBtn(side);
+    syncNav();
+    applyPadding();
+  }
+  function syncSideBtn(side: 'left' | 'right') {
+    const open = !body.classList.contains(`${side}-closed`);
     const btn = $(`#toggle-${side}`);
     const what = side === 'left' ? 'controls' : 'candidates';
     btn.textContent = (side === 'left') === open ? '‹' : '›';
     btn.setAttribute('aria-label', `${open ? 'Hide' : 'Show'} ${what}`);
     btn.title = `${open ? 'Hide' : 'Show'} ${what}`;
+  }
+  /** Mobile bottom nav: shows which sheet is open. The buttons click the same toggles as on desktop. */
+  function syncNav() {
+    const l = !body.classList.contains('left-closed');
+    const r = !body.classList.contains('right-closed');
+    const g = body.classList.contains('guide-open');
+    const set = (id: string, on: boolean) => $(`#${id}`).setAttribute('aria-pressed', String(on));
+    set('mnav-ctrl', l);
+    set('mnav-cand', r);
+    set('mnav-guide', g);
+    set('mnav-map', !l && !r && !g);
+  }
+  function setGuide(open: boolean) {
+    if (open && isNarrow()) {
+      body.classList.add('left-closed', 'right-closed');
+      syncSideBtn('left');
+      syncSideBtn('right');
+    }
+    body.classList.toggle('guide-open', open);
+    $('#guide-sheet').classList.toggle('hidden', !open);
+    syncNav();
     applyPadding();
   }
 
@@ -837,6 +969,29 @@ async function main() {
   applyDefaultFilters(app.target());
   root.style.setProperty('--inferno', cssGradient());
   $('#btn-about').onclick = () => renderAbout(app, showPlace);
+  $('#btn-limits').onclick = openLimits;
+  $('#legend-limits').onclick = openLimits;
+  // Mobile bottom nav and Guide sheet: thin wrappers over the existing controls.
+  $('#mnav-map').onclick = () => {
+    setGuide(false);
+    if (!body.classList.contains('left-closed')) setPanel('left', false);
+    if (!body.classList.contains('right-closed')) setPanel('right', false);
+  };
+  $('#mnav-cand').onclick = () => $('#toggle-right').click();
+  $('#mnav-ctrl').onclick = () => $('#toggle-left').click();
+  $('#mnav-guide').onclick = () => setGuide(!body.classList.contains('guide-open'));
+  $('#guide-tour').onclick = () => {
+    setGuide(false);
+    tour.start($('#mnav-guide'));
+  };
+  $('#guide-about').onclick = () => {
+    setGuide(false);
+    $('#btn-about').click();
+  };
+  $('#guide-limits').onclick = () => {
+    setGuide(false);
+    openLimits();
+  };
   $('#toggle-left').onclick = () => setPanel('left', body.classList.contains('left-closed'));
   $('#heat-toggle').onclick = () => {
     if (!focus) return;
@@ -874,6 +1029,7 @@ async function main() {
     for (const k of ['cand', 'disc']) $(`#rv-${k}`).classList.toggle('hidden', k !== id);
   }
   rtabs.forEach((b) => (b.onclick = () => showRightTab(b.dataset.r as 'cand' | 'disc')));
+  tabArrowKeys(rtabs);
   function syncRegionChip() {
     const chip = $('#region-chip');
     chip.classList.toggle('hidden', state.region === 'world');
@@ -911,13 +1067,141 @@ async function main() {
 
   // ---------------------------------------------------------------- guided tour
   const clickWhenReady = (sel: string, tries = 20) => {
+    if (tour.mode() !== 'demo') return; // the demo was exited before this (retried) click fired
     const el = document.querySelector<HTMLButtonElement>(sel);
     if (el && !el.disabled) {
       el.scrollIntoView({ block: 'center', behavior: 'smooth' });
       el.click();
     } else if (tries > 0) window.setTimeout(() => clickWhenReady(sel, tries - 1), 250);
   };
+  const leftTab = (): LeftTab => (left.querySelector<HTMLButtonElement>('.tabs button[aria-selected="true"]')?.dataset.tab as LeftTab) ?? 'weights';
+  const showLeftTab = (id: LeftTab) => left.querySelector<HTMLButtonElement>(`.tabs button[data-tab="${id}"]`)?.click();
+  const rightTab = (): RightTab => (document.querySelector<HTMLButtonElement>('.rtabs button[aria-selected="true"]')?.dataset.r as RightTab) ?? 'cand';
+  /** Put back the view captured by the tour (and, after the demo, the settings too). */
+  function restoreNow(s: TourSnapshot, full: boolean) {
+    if (full) {
+      // The demo changed settings: put every one of them back.
+      if (state.t !== s.t) {
+        state.t = s.t;
+        syncTargetUI();
+      }
+      state.weights = [...s.weights];
+      syncSliders();
+      for (const f of state.filters) {
+        const o = s.filters.find((x) => x.id === f.id);
+        if (o) {
+          f.on = o.on;
+          f.tau = o.tau;
+        }
+      }
+      for (const fi of filterInputs) {
+        fi.cb.checked = fi.flt.on;
+        fi.num.value = String(fi.flt.tau);
+      }
+      setAlphaUI(s.alpha);
+      state.geography = { countries: [...s.geography.countries], regions: [...s.geography.regions] as RegionId[] };
+      syncGeoUI();
+      state.region = s.region;
+      state.projection = s.projection as AppState['projection'];
+      state.basemap = s.basemap as AppState['basemap'];
+      state.stretchLow = s.stretchLow;
+      state.hideBelow = s.hideBelow;
+      state.opacity = s.opacity;
+      syncViewUI();
+      syncFilterCount();
+      requestScore();
+    }
+    setPlanetOpen(s.planetOpen);
+    const finish = () => {
+      if (!s.focus) exitFocus();
+      setPanel('left', s.leftOpen);
+      setPanel('right', s.rightOpen);
+      showLeftTab(s.leftTab);
+      showRightTab(s.rightTab);
+      const cm = s.camera;
+      mapApi.map.jumpTo({ center: [cm.lng, cm.lat], zoom: cm.zoom, bearing: cm.bearing, pitch: cm.pitch, padding: panelPadding() });
+      updateHash();
+    };
+    const same = current && s.site && current.lat === s.site.lat && current.lon === s.site.lon;
+    if (s.site && !same) {
+      const rank = lastResult?.sites.findIndex((x) => x.lat === s.site!.lat && x.lon === s.site!.lon) ?? -1;
+      void showCell(s.site.lat, s.site.lon, rank >= 0 ? rank + 1 : undefined, false, false, s.focus).then(finish);
+    } else {
+      if (!s.site) closeDossier();
+      finish();
+    }
+  }
   const tour = createTour({
+    // ---- what the guided tour needs: snapshot and restore the view, reveal controls (main.ts owns the state)
+    snapshot: (): TourSnapshot => {
+      const c = mapApi.map.getCenter();
+      return {
+        t: state.t,
+        weights: [...state.weights],
+        filters: state.filters.map((f) => ({ id: f.id, on: f.on, tau: f.tau })),
+        alpha: state.alpha,
+        geography: { countries: [...state.geography.countries], regions: [...state.geography.regions] },
+        region: state.region,
+        projection: state.projection,
+        basemap: state.basemap,
+        stretchLow: state.stretchLow,
+        hideBelow: state.hideBelow,
+        opacity: state.opacity,
+        leftTab: leftTab(),
+        rightTab: rightTab(),
+        leftOpen: !body.classList.contains('left-closed'),
+        rightOpen: !body.classList.contains('right-closed'),
+        site: current ? { lat: current.lat, lon: current.lon } : null,
+        focus: !!focus,
+        planetOpen: planetOpen(),
+        camera: { lng: c.lng, lat: c.lat, zoom: mapApi.map.getZoom(), bearing: mapApi.map.getBearing(), pitch: mapApi.map.getPitch() },
+        hash: location.hash,
+      };
+    },
+    restore: (s, full) => {
+      setGuide(false);
+      // A location the demo or the example button was still opening (showCell awaits the worker) must land
+      // first. The worker answers cell requests in order, so one more request works as a barrier.
+      void app.requestCell(0, 0).then(() => restoreNow(s, full));
+    },
+    context: () => ({
+      nCells: meta.n_cells,
+      nFeatures: F,
+      nTargets: targets.targets.length,
+      nAnalogs: ds.analogs.length,
+      nDiscoveries: ds.discoveries?.discoveries.length ?? 0,
+      noveltyKm: meta.novelty_saturation_km,
+      ...groupTargets(targets.targets.map((t) => ({ body: t.body, short: shortName(t) }))),
+      proxies: meta.features.filter((f) => f.proxy && !f.synthetic).map((f) => f.name),
+      regionName: state.region !== 'world' ? REGIONS[state.region].name : null,
+    }),
+    prep: (p) => {
+      if (!p) return;
+      if (p.clear && isNarrow()) {
+        setGuide(false);
+        if (!body.classList.contains('left-closed')) setPanel('left', false);
+        if (!body.classList.contains('right-closed')) setPanel('right', false);
+      }
+      if (p.guide && isNarrow()) setGuide(true);
+      if (p.left) {
+        setGuide(false);
+        if (body.classList.contains('left-closed')) setPanel('left', true);
+        if (p.left !== 'current') showLeftTab(p.left);
+      }
+      if (p.right) {
+        setGuide(false);
+        if (body.classList.contains('right-closed')) setPanel('right', true);
+        showRightTab(p.right);
+      }
+    },
+    dossierOpen: () => !!current,
+    openExample: () => {
+      const s = lastResult?.sites[0];
+      if (s) selectSite(s, 0);
+    },
+    openAbout: (section) => (section === 'limits' ? openLimits() : renderAbout(app, showPlace)),
+    narrow: isNarrow,
+    // ---- the original 30-second demo
     selectTarget: (id) => flyToTarget(id),
     setAlpha: (a) => {
       setAlphaUI(a);
@@ -941,7 +1225,7 @@ async function main() {
       else b?.scrollIntoView({ block: 'center', behavior: 'smooth' });
     },
   });
-  $('#btn-tour').onclick = () => tour.start();
+  $('#btn-tour').onclick = () => tour.start($('#btn-tour'));
 
   await Promise.all([workerReady, mapApi.ready]);
   mapApi.setAnalogs(ds.analogs);
@@ -968,13 +1252,14 @@ async function main() {
   syncTargetUI();
   if (link.v) mapApi.map.jumpTo({ center: [link.v.lon, link.v.lat], zoom: link.v.zoom });
   else if (state.region !== 'world') setRegion(state.region);
-  const narrow = window.innerWidth < 900;
+  const narrow = isNarrow();
   setPanel('left', !narrow);
   setPanel('right', !narrow);
   window.addEventListener('resize', applyPadding);
   requestScore();
   if (link.s) void showCell(link.s.lat, link.s.lon, undefined, !link.v, false, true);
-  if (link.tour) window.setTimeout(() => tour.start(), 800);
+  // #tour keeps its original meaning: play the 30-second captioned demo.
+  if (link.tour) window.setTimeout(() => tour.start(null, true), 800);
   $('#loader').classList.add('hidden');
   (window as unknown as { app: App }).app = app;
 }

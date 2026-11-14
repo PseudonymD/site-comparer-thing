@@ -40,8 +40,11 @@
       <div class="brand"><span class="brand-mark" aria-hidden="true"></span>Analog Finder</div>
       <nav class="targets" id="targets" aria-label="Target site"></nav>
       <select id="target-select" aria-label="Target site"></select>
-      <button class="text-btn" id="btn-tour">Take the tour</button>
-      <button class="text-btn" id="btn-about">How it works</button>
+      <div class="guide" role="group" aria-label="Guide">
+        <button class="text-btn" id="btn-tour">Take the tour</button>
+        <button class="text-btn" id="btn-about">How it works</button>
+        <button class="text-btn" id="btn-limits">Data and limitations</button>
+      </div>
     </header>
 
     <aside id="left" class="panel sheet" aria-label="Target and controls"></aside>
@@ -50,17 +53,18 @@
     <aside id="right" class="panel sheet" aria-label="Candidate sites">
       <div id="list-view">
         <div class="tabs rtabs" role="tablist">
-          <button role="tab" data-r="cand" aria-selected="true">Candidates</button>
-          <button role="tab" data-r="disc" aria-selected="false">Discoveries</button>
+          <button role="tab" id="rtab-cand" aria-controls="rv-cand" data-r="cand" aria-selected="true">Candidates</button>
+          <button role="tab" id="rtab-disc" aria-controls="rv-disc" data-r="disc" aria-selected="false">Discoveries</button>
         </div>
-        <div id="rv-cand" class="rv">
+        <div id="rv-cand" class="rv" role="tabpanel" aria-labelledby="rtab-cand">
           <div class="panel-head">
             <div class="note" id="sites-sub"></div>
+            <button class="vbadge hidden" id="sites-valid" title="How well do known analogs score? Click for the method."></button>
             <div id="region-chip" class="hidden"></div>
           </div>
           <ol id="sites"></ol>
         </div>
-        <div id="rv-disc" class="rv rv-scroll hidden"></div>
+        <div id="rv-disc" class="rv rv-scroll hidden" role="tabpanel" aria-labelledby="rtab-disc"></div>
       </div>
       <section id="dossier" class="hidden" aria-live="polite"></section>
     </aside>
@@ -72,9 +76,24 @@
       <div class="legend-ticks"><span id="legend-lo"></span><span id="legend-mid"></span><span id="legend-hi"></span></div>
       <div class="legend-foot" id="legend-foot"></div>
       <div class="legend-key"><span><i class="k-site"></i>candidate</span><span><i class="k-analog"></i>known analog site</span></div>
+      <div class="legend-more"><button class="text-btn legend-limits" id="legend-limits" type="button">Limitations</button></div>
     </div>
 
     <button id="heat-toggle" class="sheet" aria-pressed="false">Show heatmap</button>
+
+    <div id="guide-sheet" class="sheet hidden" role="region" aria-label="Guide">
+      <div class="eyebrow">Guide</div>
+      <button class="guide-item" id="guide-tour" type="button"><b>Take the tour</b><span>A step-by-step walk through the controls</span></button>
+      <button class="guide-item" id="guide-about" type="button"><b>How it works</b><span>The method, step by step</span></button>
+      <button class="guide-item" id="guide-limits" type="button"><b>Data and limitations</b><span>Validation, data sources and caveats</span></button>
+    </div>
+
+    <nav id="mnav" class="sheet" aria-label="Panels">
+      <button id="mnav-map" type="button" aria-pressed="true">Map</button>
+      <button id="mnav-cand" type="button" aria-pressed="false">Candidates</button>
+      <button id="mnav-ctrl" type="button" aria-pressed="false">Controls<span class="count" id="mnav-ctrl-n"></span></button>
+      <button id="mnav-guide" type="button" aria-pressed="false">Guide</button>
+    </nav>
 
     <div id="about" class="hidden"></div>
     <div id="toast" class="hidden sheet" role="status"></div>
