@@ -1,6 +1,6 @@
 {
- "generated": "2026-11-14T07:30:19",
- "data_generated": "2026-11-14T07:21:44",
+ "generated": "2026-11-14T09:58:31",
+ "data_generated": "2026-11-14T09:58:26",
  "bbox": [
   11.0,
   -35.5,
@@ -168,7 +168,7 @@
      "target": "mars_jezero",
      "target_name": "Mars – Jezero crater",
      "score": 0.6372,
-     "percentile": 96.21,
+     "percentile": 96.2,
      "lat": -31.85,
      "lon": 20.45,
      "best": [
@@ -910,7 +910,7 @@
      "target": "moon_south_pole",
      "target_name": "Moon – South Pole (Artemis)",
      "score": 0.5739,
-     "percentile": 86.63,
+     "percentile": 86.64,
      "lat": -23.65,
      "lon": 15.45,
      "best": [
@@ -2156,7 +2156,7 @@
      "target": "mars_north_polar",
      "target_name": "Mars – North polar layered deposits",
      "score": 0.5425,
-     "percentile": 64.32,
+     "percentile": 64.31,
      "lat": -27.45,
      "lon": 27.95,
      "best": [
@@ -2526,7 +2526,7 @@
     {
      "target": "mars_arcadia",
      "target_name": "Mars – Arcadia Planitia (mid-latitude ice)",
-     "score": 0.6347,
+     "score": 0.6346,
      "percentile": 92.46,
      "lat": -31.85,
      "lon": 24.05,
@@ -2971,7 +2971,7 @@
    "lat": -22.45,
    "lon": 14.85,
    "country": "Namibia",
-   "score": 0.6633,
+   "score": 0.6632,
    "percentile": 96.96,
    "best": [
     {
@@ -3045,7 +3045,7 @@
    "lon": 16.45,
    "country": "Namibia",
    "score": 0.5887,
-   "percentile": 85.69,
+   "percentile": 85.7,
    "best": [
     {
      "feature": "temp_range",

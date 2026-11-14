@@ -1,6 +1,6 @@
 # Validation report
 
-Generated 2026-11-14 07:21. Land cells scored: 2,143,220.
+Generated 2026-11-14 09:58. Land cells scored: 2,143,220.
 
 For each planetary target we score every land cell with the target's default weights and default filters (non-ice targets exclude cells with > 50 % permanent ice), then compare the **known analog sites** used for that body against **1000 random land cells**. A site's score is the best cell within ±2 cells (~±20 km) of its published coordinates; random cells use the same rule. ROC-AUC = probability that a known analog outranks a random land cell (0.5 = chance, 1.0 = perfect).
 
@@ -25,55 +25,55 @@ Targets whose analog list was revised after seeing earlier results (not a blind 
 
 | Known analog | Score | Earth percentile | Rank |
 |---|---|---|---|
-| Haughton Crater, Devon Island | 0.540 | 75.8 | 518,266 |
+| Haughton Crater, Devon Island | 0.540 | 75.8 | 518,275 |
 | McMurdo Dry Valleys | 0.736 | 100.0 | 26 |
-| Svalbard (Bockfjord, AMASE) | 0.493 | 53.9 | 988,431 |
-| Meteor Crater (Barringer) | 0.603 | 93.5 | 139,452 |
+| Svalbard (Bockfjord, AMASE) | 0.493 | 53.9 | 988,500 |
+| Meteor Crater (Barringer) | 0.603 | 93.5 | 139,388 |
 
 ## Moon – Mare / lava tube (Marius Hills)
 
 | Known analog | Score | Earth percentile | Rank |
 |---|---|---|---|
-| Hawaiian lava tubes (Kazumura) | 0.448 | 54.9 | 965,754 |
-| Kīlauea | 0.504 | 72.8 | 583,771 |
-| Black Point Lava Flow | 0.662 | 98.7 | 28,621 |
-| Lanzarote (Timanfaya) | 0.561 | 84.8 | 326,392 |
-| Askja, Iceland | 0.445 | 53.9 | 988,905 |
-| Holuhraun lava field | 0.443 | 53.2 | 1,002,539 |
-| Mauna Kea | 0.503 | 72.6 | 586,910 |
+| Hawaiian lava tubes (Kazumura) | 0.448 | 54.9 | 965,812 |
+| Kīlauea | 0.504 | 72.8 | 583,814 |
+| Black Point Lava Flow | 0.662 | 98.7 | 28,636 |
+| Lanzarote (Timanfaya) | 0.561 | 84.8 | 326,426 |
+| Askja, Iceland | 0.445 | 53.9 | 988,982 |
+| Holuhraun lava field | 0.443 | 53.2 | 1,002,603 |
+| Mauna Kea | 0.503 | 72.6 | 586,958 |
 
 ## Mars – Jezero crater
 
 | Known analog | Score | Earth percentile | Rank |
 |---|---|---|---|
-| Atacama Desert (Yungay) | 0.667 | 98.8 | 25,036 |
-| Death Valley | 0.665 | 98.7 | 27,753 |
-| Pilbara Craton | 0.580 | 88.8 | 239,197 |
-| Mars Desert Research Station | 0.658 | 98.2 | 38,043 |
-| Río Tinto | 0.574 | 87.8 | 262,133 |
+| Atacama Desert (Yungay) | 0.667 | 98.8 | 25,042 |
+| Death Valley | 0.665 | 98.7 | 27,763 |
+| Pilbara Craton | 0.580 | 88.8 | 239,217 |
+| Mars Desert Research Station | 0.658 | 98.2 | 38,056 |
+| Río Tinto | 0.574 | 87.8 | 262,169 |
 
 ## Mars – Gale crater
 
 | Known analog | Score | Earth percentile | Rank |
 |---|---|---|---|
-| Atacama Desert (Yungay) | 0.672 | 99.0 | 21,937 |
-| Mars Desert Research Station | 0.662 | 98.4 | 35,004 |
-| Death Valley | 0.672 | 99.0 | 21,896 |
-| Pilbara Craton | 0.577 | 89.0 | 234,658 |
+| Atacama Desert (Yungay) | 0.672 | 99.0 | 21,948 |
+| Mars Desert Research Station | 0.662 | 98.4 | 35,019 |
+| Death Valley | 0.672 | 99.0 | 21,905 |
+| Pilbara Craton | 0.577 | 89.0 | 234,667 |
 
 ## Mars – Arcadia Planitia (mid-latitude ice)
 
 | Known analog | Score | Earth percentile | Rank |
 |---|---|---|---|
-| Haughton Crater, Devon Island | 0.542 | 56.3 | 936,000 |
-| Svalbard (Bockfjord, AMASE) | 0.474 | 21.5 | 1,682,815 |
-| McMurdo Dry Valleys | 0.674 | 98.1 | 40,188 |
-| University Valley (Dry Valleys) | 0.683 | 98.8 | 25,773 |
+| Haughton Crater, Devon Island | 0.542 | 56.3 | 935,948 |
+| Svalbard (Bockfjord, AMASE) | 0.474 | 21.5 | 1,682,853 |
+| McMurdo Dry Valleys | 0.674 | 98.1 | 40,198 |
+| University Valley (Dry Valleys) | 0.683 | 98.8 | 25,779 |
 
 ## Mars – North polar layered deposits
 
 | Known analog | Score | Earth percentile | Rank |
 |---|---|---|---|
 | McMurdo Dry Valleys | 0.704 | 100.0 | 51 |
-| Svalbard (Bockfjord, AMASE) | 0.493 | 36.4 | 1,363,977 |
-| Haughton Crater, Devon Island | 0.540 | 62.7 | 800,143 |
+| Svalbard (Bockfjord, AMASE) | 0.493 | 36.4 | 1,364,025 |
+| Haughton Crater, Devon Island | 0.540 | 62.7 | 800,229 |
