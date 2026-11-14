@@ -293,7 +293,7 @@ function g6(): string {
 function update6(s: St, animate: boolean) {
   const { meta } = s.app.ds;
   const w = effWeights(s);
-  const c = contributions(s.info!.q, s.t.vector, w);
+  const c = contributions(s.info!.q, s.t.vector, w, s.app.state.ranges);
   const total = c.reduce((a, b) => a + b, 0);
   const score = (1 - Math.sqrt(total)) * 100;
   const byG: Record<string, number> = {};
@@ -327,7 +327,7 @@ function update6(s: St, animate: boolean) {
 }
 
 function baseScore(s: St): number {
-  const c = contributions(s.info!.q, s.t.vector, s.app.state.weights);
+  const c = contributions(s.info!.q, s.t.vector, s.app.state.weights, s.app.state.ranges);
   return 1 - Math.sqrt(c.reduce((a, b) => a + b, 0));
 }
 
@@ -403,7 +403,7 @@ async function g9(s: St, el: HTMLElement) {
     if (!a) continue;
     const info = await s.app.requestCell(a.lat, a.lon);
     if (!info) continue;
-    const c = contributions(info.q, s.t.vector, s.app.state.weights);
+    const c = contributions(info.q, s.t.vector, s.app.state.weights, s.app.state.ranges);
     const tot = c.reduce((x, y) => x + y, 0) || 1;
     c.forEach((v, i) => (sums[i] += v / tot));
     n++;

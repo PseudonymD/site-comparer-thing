@@ -1,12 +1,14 @@
 // Site dossier: rendered inside the right panel in place of the candidate list, so the map stays visible.
 import type { App } from '../main';
 import type { CellInfo, FeatureMeta } from '../types';
-import { contributions, scoreCell, valueFromQ } from '../scoring';
+import { contributions, scoreCell, valueFromQ, valueFromZ } from '../scoring';
 import { esc, flag, fmtKm, fmtLatLon, fmtValue, GROUP_COLORS } from '../format';
 import { runDrill } from '../drill';
 import { fingerprint } from './fingerprint';
 import { rail } from './rail';
 import { planetPanel, watchPlanetTiles } from './planet';
+import { complicationEvidence } from '../complications';
+import { openResearchReport } from './report';
 
 // The side-by-side stays open while stepping through candidates.
 let pmOpen = false;
@@ -27,9 +29,11 @@ export function renderDossier(app: App, info: CellInfo, lat: number, lon: number
   const { meta } = app.ds;
   const t = app.target();
   const w = app.state.weights;
-  const contrib = contributions(info.q, t.vector, w);
+  const contrib = contributions(info.q, t.vector, w, app.state.ranges);
   const total = contrib.reduce((a, b) => a + b, 0);
-  const s = scoreCell(info.q, t.vector, w);
+  const s = scoreCell(info.q, t.vector, w, [], app.state.ranges);
+  const pointScore = scoreCell(info.q, t.vector, w);
+  const rangeChanged = app.state.ranges.some((range, j) => range.min !== t.vector[j] || range.max !== t.vector[j]);
   const filtered = info.score === 0 && s > 0;
   const pctl = filtered ? NaN : app.percentileOf(info.blended);
   const country = app.countryName(info.country);
@@ -44,6 +48,23 @@ export function renderDossier(app: App, info: CellInfo, lat: number, lon: number
   const good = [...weighted].sort((a, b) => b.w * (1 - Math.abs(b.z - b.t)) - a.w * (1 - Math.abs(a.z - a.t))).slice(0, 3);
   const bad = [...weighted].sort((a, b) => b.c - a.c).slice(0, 3).filter((r) => r.c > 0.0005);
   const targetText = (r: (typeof rows)[number]) => (r.raw.value === null ? 'beyond Earth' : fmtValue(r.raw.value, r.f));
+  const targetIntervalText = (r: (typeof rows)[number]) => {
+    const range = app.state.ranges[r.j];
+    const lo = valueFromZ(r.f.breakpoints, range.min);
+    const hi = valueFromZ(r.f.breakpoints, range.max);
+    return Math.abs(lo - hi) < 1e-9 ? fmtValue(lo, r.f) : `${fmtValue(lo, r.f)} – ${fmtValue(hi, r.f)}`;
+  };
+  const targetClass = (r: (typeof rows)[number]) => r.raw.refs.length ? (r.raw.refs.some((ref) => ref.includes('proxy')) ? 'proxy' : 'literature-derived') : 'assumed/model input';
+  const sourceDetails = (r: (typeof rows)[number]) => [
+    r.f.source_name,
+    r.f.measurement_class,
+    r.f.resolution,
+    r.f.temporal_coverage,
+    r.f.data_quality,
+    r.f.uncertainty,
+    r.f.coverage === null ? '' : `coverage ${Math.round(r.f.coverage * 100)}%`,
+    r.f.notes || '',
+  ].filter(Boolean).join(' · ');
 
   const maxC = Math.max(...contrib, 1e-9);
   const off = rows.length - weighted.length;
@@ -59,14 +80,18 @@ export function renderDossier(app: App, info: CellInfo, lat: number, lon: number
       </div>`;
     })
     .join('');
-
   const tableRows = rows
     .map((r) => {
-      const tv = r.raw.value === null ? `<span class="beyond" title="Beyond Earth's range; clamped to Earth max">> ${fmtValue(r.raw.clamped, r.f)}</span>` :
+      const tv = r.raw.value === null ? `<span class="beyond" title="Beyond Earth's range; clamped to Earth max">beyond Earth</span>` :
         r.raw.beyond_earth ? `<span class="beyond" title="Beyond Earth's range (clamped to ${fmtValue(r.raw.clamped, r.f)})">${fmtValue(r.raw.value, r.f)}</span>` : fmtValue(r.raw.value, r.f);
-      return `<tr class="${r.w > 0 ? '' : 'off'}"><td>${esc(r.f.name)}</td><td>${fmtValue(r.here, r.f)}</td><td>${tv}</td><td>${Math.round(r.z * 100)}</td><td>${Math.round(r.t * 100)}</td></tr>`;
+      const gap = Math.max(app.state.ranges[r.j].min - r.z, 0, r.z - app.state.ranges[r.j].max);
+      const share = total > 0 ? `${((r.c / total) * 100).toFixed(1)}%` : '–';
+      return `<tr class="${r.w > 0 ? '' : 'off'}"><td>${esc(r.f.name)}</td><td>${fmtValue(r.here, r.f)}</td><td>${Math.round(r.z * 100)}</td><td>${tv}</td><td>${targetIntervalText(r)}</td><td>${(gap * 100).toFixed(1)}</td><td>${r.w.toFixed(1)}%</td><td>${share}</td></tr>
+        <tr class="meta-row ${r.w > 0 ? '' : 'off'}"><td colspan="8"><details><summary>${esc(sourceDetails(r))}</summary><span>Target: ${esc(targetClass(r))}; references: ${esc(r.raw.refs.join(', ') || 'none listed')}; target uncertainty: not provided.</span></details></td></tr>`;
     })
     .join('');
+  const complicationRows = rows.map((r) => ({ feature: r.f, measurement: r.here, percentile: r.z }));
+  const complications = app.state.mode === 'earth-complications' ? complicationEvidence(t, complicationRows) : [];
 
   const rankTxt = Number.isFinite(pctl) ? `top ${Math.max(0.01, (1 - pctl) * 100).toFixed(pctl > 0.99 ? 2 : 1)}%` : '–';
   const prevScroll = keepScroll ? ((el().querySelector('.d-scroll') as HTMLElement | null)?.scrollTop ?? 0) : 0;
@@ -78,7 +103,7 @@ export function renderDossier(app: App, info: CellInfo, lat: number, lon: number
         <button class="icon-btn" id="d-prev" aria-label="Previous candidate" ${nav.rank <= 1 ? 'disabled' : ''}>↑</button>
         <button class="icon-btn" id="d-next" aria-label="Next candidate" ${nav.rank >= nav.total ? 'disabled' : ''}>↓</button></div>` : '<div class="d-step"><span>Picked on the map</span></div>'}
     </div>
-    <div class="d-share"><button class="text-btn" id="d-copy" title="Copy a link that opens this exact view">Copy link</button></div>
+    <div class="d-share"><button class="text-btn" id="d-copy" title="Copy a link that opens this exact view">Copy link</button><button class="btn" id="report-btn">Generate Research Report</button></div>
     <div class="d-scroll">
       <div class="d-head">
         ${fingerprint(meta.features, t.vector, z, 104, `Fingerprint of this site against ${t.name}`)}
@@ -87,12 +112,13 @@ export function renderDossier(app: App, info: CellInfo, lat: number, lon: number
           <h2>${flag(country.iso)} ${esc(country.name || 'Unknown location')}</h2>
           <div class="facts">
             <div class="big">${filtered ? '<span class="beyond">filtered</span>' : (s * 100).toFixed(1)}</div>
-            <div><b>${rankTxt}</b>of Earth's land</div>
+            <div><b>${rankTxt}</b>of Earth's land<br><span class="note">similarity score / 100</span></div>
             <div title="Nearest known analog: ${esc(near.name)}"><b>${fmtKm(info.noveltyKm)}</b>from a known analog</div>
           </div>
         </div>
       </div>
       <div class="d-why">
+        ${rangeChanged ? `<p class="note">Range-based score <b>${(s * 100).toFixed(1)}</b> vs point baseline <b>${(pointScore * 100).toFixed(1)}</b> (${((s - pointScore) * 100).toFixed(1)} points). Acceptable intervals describe comparison tolerance, not site suitability.</p>` : ''}
         ${good.length ? `<p><b>Matches ${t.body} on</b> ${good.map((r) => esc(lower(r.f.name))).join(', ')}.</p>` : ''}
         ${bad.length ? `<p><b>Biggest gaps:</b> ${bad.map((r) => `${esc(lower(r.f.name))} (${fmtValue(r.here, r.f)} vs ${targetText(r)})`).join(', ')}.</p>` : ''}
         <p class="note">Nearest known analog: ${esc(near.name)}, ${fmtKm(near.km)} away.${filtered ? ' This cell is excluded by one of your filters.' : ''}</p>
@@ -103,10 +129,14 @@ export function renderDossier(app: App, info: CellInfo, lat: number, lon: number
         ${rails}
         ${off ? `<p class="note">${off} layer${off > 1 ? 's' : ''} with weight 0 not shown.</p>` : ''}
         <details class="all-values"><summary>Show all values</summary>
-          <table class="vals"><thead><tr><th>Layer</th><th>Here</th><th>${esc(t.body)} target</th><th>Here %ile</th><th>Target %ile</th></tr></thead><tbody>${tableRows}</tbody></table>
-          <p class="note">Percentiles rank this value among all land on Earth (0–100). Highlighted targets lie beyond anything on Earth and were clamped before comparison.</p>
+          <table class="vals"><thead><tr><th>Feature</th><th>Earth</th><th>Earth %ile</th><th>Literature target</th><th>Selected interval</th><th>Gap %ile</th><th>Weight</th><th>Gap share</th></tr></thead><tbody>${tableRows}</tbody></table>
+          <p class="note">Earth values are physical measurements or estimates from the listed source. Percentiles rank values among Earth's land; gap %ile is the distance from the selected target interval. A wider interval is not a suitability claim.</p>
         </details>
       </div>
+      ${complications.length ? `<div class="d-sec complications"><h3>Earth complications</h3><p class="note">These are separate contextual assessments, not penalties or additions to the similarity score.</p>
+        ${complications.map((item) => `<details class="complication ${item.status}"><summary><span>${esc(item.title)}</span><b>${item.status}</b></summary><p>${esc(item.summary)}</p>${item.evidence.length ? `<ul>${item.evidence.map((e) => `<li>${esc(e)}</li>`).join('')}</ul>` : ''}<p class="note">${esc(item.limitation)}</p></details>`).join('')}
+        <p class="note">Pressure references: <a href="https://nssdc.gsfc.nasa.gov/planetary/factsheet/moonfact.html" target="_blank" rel="noreferrer">NASA Moon fact sheet</a>; <a href="https://nssdc.gsfc.nasa.gov/planetary/factsheet/marsfact.html" target="_blank" rel="noreferrer">NASA Mars fact sheet</a>.</p>
+      </div>` : ''}
       <div class="d-sec">
         <h3>Side by side with ${esc(t.body)}</h3>
         <p class="note">The target's real terrain next to this candidate, at a similar ground scale.</p>
@@ -129,6 +159,7 @@ export function renderDossier(app: App, info: CellInfo, lat: number, lon: number
   }
   document.getElementById('d-back')!.onclick = nav.onBack;
   document.getElementById('d-copy')!.onclick = nav.onCopy;
+  document.getElementById('report-btn')!.onclick = () => openResearchReport(app, info, lat, lon);
   const pmBtn = document.getElementById('pm-btn') as HTMLButtonElement;
   const pmOut = document.getElementById('pm-out')!;
   const showPm = () => {

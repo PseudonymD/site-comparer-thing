@@ -18,16 +18,18 @@ This document is the single source of truth for the analog score. It is implemen
 | `q_if ∈ {0..255}` | stored value of feature *f* for land cell *i* (`features.bin`, cell-major `[cell][18]`) |
 | `z_if = q_if / 255` | Earth-land percentile of the cell's raw value, `CDF_f(x_if)` (mid-rank for ties) |
 | `t_f ∈ [0,1]` | target percentile `CDF_f(clamp(T_f, min_f, max_f))` (`targets.json → vector`) |
-| `w_f ≥ 0` | user weight (UI sliders 0–3; defaults in `targets.json → weights`) |
+| `w_f ≥ 0` | normalized user weight (UI percentages; legacy `targets.json → weights` are normalized without changing their ratios) |
+| `[L_f, U_f]` | acceptable target interval in Earth-percentile space; defaults to `[t_f, t_f]` and may be expanded only within `[0,1]` |
 
 ## Score
 
 ```
-S_i  = 1 − sqrt( Σ_f w_f (z_if − t_f)² / Σ_f w_f )
-c_if = w_f (z_if − t_f)² / Σ_f w_f            (per-feature contribution; Σ_f c_if = (1 − S_i)²)
+S_i  = 1 − sqrt( Σ_f w_f d_if² / Σ_f w_f )
+c_if = w_f d_if² / Σ_f w_f                   (per-feature contribution; Σ_f c_if = (1 − S_i)²)
+d_if = max(L_f − z_if, 0, z_if − U_f)
 ```
 
-`S_i ∈ [0, 1]`: 1 means the cell matches the target percentile on every weighted feature, 0 means maximally different.
+For point matching, `L_f = U_f = t_f`, which is exactly the original score. Values inside an interval have zero mismatch. `S_i ∈ [0, 1]`: 1 means the cell matches every weighted interval, 0 means maximally different.
 If every weight is 0, the configuration is invalid and both implementations reject it.
 The web UI prevents submitting an all-zero vector; negative, non-finite, or incorrectly sized vectors are also rejected.
 

@@ -3,9 +3,14 @@
 //   #t=mars_jezero&a=0.3&f=ice:0.5&r=safrica&v=-24.1,-69.9,9&s=-24.1,-69.93
 // Weights are only written when they differ from the target's defaults (w=18 values joined by "_").
 
+import { ACTIVITIES, type ActivityId } from './activities';
+
 export interface LinkState {
+  m?: MapMode;
+  activity?: ActivityId;
   t?: string; // target id
   w?: number[]; // weights (full vector) when changed
+  x?: { min: number; max: number }[]; // target intervals in percentile space
   f?: { id: string; tau: number }[]; // filters that are on (present = explicit, even if empty)
   c?: string[]; // selected country ISO codes
   g?: string[]; // selected geographic region IDs
@@ -18,16 +23,28 @@ export interface LinkState {
   tour?: boolean;
 }
 
+export type MapMode = 'direct' | 'exploration' | 'earth-complications';
+
+const MODES: MapMode[] = ['direct', 'exploration', 'earth-complications'];
 const num = (x: string | null) => (x === null || x === '' || !Number.isFinite(+x) ? undefined : +x);
 const r4 = (x: number) => +x.toFixed(4);
 
 export function parseHash(hash: string): LinkState {
   const p = new URLSearchParams(hash.replace(/^#/, ''));
   const out: LinkState = {};
+  if (MODES.includes(p.get('m') as MapMode)) out.m = p.get('m') as MapMode;
+  if (ACTIVITIES.some((activity) => activity.id === p.get('act'))) out.activity = p.get('act') as ActivityId;
   if (p.get('t')) out.t = p.get('t')!;
   if (p.get('w')) {
     const w = p.get('w')!.split('_').map(Number);
     if (w.every((x) => Number.isFinite(x) && x >= 0 && x <= 3)) out.w = w;
+  }
+  if (p.get('x')) {
+    const ranges = p.get('x')!.split('_').map((pair) => {
+      const [min, max] = pair.split(':').map(Number);
+      return { min, max };
+    });
+    if (ranges.length && ranges.every((range) => Number.isFinite(range.min) && Number.isFinite(range.max) && range.min >= 0 && range.max <= 1 && range.min <= range.max)) out.x = ranges;
   }
   if (p.has('f')) {
     out.f = p
@@ -57,8 +74,11 @@ export function parseHash(hash: string): LinkState {
 
 export function buildHash(s: LinkState): string {
   const parts: string[] = [];
+  if (s.m && s.m !== 'direct') parts.push(`m=${encodeURIComponent(s.m)}`);
+  if (s.activity && s.activity !== 'rover-mobility') parts.push(`act=${encodeURIComponent(s.activity)}`);
   if (s.t) parts.push(`t=${encodeURIComponent(s.t)}`);
   if (s.w) parts.push(`w=${s.w.map((x) => +x.toFixed(2)).join('_')}`);
+  if (s.x) parts.push(`x=${s.x.map((range) => `${range.min.toFixed(4)}:${range.max.toFixed(4)}`).join('_')}`);
   if (s.f) parts.push(`f=${s.f.map((f) => `${f.id}:${+f.tau.toPrecision(4)}`).join(',')}`);
   if (s.c?.length) parts.push(`c=${s.c.join(',')}`);
   if (s.g?.length) parts.push(`g=${s.g.join(',')}`);

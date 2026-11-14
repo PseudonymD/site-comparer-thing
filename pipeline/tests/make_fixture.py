@@ -26,12 +26,16 @@ def build() -> dict:
     filters = [[11, 0.6], [15, 0.8]]
     s = score(q, target, weights)
     sf = score(q, target, weights, [(f, t) for f, t in filters])
+    target_ranges = np.column_stack((np.maximum(target - 0.1, 0), np.minimum(target + 0.1, 1)))
+    sr = score(q, target, weights, target_ranges=target_ranges)
     d = np.round(rng.random(n) * 4000, 2)
     b = blend(sf, d, 0.3)
     return {
         "n_features": F, "q": q.tolist(), "target": target.tolist(), "weights": weights.tolist(),
         "filters": filters, "dist_km": d.tolist(), "alpha": 0.3, "saturation_km": NOVELTY_SATURATION_KM,
-        "expected_score": s.tolist(), "expected_score_filtered": sf.tolist(), "expected_blend": b.tolist(),
+        "target_ranges": target_ranges.tolist(), "expected_score": s.tolist(), "expected_score_filtered": sf.tolist(),
+        "expected_range_score": sr.tolist(), "expected_range_contrib_first": contributions(q[0], target, weights, target_ranges).tolist(),
+        "expected_blend": b.tolist(),
         "zthr_breakpoints": ZBP, "zthr_cases": [[tau, z_threshold_from_value(ZBP, tau)] for tau in (-1, 0, 0.05, 0.3, 0.95, 2)],
         "expected_contrib_first5": [contributions(q[i], target, weights).tolist() for i in range(5)],
     }
