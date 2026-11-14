@@ -59,7 +59,12 @@ def validate(q: np.ndarray, land_idx: np.ndarray, grid: Grid, targets: dict, ana
             rank = int(sorted_s.size - np.searchsorted(sorted_s, v, side="left")) if np.isfinite(v) else None
             rows.append({"id": aid, "name": a["name"], "score": round(v, 4), "percentile": round(pct, 2), "rank": rank})
         pos = np.array([r["score"] for r in rows], dtype=float)
-        results.append({
+        extra = {}
+        if t.get("validation_v1"):
+            pos1 = np.array([_site_score(g, grid, by_id[a]["lat"], by_id[a]["lon"]) for a in t["validation_v1"]
+                             if a in by_id], dtype=float)
+            extra = {"auc_v1_list": round(auc(pos1, neg), 3), "validation_v1": t["validation_v1"]}
+        results.append({**extra,
             "target": t["id"], "name": t["name"], "auc": round(auc(pos, neg), 3),
             "median_analog_percentile": _nanmedian([r["percentile"] for r in rows]),
             "random_median_score": round(float(np.median(neg)), 4), "analogs": rows,
@@ -67,6 +72,19 @@ def validate(q: np.ndarray, land_idx: np.ndarray, grid: Grid, targets: dict, ana
     md = _markdown(results, synthetic_features, land_idx.size)
     return {"generated": datetime.now().isoformat(timespec="seconds"), "n_random": int(rand_idx.size),
             "synthetic_features": synthetic_features, "results": results}, md
+
+
+HOLDOUT = [
+    "**What was seen when.** The target values and default weights in `pipeline/targets.py` were written from the "
+    "literature and the challenge brief in the first commit, before any validation had been run on real data, and "
+    "no weight has been changed since. Every analog in `known_analogs.json` was known to the authors at that time "
+    "(they are the famous sites), so none is a hold-out in the strict sense; but none was used to fit weights. "
+    "Changes made after seeing results, and therefore not blind: (1) the default ice filter for non-ice targets "
+    "(added after a synthetic-data smoke test); (2) the SoilGrids gap policy (a data bug found while diagnosing "
+    "Arcadia: Antarctica had been filled with peat-like soil carbon); (3) the Arcadia surface-ice target and its "
+    "analog list. See `docs/decisions.md`. The AUC is therefore a sanity check of the method, not an independent "
+    "accuracy estimate.", "",
+]
 
 
 def divmod_latlon(grid: Grid, cell: int) -> tuple[float, float]:
@@ -84,12 +102,19 @@ def _markdown(results, synthetic, n_land) -> str:
         "the best cell within ±2 cells (~±20 km) of its published coordinates; random cells use the same rule. "
         "ROC-AUC = probability that a known analog outranks a random land cell (0.5 = chance, 1.0 = perfect).", "",
     ]
+    lines += HOLDOUT
     if synthetic:
         lines += [f"> ⚠️ **{len(synthetic)} feature(s) were SYNTHETIC in this run** ({', '.join(synthetic)}). "
                   "These numbers are only a smoke test of the method until the real pipeline run replaces them.", ""]
     lines += ["| Target | ROC-AUC | Median analog percentile | Random median score |", "|---|---|---|---|"]
     for r in results:
         lines.append(f"| {r['name']} | {r['auc']:.3f} | {r['median_analog_percentile']:.1f} | {r['random_median_score']:.3f} |")
+    v1 = [r for r in results if "auc_v1_list" in r]
+    if v1:
+        lines += ["", "Targets whose analog list was revised after seeing earlier results (not a blind test):", ""]
+        for r in v1:
+            lines.append(f"- {r['name']}: AUC {r['auc']:.3f} with the revised list, {r['auc_v1_list']:.3f} with the "
+                         f"original list ({', '.join(r['validation_v1'])}).")
     for r in results:
         lines += ["", f"## {r['name']}", "", "| Known analog | Score | Earth percentile | Rank |", "|---|---|---|---|"]
         for a in r["analogs"]:

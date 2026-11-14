@@ -27,8 +27,20 @@ QUICK_BBOX = (-120.0, 30.0, -100.0, 45.0)  # US South-West: Death Valley, MDRS, 
 MIN_COVERAGE = 0.5
 
 
+# Bump a source's tag when its gap policy changes so old cached finals are recomputed.
+SOURCE_TAG_VERSION = {"soilgrids": "soilgrids_v2"}
+
+
 def _source_tag(name: str) -> str:
-    return f"terrain_z{terrain.zoom()}" if name == "terrain" else name
+    return f"terrain_z{terrain.zoom()}" if name == "terrain" else SOURCE_TAG_VERSION.get(name, name)
+
+
+def compute_order() -> list:
+    """FEATURES in the order they are computed: ice before soc/sand (SoilGrids' gap policy needs it)."""
+    order = [f for f in FEATURES if f.id != "ice"]
+    ice = next(f for f in FEATURES if f.id == "ice")
+    order.insert(next(i for i, f in enumerate(order) if f.id == "soc"), ice)
+    return order
 
 
 _HOST_CACHE: dict[str, bool] = {}
@@ -96,8 +108,14 @@ def compute_feature(fid: str, chain: tuple[str, ...], grid: Grid, land: np.ndarr
             log.warning("  %-11s source %s covers only %.0f%% of land - skipping", fid, name, cov * 100)
             attempts.append({"source": name, "error": f"coverage {cov:.2f}"})
             continue
-        arr = fill_nearest(arr, land)
+        gap_info = None
+        if hasattr(mod, "fill_gaps"):
+            arr, gap_info = mod.fill_gaps(arr, land, fid, grid, ctx.get("ice"))
+        else:
+            arr = fill_nearest(arr, land)
         info = {"coverage": round(cov, 4), "filled_pct": round((1 - cov) * 100, 2), "seconds": round(time.time() - t0, 1)}
+        if gap_info:
+            info["gap_fill"] = gap_info
         unit = getattr(mod, "UNIT", None)
         if unit:
             info["unit"] = unit
@@ -130,14 +148,16 @@ def run(opts: RunOptions) -> dict:
     raw: dict[str, np.ndarray] = {}
     used: dict[str, dict] = {}
     ctx: dict = {"land": land}
-    for f in FEATURES:
+    for f in compute_order():
         if not opts.wants(f.id):
             prev = _previous_final(f.id, grid)
             if prev is not None:
                 raw[f.id], used[f.id] = prev
                 log.info("  %-11s <- %s (from earlier run; not in --only)", f.id, used[f.id]["source"])
                 continue
-            chain = ("synthetic",)
+            # Computed before by a real source whose cache tag has since changed (e.g. a new gap policy):
+            # recompute from that source's raw cache instead of falling back to synthetic.
+            chain = f.sources if _previous_source(f.id, grid) not in (None, "synthetic") else ("synthetic",)
         else:
             chain = f.sources
         if f.id not in ("elevation",) and "elevation" in raw:
@@ -185,7 +205,7 @@ def run(opts: RunOptions) -> dict:
             "description": f.description, "log_display": f.log_display,
             "source": u["source"], "source_name": desc, "source_url": url,
             "synthetic": u["source"] == "synthetic", "proxy": f.id in proxy,
-            "coverage": u.get("coverage"), "min": round(cdf.min, 4), "max": round(cdf.max, 4),
+            "coverage": u.get("coverage"), "notes": (u.get("gap_fill") or {}).get("note"), "min": round(cdf.min, 4), "max": round(cdf.max, 4),
             "breakpoints": cdf.breakpoints(),
         })
     files.append(write_json(out / "meta.json", meta))
@@ -222,6 +242,13 @@ def _remember_final(used: dict, grid: Grid) -> None:
     p.parent.mkdir(parents=True, exist_ok=True)
     p.write_text(json.dumps({k: {kk: vv for kk, vv in v.items() if kk != "attempts"} for k, v in used.items()},
                             indent=1), encoding="utf-8")
+
+
+def _previous_source(fid: str, grid: Grid) -> str | None:
+    p = CACHE_DIR / "grids" / grid_tag(grid) / "final_sources.json"
+    if not p.exists():
+        return None
+    return (json.loads(p.read_text(encoding="utf-8")).get(fid) or {}).get("source")
 
 
 def _previous_final(fid: str, grid: Grid):

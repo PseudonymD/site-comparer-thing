@@ -9,12 +9,13 @@ export function renderAbout(app: App) {
     .map((f) => {
       const status = f.synthetic ? '<span class="badge synth">placeholder</span>' : f.proxy ? '<span class="badge proxy">proxy</span>' : '';
       const src = f.source_url ? `<a href="${f.source_url}" target="_blank" rel="noopener">${esc(f.source_name)}</a>` : esc(f.source_name);
-      return `<tr><td>${esc(f.name)}</td><td>${esc(f.unit || '–')}</td><td>${esc(f.ui_group)}</td><td>${src} ${status}</td></tr>`;
+      const notes = f.notes ? `<div class="note">${esc(f.notes)}</div>` : '';
+      return `<tr><td>${esc(f.name)}</td><td>${esc(f.unit || '–')}</td><td>${esc(f.ui_group)}</td><td>${src} ${status}${notes}</td></tr>`;
     })
     .join('');
   const valRows = validation
     ? validation.results
-        .map((r) => `<tr><td>${esc(r.name)}</td><td><b>${r.auc.toFixed(2)}</b></td><td>${r.median_analog_percentile.toFixed(0)}</td><td>${r.analogs.map((a) => `${esc(a.name)} (p${a.percentile.toFixed(0)})`).join(', ')}</td></tr>`)
+        .map((r) => `<tr id="val-${r.target}"><td>${esc(r.name)}</td><td><b>${r.auc.toFixed(2)}</b>${r.auc_v1_list != null ? `<div class="note">original list: ${r.auc_v1_list.toFixed(2)}</div>` : ''}</td><td>${r.median_analog_percentile.toFixed(0)}</td><td>${r.analogs.map((a) => `${esc(a.name)} (p${a.percentile.toFixed(0)})`).join(', ')}</td></tr>`)
         .join('')
     : '';
   const refs = Object.entries(targets.references)
@@ -49,6 +50,15 @@ blended B_i = (1 − α) S_i + α N_i              hard filters set S_i = 0</spa
       <h2>Validation</h2>
       <p>Do known analog sites actually score high? For each target we compare the sites used for that body with 1000 random land cells.
       ROC-AUC is the probability that a known analog outranks a random cell (0.5 = chance, 1 = perfect).</p>
+      <p><b>Read these numbers honestly.</b> Mars Jezero and Gale work well: the classic desert analogs (Atacama, Death Valley, the MDRS) sit in Earth's top 2%.
+      The polar and ice targets are weaker. They recognise the Antarctic Dry Valleys but rank the wetter Arctic sites (Svalbard, Devon Island) near or below the median,
+      because relative humidity, precipitation and soil carbon dominate and polar air is humid in <i>relative</i> terms. The lava-tube target is weak while the
+      basalt layer is a placeholder. Arcadia's analog list was corrected after we saw the first results (two volcanic sites with no ground ice were removed and
+      University Valley, the standard Mars ground-ice analog, was added), so its number is not a blind test. The original list's score is shown beside it.</p>
+      <p class="note"><b>What was seen when.</b> Target values and default weights were written from the literature before any validation on real data, and no weight
+      has been tuned since. All analogs are famous sites known to us from the start, so none is a strict hold-out, but none was used to fit weights. Changes made after
+      seeing results: the default ice filter, the SoilGrids gap fix (Antarctica had been given peat-like soil carbon) and the Arcadia surface-ice value and analog list.
+      Details: <code>docs/decisions.md</code> and <code>pipeline/report.md</code> in the repository.</p>
       ${validation ? `<table><thead><tr><th>Target</th><th>ROC-AUC</th><th>Median analog percentile</th><th>Known analogs (Earth percentile)</th></tr></thead><tbody>${valRows}</tbody></table>` : '<p class="note">No validation file in this build.</p>'}
 
       <h2>Data sources (this build)</h2>
@@ -61,6 +71,9 @@ blended B_i = (1 − α) S_i + α N_i              hard filters set S_i = 0</spa
         <li><b>Target values</b> come from the published literature, not from automated DEM extraction. Terrain statistics depend on scale, so the target slopes are chosen for ~1 km baselines.</li>
         <li><b>Clamping</b> means several targets sit at Earth's extremes on temperature, humidity or vegetation. This is deliberate, but it compresses the difference between "very" and "extremely" analogous.</li>
         <li><b>Percentiles</b> treat all features as equally spread. A 10-percentile gap in precipitation is not physically the same as one in slope. That is why the weights are exposed.</li>
+        <li><b>Cells, not km².</b> Percentiles and the random baseline count 0.1° cells, and polar cells are small, so Antarctica is ~28% of all cells. Area weighting would change the baseline.</li>
+        <li><b>Relative humidity</b> is high in cold polar air even when it holds almost no water, so it penalises cold deserts. Absolute humidity would be a better dryness measure (a future change).</li>
+        <li><b>Soil outside SoilGrids</b> (ice sheets, Antarctica, large lakes) follows a stated rule rather than measurements: see the notes in the data table.</li>
         <li><b>Proxies.</b> Elevation stands in for atmospheric thinness. The GIBS night-lights fallback is a brightness proxy, not radiance.</li>
       </ul>
 

@@ -12,6 +12,7 @@ export interface FeatureMeta {
   synthetic: boolean;
   proxy: boolean;
   coverage: number | null;
+  notes?: string | null;
   min: number;
   max: number;
   breakpoints: number[];
@@ -29,6 +30,7 @@ export interface Meta {
   novelty_saturation_km: number;
   files: { features: string; cells: string; countries: string };
   synthetic_features: string[];
+  patched?: string[];
   features: FeatureMeta[];
   countries: { name: string; iso: string }[];
 }
@@ -79,6 +81,8 @@ export interface ValidationFile {
     target: string;
     name: string;
     auc: number;
+    auc_v1_list?: number;
+    validation_v1?: string[];
     median_analog_percentile: number;
     random_median_score: number;
     analogs: { id: string; name: string; score: number; percentile: number; rank: number | null }[];
