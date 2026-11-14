@@ -44,6 +44,7 @@ export interface MapApi {
   map: maplibregl.Map;
   ready: Promise<void>;
   setScoreImage(img: Uint8ClampedArray, w: number, h: number, blob: Blob | null): Promise<void>;
+  setScoreVisible(visible: boolean): void;
   setOpacity(o: number): void;
   setSites(sites: Site[], label: (s: Site) => string, onClick: (s: Site, i: number) => void): void;
   setAnalogs(analogs: KnownAnalog[]): void;
@@ -103,6 +104,7 @@ export function createMap(container: HTMLElement): MapApi {
       blob = await new Promise<Blob | null>((res) => c.toBlob(res, 'image/png'));
       if (!blob) return;
     }
+
     const src = map.getSource('score') as maplibregl.ImageSource | undefined;
     if (!src) return;
     const url = URL.createObjectURL(blob);
@@ -110,6 +112,10 @@ export function createMap(container: HTMLElement): MapApi {
     currentUrl = url;
     src.updateImage({ url, coordinates: COORDS });
     if (prev) setTimeout(() => URL.revokeObjectURL(prev), 5000);
+  }
+
+  function setScoreVisible(visible: boolean) {
+    if (map.getLayer('score')) map.setLayoutProperty('score', 'visibility', visible ? 'visible' : 'none');
   }
 
   function setSites(sites: Site[], label: (s: Site) => string, onClick: (s: Site, i: number) => void) {
@@ -163,6 +169,7 @@ export function createMap(container: HTMLElement): MapApi {
     map,
     ready,
     setScoreImage,
+    setScoreVisible,
     setOpacity(o: number) {
       opacity = o;
       if (map.getLayer('score')) map.setPaintProperty('score', 'raster-opacity', o);

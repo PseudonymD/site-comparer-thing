@@ -1,12 +1,14 @@
 // Site dossier: rendered inside the right panel in place of the candidate list, so the map stays visible.
 import type { App } from '../main';
 import type { CellInfo, FeatureMeta } from '../types';
-import { contributions, scoreCell, valueFromQ } from '../scoring';
+import { contributions, scoreCell, valueFromQ, zThresholdFromValue } from '../scoring';
 import { esc, flag, fmtKm, fmtLatLon, fmtValue, GROUP_COLORS } from '../format';
 import { runDrill } from '../drill';
 import { fingerprint } from './fingerprint';
 import { rail } from './rail';
 import { planetPanel, watchPlanetTiles } from './planet';
+import { openResearchReport } from '../report';
+import { activityFor } from '../activities';
 
 // The side-by-side stays open while stepping through candidates.
 let pmOpen = false;
@@ -27,9 +29,13 @@ export function renderDossier(app: App, info: CellInfo, lat: number, lon: number
   const { meta } = app.ds;
   const t = app.target();
   const w = app.state.weights;
-  const contrib = contributions(info.q, t.vector, w);
+  const ranges = app.state.ranges.map((range, j) => ({
+    low: range.low === t.raw[meta.features[j].id]?.clamped && range.high === t.raw[meta.features[j].id]?.clamped ? t.vector[j] : zThresholdFromValue(meta.features[j].breakpoints, range.low),
+    high: range.low === t.raw[meta.features[j].id]?.clamped && range.high === t.raw[meta.features[j].id]?.clamped ? t.vector[j] : zThresholdFromValue(meta.features[j].breakpoints, range.high),
+  }));
+  const contrib = contributions(info.q, t.vector, w, ranges);
   const total = contrib.reduce((a, b) => a + b, 0);
-  const s = scoreCell(info.q, t.vector, w);
+  const s = scoreCell(info.q, t.vector, w, [], ranges);
   const filtered = info.score === 0 && s > 0;
   const pctl = filtered ? NaN : app.percentileOf(info.blended);
   const country = app.countryName(info.country);
@@ -78,7 +84,7 @@ export function renderDossier(app: App, info: CellInfo, lat: number, lon: number
         <button class="icon-btn" id="d-prev" aria-label="Previous candidate" ${nav.rank <= 1 ? 'disabled' : ''}>↑</button>
         <button class="icon-btn" id="d-next" aria-label="Next candidate" ${nav.rank >= nav.total ? 'disabled' : ''}>↓</button></div>` : '<div class="d-step"><span>Picked on the map</span></div>'}
     </div>
-    <div class="d-share"><button class="text-btn" id="d-copy" title="Copy a link that opens this exact view">Copy link</button></div>
+    <div class="d-share"><button class="text-btn" id="d-copy" title="Copy a link that opens this exact view">Copy link</button><button class="text-btn" id="d-report">Print research report</button></div>
     <div class="d-scroll">
       <div class="d-head">
         ${fingerprint(meta.features, t.vector, z, 104, `Fingerprint of this site against ${t.name}`)}
@@ -97,6 +103,7 @@ export function renderDossier(app: App, info: CellInfo, lat: number, lon: number
         ${bad.length ? `<p><b>Biggest gaps:</b> ${bad.map((r) => `${esc(lower(r.f.name))} (${fmtValue(r.here, r.f)} vs ${targetText(r)})`).join(', ')}.</p>` : ''}
         <p class="note">Nearest known analog: ${esc(near.name)}, ${fmtKm(near.km)} away.${filtered ? ' This cell is excluded by one of your filters.' : ''}</p>
       </div>
+      ${app.state.mode === 'earth-complications' ? `<div class="d-sec"><h3>Earth-side complications</h3><p class="note">${esc(activityFor(app.state.activity).limitations.join(' '))}</p><p class="note">Operational access, safety, legal status and local infrastructure require independent verification; they are not inferred by the analog score.</p></div>` : ''}
       <div class="d-sec">
         <h3>Where it differs</h3>
         <div class="rail-key"><span><i class="k-t"></i>target</span><span><i class="k-s"></i>this site</span><span>rank among all land, low → high</span><span class="k-share">share of gap</span></div>
@@ -129,6 +136,7 @@ export function renderDossier(app: App, info: CellInfo, lat: number, lon: number
   }
   document.getElementById('d-back')!.onclick = nav.onBack;
   document.getElementById('d-copy')!.onclick = nav.onCopy;
+  document.getElementById('d-report')!.onclick = () => openResearchReport(app, info, lat, lon);
   const pmBtn = document.getElementById('pm-btn') as HTMLButtonElement;
   const pmOut = document.getElementById('pm-out')!;
   const showPm = () => {

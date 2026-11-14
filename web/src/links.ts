@@ -16,6 +16,9 @@ export interface LinkState {
   p?: 'globe' | 'mercator';
   b?: 'satellite' | 'dark';
   tour?: boolean;
+  m?: 'radiation' | 'direct' | 'exploration' | 'earth-complications';
+  h?: string;
+  x?: { low: number; high: number }[];
 }
 
 const num = (x: string | null) => (x === null || x === '' || !Number.isFinite(+x) ? undefined : +x);
@@ -52,6 +55,14 @@ export function parseHash(hash: string): LinkState {
   if (p.get('p') === 'globe' || p.get('p') === 'mercator') out.p = p.get('p') as LinkState['p'];
   if (p.get('b') === 'satellite' || p.get('b') === 'dark') out.b = p.get('b') as LinkState['b'];
   if (p.has('tour')) out.tour = true;
+  if (p.get('m') === 'radiation' || p.get('m') === 'direct' || p.get('m') === 'exploration' || p.get('m') === 'earth-complications') out.m = p.get('m') as LinkState['m'];
+  if (p.get('h')) out.h = p.get('h')!;
+  if (p.get('x')) {
+    const ranges = p.get('x')!.split('_').map((part) => part.split(':').map(Number));
+    if (ranges.every((range) => range.length === 2 && range.every(Number.isFinite) && range[0] <= range[1])) {
+      out.x = ranges.map(([low, high]) => ({ low, high }));
+    }
+  }
   return out;
 }
 
@@ -68,6 +79,9 @@ export function buildHash(s: LinkState): string {
   if (s.s) parts.push(`s=${r4(s.s.lat)},${r4(s.s.lon)}`);
   if (s.p && s.p !== 'mercator') parts.push(`p=${s.p}`);
   if (s.b && s.b !== 'satellite') parts.push(`b=${s.b}`);
+  if (s.m && s.m !== 'exploration') parts.push(`m=${s.m}`);
+  if (s.h) parts.push(`h=${encodeURIComponent(s.h)}`);
+  if (s.x?.length) parts.push(`x=${s.x.map((range) => `${+range.low.toPrecision(6)}:${+range.high.toPrecision(6)}`).join('_')}`);
   return '#' + parts.join('&');
 }
 

@@ -50,3 +50,14 @@ def test_invalid_weights_are_rejected():
     for w in (np.zeros(18), np.r_[[-1.0], np.ones(17)], np.full(18, np.nan)):
         with pytest.raises(ValueError):
             score(q, t, w)
+
+
+def test_ranges_have_zero_inside_and_point_parity():
+    q = np.array([[128], [0]], dtype=np.uint8)
+    target = np.array([0.5])
+    weights = np.array([1.0])
+    ranged = score(q, target, weights, ranges=np.array([[0.4, 0.6]]))
+    assert ranged[0] == pytest.approx(1.0)
+    point = score(q, target, weights)
+    equal = score(q, target, weights, ranges=np.array([[0.5, 0.5]]))
+    assert equal[1] == pytest.approx(point[1])

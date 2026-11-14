@@ -94,7 +94,7 @@ function score(req: ScoreRequest): ScoreResult {
   const t0 = performance.now();
   const n = cells.length;
   const filters: Filter[] = req.filters;
-  const lut = buildLut(req.target, req.weights, filters);
+  const lut = buildLut(req.target, req.weights, filters, req.ranges);
   scoreAll(q, F, lut, scores);
   const a = req.alpha;
   const HB = 2048;
