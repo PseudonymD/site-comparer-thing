@@ -10,7 +10,7 @@ The map also supports searchable multi-select filters for countries and geograph
 
 ![Screenshot](docs/screenshot.png)
 
-**Try it:** [take the 30-second guided tour](https://site-comparer-thing.vercel.app/#tour) · open the **Discoveries** tab for new candidates · open **Southern Africa** for the local story · **Copy link** on any site to share that exact view.
+**Try it:** [take the 30-second guided tour](https://site-comparer-thing.vercel.app/#tour) · open the **Discoveries** tab for new candidates · **Copy link** on any site to share that exact view.
 
 ## What it finds
 

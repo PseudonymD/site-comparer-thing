@@ -8,7 +8,7 @@ import { renderDossier, hideDossier } from './ui/dossier';
 import { fingerprint } from './ui/fingerprint';
 import { renderAbout } from './about';
 import { buildHash, copyText, parseHash, type LinkState } from './links';
-import { renderDiscoveries, renderSpotlight } from './ui/discoveries';
+import { renderDiscoveries } from './ui/discoveries';
 import { createTour } from './ui/tour';
 import { REGIONS as GEO_REGIONS, matchesGeography, validRegion, type RegionId } from './geography';
 import type { CellInfo, Discovery, ScoreRequest, ScoreResult, Site, Target } from './types';
@@ -863,11 +863,11 @@ async function main() {
 
   // ---------------------------------------------------------------- right-panel tabs, discoveries, region
   const rtabs = document.querySelectorAll<HTMLButtonElement>('.rtabs button');
-  function showRightTab(id: 'cand' | 'disc' | 'sa') {
+  function showRightTab(id: 'cand' | 'disc') {
     rtabs.forEach((b) => b.setAttribute('aria-selected', String(b.dataset.r === id)));
-    for (const k of ['cand', 'disc', 'sa']) $(`#rv-${k}`).classList.toggle('hidden', k !== id);
+    for (const k of ['cand', 'disc']) $(`#rv-${k}`).classList.toggle('hidden', k !== id);
   }
-  rtabs.forEach((b) => (b.onclick = () => showRightTab(b.dataset.r as 'cand' | 'disc' | 'sa')));
+  rtabs.forEach((b) => (b.onclick = () => showRightTab(b.dataset.r as 'cand' | 'disc')));
   function syncRegionChip() {
     const chip = $('#region-chip');
     chip.classList.toggle('hidden', state.region === 'world');
@@ -900,18 +900,8 @@ async function main() {
       url.hash = buildHash({ t: d.target, a: ds.discoveries?.alpha ?? 0.3, s: { lat: d.lat, lon: d.lon }, v: { lat: d.lat, lon: d.lon, zoom: 10 } });
       void copyText(url.toString()).then((ok) => toast(ok ? `Link to ${d.name} copied.` : 'Could not copy the link.'));
     },
-    showRegion(id: 'safrica') {
-      setRegion(id);
-      showRightTab('cand');
-      toast(`Candidates and heatmap limited to ${REGIONS[id].name}. Percentiles still rank against all of Earth.`, 5000);
-    },
-    flyToPlace(targetId: string, lat: number, lon: number) {
-      flyToTarget(targetId);
-      void showCell(lat, lon, undefined, true, false, true);
-    },
   };
   renderDiscoveries($('#rv-disc'), ds, hooks);
-  renderSpotlight($('#rv-sa'), ds, hooks);
 
   // ---------------------------------------------------------------- guided tour
   const clickWhenReady = (sel: string, tries = 20) => {

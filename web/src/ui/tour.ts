@@ -6,7 +6,7 @@ export interface TourApi {
   setAlpha(a: number): void;
   worldView(): void;
   closeSite(): void;
-  showTab(id: 'cand' | 'disc' | 'sa'): void;
+  showTab(id: 'cand' | 'disc'): void;
   openFirstDiscovery(): void;
   runDrill(): void;
   openPlanet(): void;

@@ -33,8 +33,8 @@ Three small screenshots: the weight sliders, the Discoveries tab, and Mars besid
 - Discoveries: the cold high deserts of Central Asia. One of them, the Qaidam Basin, was proposed as a Mars analog in 2017, and our method found it independently.
 - [TEAM: update the numbers from `pipeline/report.md` if basalt is published]
 
-### 6. Southern Africa
-Screenshot: the Southern Africa tab.
+### 6. Southern Africa data
+The generated data also covers Southern African landscapes.
 - Richtersveld and the central Namib reach Earth's top ~2% for Mars Jezero and Gale; the Tankwa Karoo is in the top 4%
 - Vredefort scores low: there's no impact layer, and the crater is eroded and in farmland. We report it honestly.
 - Local analog sites could cut costs and grow African planetary science
