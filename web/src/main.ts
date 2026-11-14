@@ -738,7 +738,10 @@ async function main() {
   window.addEventListener('keydown', (e) => {
     const about = $('#about');
     if (e.key === 'Escape') {
-      if (!about.classList.contains('hidden')) about.classList.add('hidden');
+      if (!about.classList.contains('hidden')) {
+        about.classList.add('hidden');
+        $('#btn-about').focus();
+      }
       else closeDossier();
       return;
     }
