@@ -4,6 +4,8 @@
 
 Astronauts train, and rovers get tested, in places on Earth that resemble the Moon or Mars. Until now those analog sites have been chosen by expert intuition. Terrestrial Analog Finder describes **every one of Earth's ~2.1 million land cells (0.1°)** with **18 open data layers**: terrain, climate, surface, geology and remoteness, from NASA and partner agencies. It scores each cell against six planetary targets: the lunar south pole (Artemis), a lunar mare lava tube, and Mars' Jezero crater, Gale crater, Arcadia Planitia and the north polar deposits. Scoring runs live in your browser. You can reweight any factor, apply hard filters, and boost *novelty* to surface new candidates far from today's known analogs. Each candidate comes with an explanation and a 30 m terrain drill-down.
 
+The map also supports searchable multi-select filters for countries and geographic regions. Country and region selections are applied in the scoring worker, so the heatmap, candidate sites, counts and site details stay in sync; selections are preserved in shareable links.
+
 **Live demo:** https://site-comparer-thing.vercel.app (hosted on Vercel, rebuilt on every push to `main`; pull requests get preview URLs)
 
 ![Screenshot](docs/screenshot.png)

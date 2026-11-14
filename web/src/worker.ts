@@ -97,10 +97,16 @@ function score(req: ScoreRequest): ScoreResult {
   const HB = 2048;
   const hist = new Uint32Array(HB);
   const bbox = req.bbox ?? null;
+  const countryIds = req.countryIds === null || req.countryIds === undefined ? null : new Set(req.countryIds);
   const regHist = bbox ? new Uint32Array(HB) : hist;
   let valid = 0;
   let regValid = 0;
   for (let i = 0; i < n; i++) {
+    if (countryIds && !countryIds.has(countries[i])) {
+      scores[i] = 0;
+      blended[i] = 0;
+      continue;
+    }
     const s = scores[i];
     const b = a > 0 ? blend(s, dist[i], a, satKm) : s;
     blended[i] = b;

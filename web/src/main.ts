@@ -10,6 +10,7 @@ import { renderAbout } from './about';
 import { buildHash, copyText, parseHash, type LinkState } from './links';
 import { renderDiscoveries, renderSpotlight } from './ui/discoveries';
 import { createTour } from './ui/tour';
+import { REGIONS as GEO_REGIONS, matchesGeography, validRegion, type RegionId } from './geography';
 import type { CellInfo, Discovery, ScoreRequest, ScoreResult, Site, Target } from './types';
 
 export const REGIONS: Record<string, { name: string; bbox: [number, number, number, number] }> = {
@@ -24,6 +25,11 @@ interface FilterState {
   step: number;
 }
 
+interface GeographyState {
+  countries: string[];
+  regions: RegionId[];
+}
+
 export interface AppState {
   t: number;
   weights: number[];
@@ -35,6 +41,7 @@ export interface AppState {
   basemap: 'satellite' | 'dark';
   projection: 'globe' | 'mercator';
   region: string; // 'world' or a key of REGIONS
+  geography: GeographyState;
 }
 
 export interface App {
@@ -127,6 +134,10 @@ async function main() {
     basemap: link.b ?? 'satellite',
     projection: link.p ?? 'mercator',
     region: link.r && REGIONS[link.r] ? link.r : 'world',
+    geography: {
+      countries: [...new Set((link.c ?? []).filter((iso) => meta.countries.some((c) => c.iso === iso)))],
+      regions: [...new Set((link.g ?? []).filter(validRegion))],
+    },
   };
 
   let lastResult: ScoreResult | null = null;
@@ -193,6 +204,8 @@ async function main() {
     const c = mapApi.map.getCenter();
     return {
       t: t.id, w: wChanged ? state.weights : undefined, f: fChanged ? on : undefined, a: state.alpha || undefined,
+      c: state.geography.countries.length ? state.geography.countries : undefined,
+      g: state.geography.regions.length ? state.geography.regions : undefined,
       r: state.region, v: { lat: c.lat, lon: c.lng, zoom: mapApi.map.getZoom() }, s: site,
       p: state.projection, b: state.basemap,
     };
@@ -219,6 +232,7 @@ async function main() {
       }),
       alpha: state.alpha, stretchLow: state.stretchLow, hideBelow: state.hideBelow, topN: 50,
       bbox: state.region !== 'world' ? REGIONS[state.region].bbox : null,
+      countryIds: selectedCountryIds(),
     };
   }
   function requestScore() {
@@ -303,7 +317,8 @@ async function main() {
     syncFilterCount();
   }
   function syncFilterCount() {
-    const n = state.filters.filter((f) => f.on).length + (state.alpha > 0 ? 1 : 0);
+    const n = state.filters.filter((f) => f.on).length + (state.alpha > 0 ? 1 : 0) +
+      state.geography.countries.length + state.geography.regions.length;
     $('#tab-filters-n').textContent = n ? String(n) : '';
   }
   function syncGroupSums() {
@@ -317,6 +332,21 @@ async function main() {
       });
       $(`#gsum-${g}`).textContent = `${n} layers · weight ${fmtW(sum)}`;
     }
+  }
+
+  const countryOptions = [...new Map(
+    meta.countries
+      .map((country, id) => ({ ...country, id }))
+      .filter((country) => country.id > 0 && /^[A-Z]{2}$/.test(country.iso) && country.name)
+      .map((country) => [country.iso, country]),
+  ).values()].sort((a, b) => a.name.localeCompare(b.name));
+
+  function selectedCountryIds(): number[] | null {
+    if (!state.geography.countries.length && !state.geography.regions.length) return null;
+    return meta.countries.reduce<number[]>((ids, country, id) => {
+      if (matchesGeography(country.iso, state.geography.countries, state.geography.regions)) ids.push(id);
+      return ids;
+    }, []);
   }
 
   let setAlphaUI: (a: number) => void = () => {};
@@ -348,6 +378,14 @@ async function main() {
           <h4>Leave out</h4>
           <p class="note">Cells past these limits score zero.</p>
           <div id="filters"></div>
+          <div class="geo-filter">
+            <div class="geo-head"><h4>Geography</h4><button class="text-btn" id="reset-geo">Reset</button></div>
+            <p class="note">Only cells matching every selected geography remain.</p>
+            <div id="geo-active" class="geo-active" aria-live="polite"></div>
+            <div class="geo-section"><b>Regions</b><div id="geo-regions" class="geo-regions"></div></div>
+            <div class="geo-section"><label for="geo-search"><b>Countries</b></label><input id="geo-search" class="geo-search" type="search" placeholder="Search countries" autocomplete="off"></div>
+            <div id="geo-countries" class="geo-countries"></div>
+          </div>
           <h4>Favour new places <span class="mono" id="alpha-val"></span></h4>
           <input type="range" id="alpha" min="0" max="0.6" step="0.02" value="${state.alpha}">
           <p class="note">Mixes in distance from the ${ds.analogs.length} known analog sites (levels off at ${meta.novelty_saturation_km.toLocaleString()} km), so candidates nobody has used yet rise.</p>
@@ -434,6 +472,71 @@ async function main() {
       filterInputs.push({ flt, cb: cb as HTMLInputElement, num: num as HTMLInputElement });
       fDiv.appendChild(row);
     });
+
+    const geoRegions = $('#geo-regions');
+    geoRegions.innerHTML = Object.entries(GEO_REGIONS)
+      .map(([id, name]) => `<label class="geo-check"><input type="checkbox" data-region="${id}"><span>${name}</span></label>`)
+      .join('');
+    const geoCountries = $('#geo-countries');
+    geoCountries.innerHTML = countryOptions
+      .map((country) => `<label class="geo-option" data-name="${esc(country.name.toLocaleLowerCase())}"><input type="checkbox" class="geo-country" data-iso="${country.iso}"><span>${esc(country.name)}</span></label>`)
+      .join('');
+    const renderGeo = () => {
+      geoRegions.querySelectorAll<HTMLInputElement>('[data-region]').forEach((input) => {
+        input.checked = state.geography.regions.includes(input.dataset.region as RegionId);
+      });
+      geoCountries.querySelectorAll<HTMLInputElement>('.geo-country').forEach((input) => {
+        input.checked = state.geography.countries.includes(input.dataset.iso!);
+      });
+      const chips = [
+        ...state.geography.regions.map((id) => `<span class="geo-chip">${GEO_REGIONS[id]}<button type="button" data-remove-region="${id}" aria-label="Remove ${GEO_REGIONS[id]}">×</button></span>`),
+        ...state.geography.countries.map((iso) => `<span class="geo-chip">${esc(meta.countries.find((c) => c.iso === iso)?.name ?? iso)}<button type="button" data-remove-country="${iso}" aria-label="Remove country">×</button></span>`),
+      ];
+      $('#geo-active').innerHTML = chips.length ? chips.join('') : '<span class="note">No geographic restrictions</span>';
+      $('#geo-active').querySelectorAll<HTMLButtonElement>('[data-remove-region]').forEach((button) => {
+        button.onclick = () => {
+          state.geography.regions = state.geography.regions.filter((id) => id !== button.dataset.removeRegion);
+          renderGeo(); syncFilterCount(); requestScore();
+        };
+      });
+      $('#geo-active').querySelectorAll<HTMLButtonElement>('[data-remove-country]').forEach((button) => {
+        button.onclick = () => {
+          state.geography.countries = state.geography.countries.filter((iso) => iso !== button.dataset.removeCountry);
+          renderGeo(); syncFilterCount(); requestScore();
+        };
+      });
+      syncFilterCount();
+    };
+    geoRegions.querySelectorAll<HTMLInputElement>('[data-region]').forEach((input) => {
+      input.onchange = () => {
+        const id = input.dataset.region as RegionId;
+        state.geography.regions = input.checked
+          ? [...state.geography.regions, id]
+          : state.geography.regions.filter((selected) => selected !== id);
+        renderGeo(); requestScore();
+      };
+    });
+    geoCountries.querySelectorAll<HTMLInputElement>('.geo-country').forEach((input) => {
+      input.onchange = () => {
+        const iso = input.dataset.iso!;
+        state.geography.countries = input.checked
+          ? [...state.geography.countries, iso]
+          : state.geography.countries.filter((selected) => selected !== iso);
+        renderGeo(); requestScore();
+      };
+    });
+    $('#geo-search').addEventListener('input', (event) => {
+      const query = (event.target as HTMLInputElement).value.trim().toLocaleLowerCase();
+      geoCountries.querySelectorAll<HTMLElement>('.geo-option').forEach((option) => {
+        option.hidden = !!query && !option.dataset.name!.includes(query);
+      });
+    });
+    $('#reset-geo').onclick = () => {
+      state.geography = { countries: [], regions: [] };
+      renderGeo(); requestScore();
+    };
+    renderGeo();
+
     const alpha = $<HTMLInputElement>('#alpha');
     const updAlpha = () => {
       $('#alpha-val').textContent = state.alpha > 0 ? `${Math.round(state.alpha * 100)}%` : 'off';

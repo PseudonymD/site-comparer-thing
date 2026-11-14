@@ -1,6 +1,6 @@
 # Validation report
 
-Generated 2026-11-14 10:47. Land cells scored: 2,143,220.
+Generated 2026-11-14 11:48. Land cells scored: 2,143,220.
 
 For each planetary target we score every land cell with the target's default weights and default filters (non-ice targets exclude cells with > 50 % permanent ice), then compare the **known analog sites** used for that body against **1000 random land cells**. A site's score is the best cell within ±2 cells (~±20 km) of its published coordinates; random cells use the same rule. ROC-AUC = probability that a known analog outranks a random land cell (0.5 = chance, 1.0 = perfect).
 
