@@ -6,12 +6,17 @@ import { esc, flag, fmtKm, fmtLatLon, fmtValue, GROUP_COLORS } from '../format';
 import { runDrill } from '../drill';
 import { fingerprint } from './fingerprint';
 import { rail } from './rail';
+import { planetPanel, watchPlanetTiles } from './planet';
+
+// The side-by-side stays open while stepping through candidates.
+let pmOpen = false;
 
 export interface DossierNav {
   rank?: number; // 1-based position in the candidate list, when opened from it
   total: number;
   onBack(): void;
   onStep(delta: number): void;
+  onCopy(): void;
 }
 
 const el = () => document.getElementById('dossier')!;
@@ -73,6 +78,7 @@ export function renderDossier(app: App, info: CellInfo, lat: number, lon: number
         <button class="icon-btn" id="d-prev" aria-label="Previous candidate" ${nav.rank <= 1 ? 'disabled' : ''}>↑</button>
         <button class="icon-btn" id="d-next" aria-label="Next candidate" ${nav.rank >= nav.total ? 'disabled' : ''}>↓</button></div>` : '<div class="d-step"><span>Picked on the map</span></div>'}
     </div>
+    <div class="d-share"><button class="text-btn" id="d-copy" title="Copy a link that opens this exact view">Copy link</button></div>
     <div class="d-scroll">
       <div class="d-head">
         ${fingerprint(meta.features, t.vector, z, 104, `Fingerprint of this site against ${t.name}`)}
@@ -102,6 +108,12 @@ export function renderDossier(app: App, info: CellInfo, lat: number, lon: number
         </details>
       </div>
       <div class="d-sec">
+        <h3>Side by side with ${esc(t.body)}</h3>
+        <p class="note">The target's real terrain next to this candidate, at a similar ground scale.</p>
+        <button class="btn" id="pm-btn">Show ${esc(t.body)} beside Earth</button>
+        <div id="pm-out"></div>
+      </div>
+      <div class="d-sec">
         <h3>Terrain close-up</h3>
         <p class="note">Fetches ~30 m elevation for a 20 km box around this cell and compares its slopes with the target's.</p>
         <button class="btn" id="drill-btn">Run terrain close-up</button>
@@ -116,6 +128,23 @@ export function renderDossier(app: App, info: CellInfo, lat: number, lon: number
     document.getElementById('drill-btn')!.textContent = 'Run again';
   }
   document.getElementById('d-back')!.onclick = nav.onBack;
+  document.getElementById('d-copy')!.onclick = nav.onCopy;
+  const pmBtn = document.getElementById('pm-btn') as HTMLButtonElement;
+  const pmOut = document.getElementById('pm-out')!;
+  const showPm = () => {
+    pmOut.innerHTML = planetPanel(t, lat, lon);
+    watchPlanetTiles(pmOut);
+    pmBtn.textContent = `Hide ${t.body}`;
+    pmOpen = true;
+  };
+  pmBtn.onclick = () => {
+    if (pmOpen) {
+      pmOut.innerHTML = '';
+      pmBtn.textContent = `Show ${t.body} beside Earth`;
+      pmOpen = false;
+    } else showPm();
+  };
+  if (pmOpen) showPm();
   const prev = document.getElementById('d-prev');
   const next = document.getElementById('d-next');
   if (prev) prev.onclick = () => nav.onStep(-1);

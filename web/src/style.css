@@ -70,7 +70,11 @@ h1, h2, h3, h4, p { margin: 0; }
 .warn-box { margin: 0 16px 12px; padding: 8px 10px; border-left: 3px solid var(--beyond); background: var(--raised); border-radius: 0 6px 6px 0; font-size: 11.5px; line-height: 1.4; }
 
 /* ---------- loader ---------- */
-#loader { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; background: var(--paper); }
+#loader { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; background: color-mix(in srgb, var(--map) 55%, transparent); pointer-events: none; }
+.loader-inner { background: var(--paper); border-radius: var(--radius); padding: 22px 24px; box-shadow: 0 10px 40px rgb(0 0 0 / 0.45); pointer-events: auto; }
+.loader-steps { margin: 4px 0 0; padding-left: 18px; font-size: 12.5px; line-height: 1.5; color: var(--muted); }
+.loader-steps li.done { color: var(--ink); }
+.loader-steps li.done::marker { content: '✓  '; }
 .loader-inner { width: min(460px, 86vw); display: flex; flex-direction: column; gap: 12px; }
 .loader-title { font: 700 34px/1.05 var(--display); font-stretch: 78%; text-wrap: balance; }
 .progress { height: 3px; background: var(--line); margin-top: 10px; }
@@ -305,8 +309,73 @@ body.site-focus.focus-heat #legend { bottom: calc(var(--gut) + 46px); }
 }
 @media (max-width: 700px) {
   #legend { display: none; }
-  .brand { font-size: 16px; }
+  .brand { font-size: 0; gap: 0; }
+  .brand-mark { width: 22px; height: 22px; }
+  #topbar { gap: 10px; padding: 0 10px; }
+  #topbar #btn-tour { display: none; }
+  #topbar #btn-about { margin-left: 0; }
+  #target-select { min-width: 120px; }
+  #tour p { font-size: 15px; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition-duration: 0s !important; }
 }
+
+/* ---------- right: tabs, discoveries, southern Africa (P1) ---------- */
+.rtabs { border-top: 0; }
+.rv { display: flex; flex-direction: column; min-height: 0; flex: 1; }
+.rv-scroll { overflow-y: auto; padding: 12px 16px 20px; gap: 12px; display: flex; flex-direction: column; }
+.rv-scroll.hidden, .rv.hidden { display: none; }
+.rv-scroll > p { margin: 0; }
+#region-chip { display: flex; align-items: center; gap: 8px; font-size: 12px; }
+#region-chip.hidden { display: none; }
+#region-chip b { background: var(--accent); color: var(--on-accent, #fff); border-radius: 10px; padding: 2px 8px; font-weight: 600; }
+.disc, .spot { border: 1px solid var(--line); border-radius: var(--radius); padding: 12px; background: var(--raised); display: flex; flex-direction: column; gap: 8px; }
+.disc p, .spot p { margin: 0; font-size: 13px; line-height: 1.45; }
+.disc h3, .spot h3 { font: 700 17px/1.15 var(--display); font-stretch: 82%; margin: 2px 0; }
+.disc-head { display: flex; justify-content: space-between; gap: 10px; }
+.disc-score { text-align: right; display: flex; flex-direction: column; flex: none; }
+.disc-score b { font: 700 26px/1 var(--display); }
+.disc-score span { font-size: 11px; color: var(--muted); }
+.disc-new { color: var(--good); font-weight: 600; }
+.disc-lit { border-left: 3px solid var(--accent); padding-left: 8px; }
+.disc-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.disc-cols h4 { margin: 0 0 4px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+.disc-cols ul, .caveats { margin: 0; padding-left: 16px; font-size: 12px; line-height: 1.45; }
+.disc-cols .vs { color: var(--muted); }
+.disc details summary { cursor: pointer; font-size: 12px; color: var(--muted); }
+.disc-actions { display: flex; gap: 12px; align-items: center; }
+.spot-bars { display: flex; flex-direction: column; gap: 3px; }
+.spot-bar { display: grid; grid-template-columns: 112px 1fr 44px; align-items: center; gap: 6px; background: none; border: 0; padding: 2px 0; cursor: pointer; font-size: 11.5px; color: var(--ink); text-align: left; }
+.spot-bar i { display: block; height: 8px; border-radius: 4px; background: var(--inferno); }
+.spot-bar em { font: 500 10px var(--mono); font-style: normal; color: var(--muted); text-align: right; }
+.spot-bar:hover span { text-decoration: underline; }
+/* validation badge */
+.vbadge { display: inline-flex; gap: 8px; align-items: center; margin-top: 6px; font-size: 12px; background: none; border: 1px solid var(--line); border-radius: 14px; padding: 3px 10px; cursor: pointer; color: var(--ink); text-align: left; }
+.vbadge b { font-family: var(--mono); font-weight: 600; }
+.vbadge i { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+.vbadge.good i { background: var(--good); }
+.vbadge.fair i { background: #c08a1c; }
+.vbadge.weak i { background: #b5442e; }
+/* planetary side-by-side */
+.pm { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.pm figure { margin: 0; display: flex; flex-direction: column; gap: 4px; }
+.pm-box { position: relative; overflow: hidden; border-radius: 6px; background: #111; max-width: 100%; }
+.pm-box img { position: absolute; width: 256px; height: 256px; }
+.pm-box img.fail { visibility: hidden; }
+.pm-cross { position: absolute; left: 50%; top: 50%; width: 18px; height: 18px; margin: -9px; border: 2px solid #fff; border-radius: 50%; box-shadow: 0 0 0 1px #000; }
+.pm figcaption { display: flex; flex-direction: column; font-size: 11.5px; }
+.pm figcaption span { color: var(--muted); font-size: 10.5px; }
+.pm-dead .pm-box::after { content: 'Trek tiles unavailable'; position: absolute; inset: 0; display: grid; place-items: center; color: #aaa; font-size: 11px; }
+.pm-credit .hidden { display: none; }
+.d-share { display: flex; justify-content: flex-end; padding: 0 16px 6px; }
+/* ---------- guided tour ---------- */
+#tour { position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%); z-index: 60; width: min(640px, calc(100vw - 24px)); padding: 14px 18px 10px; display: flex; flex-direction: column; gap: 8px; }
+#tour p { margin: 0; font: 600 18px/1.3 var(--text); text-wrap: balance; }
+.tour-step { font-size: 10px; color: var(--muted); }
+.tour-ctl { display: flex; gap: 14px; align-items: center; justify-content: flex-end; }
+.tour-bar { height: 3px; background: var(--line); border-radius: 2px; overflow: hidden; }
+.tour-bar i { display: block; height: 100%; width: 0; background: var(--accent); }
+body.touring #legend, body.touring #heat-toggle { display: none; }
+#topbar #btn-tour { margin-left: auto; }
+#topbar #btn-tour + #btn-about { margin-left: 16px; }

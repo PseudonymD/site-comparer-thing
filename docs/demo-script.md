@@ -1,14 +1,21 @@
 # 30-second demo video script
 
-Record at 1920×1080 with the browser at 100% zoom and the satellite basemap. Do one dry run first so the data is cached and loads instantly.
+**Hard limit: 30 s, with English subtitles** (longer makes us ineligible for global judging). The subtitle file is [`demo.srt`](demo.srt). The built-in tour (`#tour`) shows the same lines as on-screen captions, so the video carries subtitles either way.
 
-| Time | On screen | Voice-over (≈75 words) |
+## Record it in one take with the tour
+
+1. Open https://site-comparer-thing.vercel.app in Chrome at 1920×1080, 100% zoom, bookmarks bar hidden. Wait for the data to load once (it's cached afterwards), then reload.
+2. Start the screen recorder, then open https://site-comparer-thing.vercel.app/#tour (or press **Take the tour**). The six steps run by themselves in 29.5 s, so stop recording when the last caption ends to stay **≤ 30 s**.
+3. Add a voice-over following the subtitles below (≈ 75 words), or skip the voice-over and keep the captions. Attach `demo.srt` as the subtitle track when you upload.
+4. **Only record after the basalt hot-fix is published**, so no "placeholder" badges are on screen. If it isn't published in time, record anyway: the badges are honest, and the about page explains them.
+
+| Time | Tour step / on screen | Subtitle and voice-over |
 |---|---|---|
-| 0–4 s | App loads on **Moon – South Pole**; the world lights up in inferno colours. | "Where on Earth is most like the Moon or Mars? We scored every one of Earth's two million land cells…" |
-| 4–9 s | Hover the left panel sliders; drag **Vegetation** down, then back up. The map re-scores instantly. | "…against 18 NASA and partner data layers: terrain, climate, soils, geology, ice, darkness and dust. It re-scores live in the browser." |
-| 9–14 s | Click the **Mars – Jezero crater** tab. Known analogs (Atacama, Death Valley, Pilbara) glow. | "Switch to Jezero crater and the classic analogs light up. Our validation shows they outrank random land." |
-| 14–19 s | Drag the **Novelty** slider to ~0.4. The top-50 list reshuffles, with green "new" tags. | "Boost novelty and it surfaces candidates nobody is using yet." |
-| 19–26 s | Click candidate **#1** → the site card opens: contribution bars, values vs target. Click **Run drill-down** → hillshade and slope histogram against the Mars target. | "Every site explains itself, and a live 30-metre drill-down compares its slopes with the real Martian terrain." |
-| 26–30 s | Close the card, toggle **Globe**, slow spin. Title overlay: *Terrestrial Analog Finder – open data, open source.* | "Terrestrial Analog Finder: Earth's best stand-ins for the Moon and Mars." |
+| 0–5 s | 1. Moon south pole, world heatmap | "Where on Earth is most like the Moon? 2.1 million land cells, scored live on 18 open data layers." |
+| 5–9.5 s | 2. Jezero; Atacama and Death Valley glow | "Switch to Mars, Jezero crater: the known analogs light up." |
+| 9.5–13.5 s | 3. Novelty slider to 40% | "Favour new places: good matches far from any known site rise." |
+| 13.5–19 s | 4. Discovery card: western Qaidam Basin | "A discovery, explained in real units: what matches, what doesn’t, what it’s for." |
+| 19–24 s | 5. 30 m terrain close-up | "Zoom in: a live 30 m terrain close-up against the real Mars slopes." |
+| 24–29.5 s | 6. Mars beside Earth | "Mars side by side with its Earth stand-in. Terrestrial Analog Finder: open data, open source." |
 
-Tips: hide the bookmarks bar, and turn on "Hide cells below that percentile" at p80 for a cleaner globe shot. Only record after the real pipeline data is published, so no SYNTH badges appear on screen.
+Tips: use the **satellite** basemap (the default). If Trek tiles are slow, run the tour once beforehand so they're cached. Don't add NASA logos. If you add any AI-generated imagery, it must carry a visible watermark.

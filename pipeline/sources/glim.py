@@ -27,9 +27,14 @@ NAME = "glim"
 FEATURES = ["basalt"]
 REQUIRES_TOKEN = False
 HOST = "https://download.pangaea.de"
+PROBE = "https://download.pangaea.de/dataset/788537/files/LiMW_GIS%202015.gdb.zip"
 URLS = [
+    # The file path is correct (checked 2026-11-14): PANGAEA answers HTTP 500 with "the download area of PANGAEA
+    # has some problems with its backing file archive" during archive outages, not 404. Retried with backoff.
     "https://download.pangaea.de/dataset/788537/files/LiMW_GIS%202015.gdb.zip",
 ]
+MANUAL = ("Download 'LiMW_GIS 2015.gdb.zip' from https://doi.pangaea.de/10.1594/PANGAEA.788537 in a browser and "
+          "put it under pipeline/cache/glim/ (or set GLIM_PATH in .env), then rerun.")
 CLASS_FIELDS = ("xx", "XX", "Litho", "LITHO", "litho")
 BASALT = ("vb", "pb")
 ICE = ("ig",)
@@ -53,8 +58,33 @@ def fetch(cache_dir: Path, grid: Grid | None = None) -> Path:
     if local:
         return local
     dest = Path(cache_dir) / "glim" / "LiMW_GIS_2015.gdb.zip"
-    download(URLS[0], dest, min_bytes=1_000_000, timeout=1800)
-    return dest
+    status = archive_status()
+    if status:
+        raise RuntimeError(f"GLiM: {status}. {MANUAL}")
+    errors = []
+    for url in URLS:
+        try:
+            download(url, dest, min_bytes=1_000_000, timeout=1800, retries=4)
+            return dest
+        except Exception as e:  # noqa: BLE001
+            errors.append(f"{url}: {e}")
+    raise RuntimeError(f"GLiM download failed ({'; '.join(errors)[:300]}). {MANUAL}")
+
+
+def archive_status(timeout: float = 30.0) -> str | None:
+    """None if the PANGAEA file is downloadable, else a one-line reason (outage page, 404, ...)."""
+    from ..util import session
+
+    try:
+        with session().get(URLS[0], stream=True, timeout=timeout, headers={"Range": "bytes=0-1023"}) as r:
+            if r.status_code in (200, 206):
+                return None
+            body = r.raw.read(20000, decode_content=True).decode("utf-8", "replace") if r.status_code >= 400 else ""
+            if "backing file archive" in body or "file downloads are not possible" in body:
+                return "PANGAEA reports a file-archive outage (HTTP %d); try again later" % r.status_code
+            return f"PANGAEA answered HTTP {r.status_code}"
+    except Exception as e:  # noqa: BLE001
+        return f"PANGAEA unreachable ({e.__class__.__name__})"
 
 
 def _read(path: Path):

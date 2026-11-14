@@ -96,16 +96,25 @@ function score(req: ScoreRequest): ScoreResult {
   const a = req.alpha;
   const HB = 2048;
   const hist = new Uint32Array(HB);
+  const bbox = req.bbox ?? null;
+  const regHist = bbox ? new Uint32Array(HB) : hist;
   let valid = 0;
+  let regValid = 0;
   for (let i = 0; i < n; i++) {
     const s = scores[i];
     const b = a > 0 ? blend(s, dist[i], a, satKm) : s;
     blended[i] = b;
     if (s > 0) {
-      hist[Math.min(HB - 1, Math.max(0, Math.round(b * (HB - 1))))]++;
+      const bin = Math.min(HB - 1, Math.max(0, Math.round(b * (HB - 1))));
+      hist[bin]++;
       valid++;
+      if (bbox && inBox(i, bbox)) {
+        regHist[bin]++;
+        regValid++;
+      }
     }
   }
+  if (!bbox) regValid = valid;
   const tScore = performance.now();
 
   // Colour stretch: [p_lo, max] of valid cells.
@@ -116,6 +125,7 @@ function score(req: ScoreRequest): ScoreResult {
   for (let i = 0; i < n; i++) {
     const b = blended[i];
     if (b <= 0) continue;
+    if (bbox && !inBox(i, bbox)) continue;
     let v = Math.round((b - lo) * scale);
     if (v < 0) {
       if (req.hideBelow) continue;
@@ -137,7 +147,7 @@ function score(req: ScoreRequest): ScoreResult {
   }
   const tImg = performance.now();
 
-  const sites = topSites(hist, valid, req.topN);
+  const sites = topSites(regHist, regValid, req.topN, bbox);
   const t1 = performance.now();
   return {
     type: 'scored', id: req.id, image: img, width: imgW, height: imgH, sites,
@@ -148,7 +158,15 @@ function score(req: ScoreRequest): ScoreResult {
   };
 }
 
-function topSites(hist: Uint32Array, valid: number, topN: number): Site[] {
+function inBox(i: number, b: [number, number, number, number]): boolean {
+  const c = cells[i];
+  const r = (c / nLon) | 0;
+  const lat = 90 - (r + 0.5) * res;
+  const lon = -180 + (c - r * nLon + 0.5) * res;
+  return lon >= b[0] && lon <= b[2] && lat >= b[1] && lat <= b[3];
+}
+
+function topSites(hist: Uint32Array, valid: number, topN: number, bbox: [number, number, number, number] | null = null): Site[] {
   // Candidate cells: roughly the best 6000 (threshold from the histogram).
   const want = Math.min(6000, valid);
   let acc = 0;
@@ -161,7 +179,7 @@ function topSites(hist: Uint32Array, valid: number, topN: number): Site[] {
     }
   }
   const cand: number[] = [];
-  for (let i = 0; i < blended.length; i++) if (blended[i] >= thr && scores[i] > 0) cand.push(i);
+  for (let i = 0; i < blended.length; i++) if (blended[i] >= thr && scores[i] > 0 && (!bbox || inBox(i, bbox))) cand.push(i);
   cand.sort((x, y) => blended[y] - blended[x]);
   if (cand.length > 8000) cand.length = 8000;
   // Union-find over 8-neighbour adjacency (longitude wraps).

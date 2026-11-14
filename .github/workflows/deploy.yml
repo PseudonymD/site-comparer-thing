@@ -1,8 +1,8 @@
-name: Deploy web app to GitHub Pages
+name: Deploy web app to GitHub Pages (legacy, manual only)
 
+# The live site is hosted on Vercel (https://site-comparer-thing.vercel.app), which builds every push to
+# main and every pull request. This Pages workflow is kept for reference and only runs when started by hand.
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 permissions:
