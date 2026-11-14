@@ -46,6 +46,17 @@
    "note": "Coldest, driest ice-free terrain on Earth; Mars polar analog."
   },
   {
+   "id": "university_valley",
+   "name": "University Valley (Dry Valleys)",
+   "country": "Antarctica",
+   "lat": -77.86,
+   "lon": 160.72,
+   "bodies": [
+    "Mars"
+   ],
+   "note": "High, dry valley with ice-cemented ground under a dry surface; Mars subsurface-ice analog (Heldmann et al. 2013)."
+  },
+  {
    "id": "askja",
    "name": "Askja, Iceland",
    "country": "Iceland",
