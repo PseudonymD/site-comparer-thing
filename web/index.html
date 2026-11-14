@@ -34,11 +34,20 @@
 
     <aside id="right" class="panel sheet" aria-label="Candidate sites">
       <div id="list-view">
-        <div class="panel-head">
-          <h2>Candidates</h2>
-          <div class="note" id="sites-sub"></div>
+        <div class="tabs rtabs" role="tablist">
+          <button role="tab" data-r="cand" aria-selected="true">Candidates</button>
+          <button role="tab" data-r="disc" aria-selected="false">Discoveries</button>
+          <button role="tab" data-r="sa" aria-selected="false">Southern Africa</button>
         </div>
-        <ol id="sites"></ol>
+        <div id="rv-cand" class="rv">
+          <div class="panel-head">
+            <div class="note" id="sites-sub"></div>
+            <div id="region-chip" class="hidden"></div>
+          </div>
+          <ol id="sites"></ol>
+        </div>
+        <div id="rv-disc" class="rv rv-scroll hidden"></div>
+        <div id="rv-sa" class="rv rv-scroll hidden"></div>
       </div>
       <section id="dossier" class="hidden" aria-live="polite"></section>
     </aside>

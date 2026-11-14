@@ -7,7 +7,13 @@ import { esc, flag, fmtKm, fmtLatLon, fmtValue, GROUP_COLORS } from './format';
 import { renderDossier, hideDossier } from './ui/dossier';
 import { fingerprint } from './ui/fingerprint';
 import { renderAbout } from './about';
-import type { CellInfo, ScoreRequest, ScoreResult, Site, Target } from './types';
+import { buildHash, copyText, parseHash, type LinkState } from './links';
+import { renderDiscoveries, renderSpotlight } from './ui/discoveries';
+import type { CellInfo, Discovery, ScoreRequest, ScoreResult, Site, Target } from './types';
+
+export const REGIONS: Record<string, { name: string; bbox: [number, number, number, number] }> = {
+  safrica: { name: 'southern Africa', bbox: [11.0, -35.5, 33.0, -16.5] },
+};
 
 interface FilterState {
   id: string; // feature id
@@ -27,6 +33,7 @@ export interface AppState {
   opacity: number;
   basemap: 'satellite' | 'dark';
   projection: 'globe' | 'mercator';
+  region: string; // 'world' or a key of REGIONS
 }
 
 export interface App {
@@ -39,6 +46,9 @@ export interface App {
   requestCell(lat: number, lon: number): Promise<CellInfo | null>;
   countryName(i: number): { name: string; iso: string };
   nearestAnalog(lat: number, lon: number): { name: string; km: number };
+  /** URL of the current view (optionally pointing at a site). */
+  linkFor(site?: { lat: number; lon: number }): string;
+  copyLink(site?: { lat: number; lon: number }): void;
 }
 
 const $ = <T extends HTMLElement = HTMLElement>(sel: string) => document.querySelector(sel) as T;
@@ -92,8 +102,8 @@ async function main() {
 
   // ---------------------------------------------------------------- state
   const bp = (id: string, p: number) => meta.features[featIndex(id)].breakpoints[p];
-  const params = new URLSearchParams(location.hash.slice(1));
-  const t0 = Math.max(0, targets.targets.findIndex((t) => t.id === params.get('t')));
+  const link: LinkState = parseHash(location.hash);
+  const t0 = Math.max(0, targets.targets.findIndex((t) => t.id === link.t));
   const state: AppState = {
     t: t0,
     weights: [...targets.targets[t0].weights],
@@ -107,8 +117,9 @@ async function main() {
     stretchLow: 0.5,
     hideBelow: false,
     opacity: 0.85,
-    basemap: 'satellite',
-    projection: 'mercator',
+    basemap: link.b ?? 'satellite',
+    projection: link.p ?? 'mercator',
+    region: link.r && REGIONS[link.r] ? link.r : 'world',
   };
 
   const mapApi = createMap($('#map'));
@@ -156,7 +167,37 @@ async function main() {
       }
       return best;
     },
+    linkFor(site) {
+      const url = new URL(location.href);
+      url.hash = buildHash(linkState(site ?? (current ? { lat: current.lat, lon: current.lon } : undefined)));
+      return url.toString();
+    },
+    copyLink(site) {
+      void copyText(app.linkFor(site)).then((ok) => toast(ok ? 'Link copied: it opens exactly this view.' : 'Could not copy; the link is in the address bar.'));
+    },
   };
+
+  // ---------------------------------------------------------------- deep links
+  function linkState(site?: { lat: number; lon: number }): LinkState {
+    const t = app.target();
+    const wChanged = state.weights.some((w, j) => w !== t.weights[j]);
+    const on = state.filters.filter((f) => f.on).map((f) => ({ id: f.id, tau: f.tau }));
+    const def = (t.default_filters || []).map((f) => ({ id: f.feature, tau: f.max }));
+    const fChanged = JSON.stringify(on) !== JSON.stringify(def);
+    const c = mapApi.map.getCenter();
+    return {
+      t: t.id, w: wChanged ? state.weights : undefined, f: fChanged ? on : undefined, a: state.alpha || undefined,
+      r: state.region, v: { lat: c.lat, lon: c.lng, zoom: mapApi.map.getZoom() }, s: site,
+      p: state.projection, b: state.basemap,
+    };
+  }
+  let hashTimer = 0;
+  function updateHash() {
+    window.clearTimeout(hashTimer);
+    hashTimer = window.setTimeout(() => {
+      history.replaceState(null, '', buildHash(linkState(current ? { lat: current.lat, lon: current.lon } : undefined)));
+    }, 150);
+  }
 
   // ---------------------------------------------------------------- scoring loop
   let reqId = 0;
@@ -171,9 +212,11 @@ async function main() {
         return { feature: featIndex(f.id), zThreshold: zThresholdFromValue(fm.breakpoints, f.tau) };
       }),
       alpha: state.alpha, stretchLow: state.stretchLow, hideBelow: state.hideBelow, topN: 50,
+      bbox: state.region !== 'world' ? REGIONS[state.region].bbox : null,
     };
   }
   function requestScore() {
+    updateHash();
     dirty = true;
     if (!inFlight) pump();
   }
@@ -270,6 +313,7 @@ async function main() {
     }
   }
 
+  let setAlphaUI: (a: number) => void = () => {};
   function buildLeft() {
     const synth = meta.synthetic_features;
     left.innerHTML = `
@@ -279,6 +323,7 @@ async function main() {
           <div id="t-glyph"></div>
         </div>
         <p id="t-blurb"></p>
+        <button class="vbadge" id="t-valid" title="How well do known analogs score? Click for the method."></button>
         <button class="text-btn" id="best-site">Fly to the best match</button>
       </div>
       ${synth.length ? `<div class="warn-box"><b>${synth.length} of ${F} layers ${synth.length > 1 ? 'are placeholders' : 'is a placeholder'}</b> in this build (${synth.map((s) => esc(meta.features[featIndex(s)].name)).join(', ')}). Treat rankings as illustrative.</div>` : ''}
@@ -395,6 +440,11 @@ async function main() {
       requestScore();
     });
     updAlpha();
+    setAlphaUI = (a: number) => {
+      state.alpha = a;
+      alpha.value = String(a);
+      updAlpha();
+    };
 
     // view
     const seg = (id: string, current: () => string, set: (v: string) => void) => {
@@ -409,10 +459,12 @@ async function main() {
     seg('seg-proj', () => state.projection, (v) => {
       state.projection = v as AppState['projection'];
       mapApi.setProjection(state.projection);
+      updateHash();
     });
     seg('seg-base', () => state.basemap, (v) => {
       state.basemap = v as AppState['basemap'];
       mapApi.setBasemap(state.basemap);
+      updateHash();
     });
     const stretch = $<HTMLInputElement>('#stretch');
     const updStretch = () => {
@@ -465,7 +517,26 @@ async function main() {
     });
     mapApi.setTargetBody(t.body);
     syncSliders();
-    history.replaceState(null, '', `#t=${t.id}`);
+    syncBadge();
+    updateHash();
+  }
+
+  function syncBadge() {
+    const t = app.target();
+    const v = ds.validation?.results.find((r) => r.target === t.id);
+    const b = $('#t-valid');
+    if (!v) {
+      b.classList.add('hidden');
+      return;
+    }
+    const cls = v.auc >= 0.85 ? 'good' : v.auc >= 0.65 ? 'fair' : 'weak';
+    const word = cls === 'good' ? 'works well' : cls === 'fair' ? 'works moderately' : 'weak';
+    b.className = `vbadge ${cls}`;
+    b.innerHTML = `<i></i><span>How well does this work? <b>AUC ${v.auc.toFixed(2)}</b> · known analogs median p${v.median_analog_percentile.toFixed(0)} · ${word}</span>`;
+    b.onclick = () => {
+      renderAbout(app);
+      document.getElementById(`val-${t.id}`)?.scrollIntoView({ block: 'center' });
+    };
   }
 
   function syncSliders() {
@@ -563,6 +634,7 @@ async function main() {
       rank,
       total: lastResult?.sites.length ?? 0,
       onBack: closeDossier,
+      onCopy: () => app.copyLink({ lat, lon }),
       onStep: (d) => {
         const k = (rank ?? 1) - 1 + d;
         const s = lastResult?.sites[k];
@@ -574,6 +646,7 @@ async function main() {
     if (zoomIn) enterFocus();
     mapApi.highlight(clat, clon);
     if (fly) mapApi.flyTo(lat, lon, zoomIn ? Math.max(mapApi.map.getZoom(), FOCUS_ZOOM) : Math.max(mapApi.map.getZoom(), 5.5));
+    updateHash();
   }
 
   function closeDossier() {
@@ -584,6 +657,7 @@ async function main() {
     body.classList.remove('dossier-open');
     exitFocus();
     applyPadding();
+    updateHash();
   }
 
   function drawLegend(res: ScoreResult) {
@@ -633,8 +707,9 @@ async function main() {
       list.appendChild(li);
     });
     $('#sites-sub').textContent = res.sites.length
-      ? `Best ${res.sites.length} of ${res.stats.valid.toLocaleString()} land cells. Score out of 100.`
+      ? `Best ${res.sites.length} of ${res.stats.valid.toLocaleString()} land cells${state.region !== 'world' ? ` (shown: ${REGIONS[state.region].name} only)` : ''}. Score out of 100.`
       : 'No cells pass the current filters. Loosen one in Filters.';
+    syncRegionChip();
     mapApi.setSites(res.sites, siteLabel, (s, i) => selectSite(s, i));
     drawLegend(res);
     // Keep an open dossier in step with new weights.
@@ -671,15 +746,88 @@ async function main() {
     }
   });
   mapApi.onCellClick((lat, lon) => void showCell(lat, lon));
+  mapApi.map.on('moveend', updateHash);
+
+  // ---------------------------------------------------------------- right-panel tabs, discoveries, region
+  const rtabs = document.querySelectorAll<HTMLButtonElement>('.rtabs button');
+  function showRightTab(id: 'cand' | 'disc' | 'sa') {
+    rtabs.forEach((b) => b.setAttribute('aria-selected', String(b.dataset.r === id)));
+    for (const k of ['cand', 'disc', 'sa']) $(`#rv-${k}`).classList.toggle('hidden', k !== id);
+  }
+  rtabs.forEach((b) => (b.onclick = () => showRightTab(b.dataset.r as 'cand' | 'disc' | 'sa')));
+  function syncRegionChip() {
+    const chip = $('#region-chip');
+    chip.classList.toggle('hidden', state.region === 'world');
+    if (state.region === 'world') return;
+    chip.innerHTML = `<b>${esc(REGIONS[state.region].name)} only</b><button class="text-btn" id="region-clear">Show the whole world</button>`;
+    $('#region-clear').onclick = () => setRegion('world');
+  }
+  function setRegion(id: string, fit = true) {
+    state.region = REGIONS[id] ? id : 'world';
+    if (fit && state.region !== 'world') {
+      const [a, b, c, d] = REGIONS[state.region].bbox;
+      mapApi.map.fitBounds([[a, b], [c, d]], { padding: 40, duration: 900 });
+    }
+    requestScore();
+  }
+  function flyToTarget(targetId: string) {
+    const i = targets.targets.findIndex((t) => t.id === targetId);
+    if (i >= 0 && i !== state.t) selectTarget(i);
+  }
+  const hooks = {
+    flyToDiscovery(d: Discovery) {
+      flyToTarget(d.target);
+      setAlphaUI(ds.discoveries?.alpha ?? 0.3);
+      state.region = 'world';
+      requestScore();
+      void showCell(d.lat, d.lon, undefined, true, false, true);
+    },
+    copyDiscovery(d: Discovery) {
+      const url = new URL(location.href);
+      url.hash = buildHash({ t: d.target, a: ds.discoveries?.alpha ?? 0.3, s: { lat: d.lat, lon: d.lon }, v: { lat: d.lat, lon: d.lon, zoom: 10 } });
+      void copyText(url.toString()).then((ok) => toast(ok ? `Link to ${d.name} copied.` : 'Could not copy the link.'));
+    },
+    showRegion(id: 'safrica') {
+      setRegion(id);
+      showRightTab('cand');
+      toast(`Candidates and heatmap limited to ${REGIONS[id].name}. Percentiles still rank against all of Earth.`, 5000);
+    },
+    flyToPlace(targetId: string, lat: number, lon: number) {
+      flyToTarget(targetId);
+      void showCell(lat, lon, undefined, true, false, true);
+    },
+  };
+  renderDiscoveries($('#rv-disc'), ds, hooks);
+  renderSpotlight($('#rv-sa'), ds, hooks);
 
   await Promise.all([workerReady, mapApi.ready]);
   mapApi.setAnalogs(ds.analogs);
+  // Apply a shared link (weights, filters, novelty, view) on top of the target defaults.
+  if (link.w && link.w.length === F) state.weights = [...link.w];
+  if (link.f) {
+    for (const flt of state.filters) {
+      const on = link.f.find((x) => x.id === flt.id);
+      flt.on = !!on;
+      if (on) flt.tau = on.tau;
+    }
+    for (const fi of filterInputs) {
+      fi.cb.checked = fi.flt.on;
+      fi.num.value = String(fi.flt.tau);
+    }
+    syncFilterCount();
+  }
+  if (link.a) setAlphaUI(link.a);
+  if (state.projection !== 'mercator') mapApi.setProjection(state.projection);
+  if (state.basemap !== 'satellite') mapApi.setBasemap(state.basemap);
   syncTargetUI();
+  if (link.v) mapApi.map.jumpTo({ center: [link.v.lon, link.v.lat], zoom: link.v.zoom });
+  else if (state.region !== 'world') setRegion(state.region);
   const narrow = window.innerWidth < 900;
   setPanel('left', !narrow);
   setPanel('right', !narrow);
   window.addEventListener('resize', applyPadding);
   requestScore();
+  if (link.s) void showCell(link.s.lat, link.s.lon, undefined, !link.v, false, true);
   $('#loader').classList.add('hidden');
   (window as unknown as { app: App }).app = app;
 }

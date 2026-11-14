@@ -1,10 +1,12 @@
-import type { KnownAnalog, Meta, TargetsFile, ValidationFile } from './types';
+import type { DiscoveriesFile, KnownAnalog, Meta, SpotlightFile, TargetsFile, ValidationFile } from './types';
 
 export interface Dataset {
   meta: Meta;
   targets: TargetsFile;
   analogs: KnownAnalog[];
   validation: ValidationFile | null;
+  discoveries: DiscoveriesFile | null;
+  spotlight: SpotlightFile | null;
   features: ArrayBuffer;
   cells: ArrayBuffer;
   countries: ArrayBuffer;
@@ -63,11 +65,13 @@ export async function loadDataset(onProgress: Progress): Promise<Dataset> {
     return (await r.json()) as T;
   };
   onProgress(0, 1, 'metadata');
-  const [meta, targets, analogsFile, validation] = await Promise.all([
+  const [meta, targets, analogsFile, validation, discoveries, spotlight] = await Promise.all([
     getJson<Meta>('meta.json'),
     getJson<TargetsFile>('targets.json'),
     getJson<{ analogs: KnownAnalog[] }>('known_analogs.json'),
     getJson<ValidationFile>('validation.json').catch(() => null),
+    getJson<DiscoveriesFile>('discoveries.json').catch(() => null),
+    getJson<SpotlightFile>('spotlight.json').catch(() => null),
   ]);
   // The .gz files are served with a one-year immutable cache (web/vercel.json); the version query makes a
   // new pipeline run (new meta.generated) fetch fresh copies.
@@ -87,5 +91,5 @@ export async function loadDataset(onProgress: Progress): Promise<Dataset> {
   if (features.byteLength !== meta.n_cells * meta.n_features) {
     throw new Error(`features.bin size ${features.byteLength} != ${meta.n_cells} x ${meta.n_features}`);
   }
-  return { meta, targets, analogs: analogsFile.analogs, validation, features, cells, countries };
+  return { meta, targets, analogs: analogsFile.analogs, validation, discoveries, spotlight, features, cells, countries };
 }

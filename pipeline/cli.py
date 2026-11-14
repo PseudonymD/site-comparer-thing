@@ -188,11 +188,15 @@ def cmd_publish(args) -> int:
     for name in PUBLISH_FILES:
         shutil.copy2(src / name, WEB_DATA_DIR / name)
         _p(f"{OK} {name:<20} {(src / name).stat().st_size / 1e6:7.2f} MB")
+    from .discoveries import generate
+
+    disc, _ = generate()
+    _p(f"{OK} discoveries.json ({len(disc['discoveries'])} sites) and spotlight.json regenerated from the new data")
     report = PIPELINE_DIR / "report.md"
     if meta["synthetic_features"]:
         _p(f"\n{WARN} synthetic features in this output: {', '.join(meta['synthetic_features'])}")
     _p("\nCopied to web/public/data/. Now commit and push (run from the repository root):\n")
-    _p("  git add web/public/data pipeline/report.md")
+    _p("  git add web/public/data pipeline/report.md")  # includes discoveries.json / spotlight.json
     _p(f'  git commit -m "data: pipeline run {meta["generated"][:10]} ({meta["n_cells"]:,} cells)"')
     _p("  git push\n")
     _ = report
@@ -208,6 +212,16 @@ def cmd_patch(args) -> int:
     patch(feats, Path(args.src) if args.src else WEB_DATA_DIR, force=args.force, offline=args.offline)
     _p(f"log: {log_path}")
     _p("Next: python -m pipeline publish")
+    return 0
+
+
+def cmd_discoveries(args) -> int:
+    from .discoveries import generate
+
+    disc, spot = generate()
+    for d in disc["discoveries"]:
+        _p(f"  {d['target']:<20} {d['name'][:34]:<34} {d['lat']:8.2f} {d['lon']:8.2f}  p{d['percentile']:.2f}  {d['novelty_km']:>5} km")
+    _p(f"{OK} wrote web/public/data/discoveries.json ({len(disc['discoveries'])}) and spotlight.json")
     return 0
 
 
@@ -246,11 +260,12 @@ def main(argv=None) -> int:
     pa.add_argument("--force", action="store_true", help="ignore cached results for these features")
     pa.add_argument("--offline", action="store_true", help="no network: cached results only")
     pa.add_argument("-v", "--verbose", action="store_true")
+    sub.add_parser("discoveries", help="pick headline discoveries + southern Africa spotlight from published data")
     a = sub.add_parser("assets", help="(developers) rebuild committed land-mask/country assets")
     a.add_argument("-v", "--verbose", action="store_true")
     args = ap.parse_args(argv)
     return {"doctor": cmd_doctor, "run": cmd_run, "status": cmd_status, "publish": cmd_publish,
-            "patch": cmd_patch, "assets": cmd_assets}[args.cmd](args)
+            "patch": cmd_patch, "discoveries": cmd_discoveries, "assets": cmd_assets}[args.cmd](args)
 
 
 if __name__ == "__main__":
