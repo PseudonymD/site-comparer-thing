@@ -5,7 +5,7 @@ describe('deep links', () => {
   it('round-trips the full view state', () => {
     const s = {
       t: 'mars_jezero', w: Array.from({ length: 18 }, (_, i) => (i % 4) * 0.75), f: [{ id: 'ice', tau: 0.5 }, { id: 'ndvi', tau: 0.35 }],
-      a: 0.3, r: 'safrica', v: { lat: -24.08, lon: -69.93, zoom: 9.5 }, s: { lat: -24.1, lon: -69.9 }, p: 'globe' as const, b: 'dark' as const,
+      c: ['NA', 'ZA'], g: ['africa' as const], a: 0.3, r: 'safrica', v: { lat: -24.08, lon: -69.93, zoom: 9.5 }, s: { lat: -24.1, lon: -69.9 }, p: 'globe' as const, b: 'dark' as const,
     };
     expect(parseHash(buildHash(s))).toEqual(s);
   });

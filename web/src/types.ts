@@ -114,6 +114,7 @@ export interface ScoreRequest {
   topN: number;
   /** Limit the heatmap and candidates to [minlon, minlat, maxlon, maxlat]; percentiles stay global. */
   bbox?: [number, number, number, number] | null;
+  countryIds?: number[] | null;
 }
 
 export interface Site {

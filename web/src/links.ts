@@ -7,6 +7,8 @@ export interface LinkState {
   t?: string; // target id
   w?: number[]; // weights (full vector) when changed
   f?: { id: string; tau: number }[]; // filters that are on (present = explicit, even if empty)
+  c?: string[]; // selected country ISO codes
+  g?: string[]; // selected geographic region IDs
   a?: number; // novelty alpha
   r?: string; // region id
   v?: { lat: number; lon: number; zoom: number }; // map view
@@ -38,6 +40,8 @@ export function parseHash(hash: string): LinkState {
       })
       .filter((x) => x.id && Number.isFinite(x.tau));
   }
+  if (p.has('c')) out.c = p.get('c')!.split(',').filter(Boolean).map((x) => x.toUpperCase());
+  if (p.has('g')) out.g = p.get('g')!.split(',').filter(Boolean);
   const a = num(p.get('a'));
   if (a !== undefined) out.a = Math.min(0.6, Math.max(0, a));
   if (p.get('r')) out.r = p.get('r')!;
@@ -56,6 +60,8 @@ export function buildHash(s: LinkState): string {
   if (s.t) parts.push(`t=${encodeURIComponent(s.t)}`);
   if (s.w) parts.push(`w=${s.w.map((x) => +x.toFixed(2)).join('_')}`);
   if (s.f) parts.push(`f=${s.f.map((f) => `${f.id}:${+f.tau.toPrecision(4)}`).join(',')}`);
+  if (s.c?.length) parts.push(`c=${s.c.join(',')}`);
+  if (s.g?.length) parts.push(`g=${s.g.join(',')}`);
   if (s.a) parts.push(`a=${+s.a.toFixed(2)}`);
   if (s.r && s.r !== 'world') parts.push(`r=${encodeURIComponent(s.r)}`);
   if (s.v) parts.push(`v=${r4(s.v.lat)},${r4(s.v.lon)},${+s.v.zoom.toFixed(2)}`);
