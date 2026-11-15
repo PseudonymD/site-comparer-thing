@@ -79,6 +79,7 @@ All of the following are implemented in the current code.
 | Discoveries | Pre-computed headline candidates at least 500 km from any known analog, plus a southern Africa spotlight |
 | Explanation | A nine-step "How it works" page with live demos, a guided tour, and a data and limitations page |
 | Sharing | The whole view (target, mode, weights, filters, map position, selected site) is stored in the URL |
+| Two ways to use it | The start screen offers **Normal Mode** (everything below) and **Simple Mode**: pick a place on the Moon or Mars, see the best matches on Earth, and read a plain-language result with the closest matches, biggest differences and a short explanation. Same data and scoring engine; advanced controls are hidden, not removed |
 | Interface | Start screen, light and dark themes, optional blue/red tint when switching Moon to Mars, responsive layout with bottom sheets on phones |
 | Data handling | Missing target values are never read as zero; soil layers are skipped on ice-sheet cells where the source has no soil ([details](docs/weights.md#measured-zero-missing-and-not-applicable)) |
 
@@ -88,8 +89,10 @@ All of the following are implemented in the current code.
 
 | | |
 |---|---|
-| <img src="docs/images/start-screen.png" alt="Start screen with the Analog Finder logo, title and Start and Settings buttons"> | <img src="docs/images/moon-dark.jpg" alt="Dark theme with the lunar south pole as target, showing the heatmap and ranked candidates"> |
-| *Start screen.* | *Dark theme, lunar south pole target.* |
+| <img src="docs/images/start-screen.png" alt="Start screen with the Analog Finder logo, a Normal Mode card and a Simple Mode card"> | <img src="docs/images/moon-dark.jpg" alt="Dark theme with the lunar south pole as target, showing the heatmap and ranked candidates"> |
+| *Start screen: choose Normal Mode or Simple Mode.* | *Normal Mode, dark theme, lunar south pole target.* |
+| <img src="docs/images/simple-mode.jpg" alt="Simple Mode: choose a Moon or Mars place, then see the best matches on Earth with plain-language match labels"> | <img src="docs/images/simple-result.jpg" alt="Simple Mode result for one Earth location: overall similarity, why it could be an analog, closest matches and biggest differences"> |
+| *Simple Mode: pick a target and see the best matches.* | *Simple Mode result: score, explanation, closest matches and differences.* |
 | <img src="docs/images/location-dossier.jpg" alt="Location panel for the top Jezero candidate with the fingerprint chart, score and best and worst matching layers"> | <img src="docs/images/location-breakdown.jpg" alt="Where it differs: per-layer bars comparing the candidate with the Jezero target and each layer's share of the score gap"> |
 | *Location view: score, fingerprint chart and a plain-language summary.* | *"Where it differs": target (tick) against the site (dot) for each layer, with its share of the gap.* |
 | <img src="docs/images/side-by-side.jpg" alt="NASA Mars Trek imagery of Jezero crater next to Esri satellite imagery of the Earth candidate"> | <img src="docs/images/terrain-closeup.jpg" alt="30 metre terrain close-up: hillshade, slope histogram compared with the Mars target, and a roughness histogram"> |
@@ -343,7 +346,7 @@ npm install
 npm run dev
 ```
 
-Open <http://127.0.0.1:5173/>. Other scripts:
+Open <http://127.0.0.1:5173/> and choose **Normal Mode** or **Simple Mode** on the start screen. A link ending in `#ui=simple` opens Simple Mode directly. Other scripts:
 
 ```bash
 npm run build     # type-check (tsc) and production build into web/dist

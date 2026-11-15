@@ -72,6 +72,7 @@ On phones: panels become bottom sheets, and a bottom nav bar (Map / Candidates /
 | Section | Where it is built | What it does |
 |---|---|---|
 | **Start screen** (`#start`) | `index.html`, `start.ts` | Logo, title, Start and Settings buttons. Skipped if the URL already contains a `#...` |
+| **Simple Mode** (`body.simple`) | `ui/simple.ts`, `ui/plain.ts` | A plain-language panel over the same map and scoring engine, chosen on the start screen. It hides the Normal panels with CSS and shows the best matches and a result view with a short explanation. See `docs/decisions.md` item 43 |
 | **Loader** (`#loader`) | `index.html`, `main.ts` | Progress card while the ~30 MB of data downloads |
 | **Top bar** | `index.html`, target buttons built in `main.ts` | Choose one of six targets (2 Moon, 4 Mars); links to Tour, How it works, Limitations, Settings |
 | **Left panel** | `buildLeft()` in `main.ts` | Target description, "Scoring mode" button, validation badge, tabs **Filters** (leave-out limits, geography, novelty slider) and **View** (flat/globe, background, colour stretch, opacity) |

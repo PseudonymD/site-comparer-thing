@@ -39,6 +39,14 @@ export function applyPrefs() {
   document.querySelector('meta[name="theme-color"]')?.setAttribute('content', prefs.theme === 'dark' ? '#05070b' : '#e8eaed');
 }
 
+/** Flip light/dark (used by Simple Mode's one-tap theme button). Stored the same way as the Settings page. */
+export function toggleTheme(): Theme {
+  prefs.theme = prefs.theme === 'dark' ? 'light' : 'dark';
+  applyPrefs();
+  save();
+  return prefs.theme;
+}
+
 function save() {
   try {
     localStorage.setItem(KEY, JSON.stringify(prefs));

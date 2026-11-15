@@ -13,14 +13,15 @@ import { createTour } from './ui/tour';
 import { groupTargets, type LeftTab, type RightTab, type TourSnapshot } from './ui/tourState';
 import { REGIONS as GEO_REGIONS, matchesGeography, validRegion, type RegionId } from './geography';
 import { validWeightVector } from './population';
-import { applyPrefs, initSettings } from './settings';
+import { applyPrefs, initSettings, toggleTheme } from './settings';
 import {
   APPLICABILITY, BODIES, PRESETS, STORAGE_KEY, WEIGHT_MAX, WEIGHT_MIN, WEIGHT_STEP, applyVector, cloneConfig, defaultConfig,
   effectiveWeights, isEarthFactor, isPresetId, keyOf, parseStore, presetInfo, resolveConfig, sameConfig, serializeStore,
-  targetUsable, weightShares,
+  targetUsable, weightShares, DEFAULT_ACTIVE,
   type Body, type PresetConfig, type PresetId,
 } from './presets';
-import { initStart } from './start';
+import { initStart, rememberMode, type UiMode } from './start';
+import { createSimple } from './ui/simple';
 import type { CellInfo, Discovery, KnownAnalog, ScoreRequest, ScoreResult, Site, Target } from './types';
 
 export const REGIONS: Record<string, { name: string; bbox: [number, number, number, number] }> = {
@@ -89,7 +90,15 @@ async function main() {
   // Appearance and the start screen come first so they work while the data streams in.
   applyPrefs();
   const settings = initSettings();
-  const start = initStart((from) => settings.open(from));
+  // Simple Mode is a presentation layer over this same app. A link with ui=simple opens it directly.
+  let uiReady = false;
+  let wantedMode: UiMode = parseHash(location.hash).ui === 'simple' ? 'simple' : 'normal';
+  document.body.classList.toggle('simple', wantedMode === 'simple');
+  const start = initStart((from) => settings.open(from), (mode) => {
+    wantedMode = mode;
+    if (uiReady) setUiMode(mode);
+    else document.body.classList.toggle('simple', mode === 'simple');
+  });
   document.getElementById('btn-start')!.onclick = () => start.show();
   // The map (and the known analog sites) appear while the 30 MB grid streams in.
   const mapApi = createMap($('#map'));
@@ -133,6 +142,9 @@ async function main() {
   // ---------------------------------------------------------------- state
   const bp = (id: string, p: number) => meta.features[featIndex(id)].breakpoints[p];
   const link: LinkState = parseHash(location.hash);
+  // Simple Mode on/off. While on, the scoring weights are the shipped default mode and the advanced settings
+  // are at their defaults; the user's saved modes, weights and filters are kept untouched and come back on exit.
+  const ui = { simple: link.ui === 'simple' };
   const t0 = Math.max(0, targets.targets.findIndex((t) => t.id === link.t));
   // ---- scoring presets: one saved/working configuration per body and mode (src/presets.ts)
   const featureIds = meta.features.map((f) => f.id);
@@ -155,7 +167,8 @@ async function main() {
   };
   const isDirty = (body: Body, id: PresetId) => !sameConfig(workingOf(body, id), savedOf(body, id), featureIds);
   const bodyOf = (t: Target) => t.body as Body;
-  const engineWeights = (body: Body) => effectiveWeights(workingOf(body, store.active[body]), featureIds);
+  const engineWeights = (body: Body) =>
+    ui.simple ? effectiveWeights(defaultOf(body, DEFAULT_ACTIVE), featureIds) : effectiveWeights(workingOf(body, store.active[body]), featureIds);
   const persist = () => {
     try {
       localStorage.setItem(STORAGE_KEY, serializeStore(store));
@@ -181,7 +194,7 @@ async function main() {
     projection: link.p ?? 'mercator',
     region: link.r && REGIONS[link.r] ? link.r : 'world',
     geography: {
-      countries: [...new Set((link.c ?? []).filter((iso) => meta.countries.some((c) => c.iso === iso)))],
+      countries: ui.simple ? [] : [...new Set((link.c ?? []).filter((iso) => meta.countries.some((c) => c.iso === iso)))],
       regions: [...new Set((link.g ?? []).filter(validRegion))],
     },
   };
@@ -243,6 +256,14 @@ async function main() {
   // ---------------------------------------------------------------- deep links
   function linkState(site?: { lat: number; lon: number }): LinkState {
     const t = app.target();
+    if (ui.simple) {
+      // Simple Mode shares only what the user chose: target, region, place and map view.
+      const c = mapApi.map.getCenter();
+      return {
+        t: t.id, ui: 'simple', g: state.geography.regions.length ? state.geography.regions : undefined,
+        r: state.region, v: { lat: c.lat, lon: c.lng, zoom: mapApi.map.getZoom() }, s: site, p: state.projection, b: state.basemap,
+      };
+    }
     const mode = store.active[bodyOf(t)];
     const shipped = effectiveWeights(defaultOf(bodyOf(t), mode), featureIds);
     const wChanged = state.weights.some((w, j) => w !== shipped[j]);
@@ -699,6 +720,7 @@ async function main() {
       targetLines[j].title = tip;
     });
     mapApi.setTargetBody(t.body);
+    simple.onTarget();
     renderWeights();
     syncMode();
     syncBadge();
@@ -940,6 +962,7 @@ async function main() {
   // Phones and small tablets (CSS max-width: 900px): the panels become bottom sheets, one at a time.
   const isNarrow = () => window.innerWidth <= 900;
   function panelPadding() {
+    if (ui.simple) return simple.padding();
     const g = 12;
     if (isNarrow()) {
       // Keep the map's centre in the strip above the open sheet and the bottom nav.
@@ -1007,7 +1030,7 @@ async function main() {
   }
 
   function selectSite(s: Site, i: number) {
-    void showCell(s.lat, s.lon, i + 1, true, false, true);
+    void showCell(s.lat, s.lon, i + 1, true, false, !ui.simple); // Normal Mode zooms into site focus; Simple Mode keeps the heatmap
   }
 
   // Site focus: opening a candidate collapses the controls, hides the heatmap and zooms in close.
@@ -1045,7 +1068,7 @@ async function main() {
       const lat = a.lat + dy * res;
       const lon = a.lon + dx * res;
       if (await app.requestCell(lat, lon)) {
-        await showCell(lat, lon, undefined, true, false, true, a);
+        await showCell(lat, lon, undefined, true, false, !ui.simple, a);
         return;
       }
     }
@@ -1078,6 +1101,7 @@ async function main() {
         if (s) selectSite(s, k);
       },
     }, keepScroll);
+    if (ui.simple) simple.showResult(info, clat, clon, currentAnalog); // same data, plain wording
     if (body.classList.contains('right-closed')) setPanel('right', true);
     else applyPadding();
     if (zoomIn) enterFocus();
@@ -1090,6 +1114,7 @@ async function main() {
     if (!current) return;
     current = null;
     currentAnalog = null;
+    simple.hideResult();
     hideDossier();
     $('#list-view').classList.remove('hidden');
     body.classList.remove('dossier-open');
@@ -1123,6 +1148,7 @@ async function main() {
 
   function onScored(res: ScoreResult) {
     void mapApi.setScoreImage(res.image, res.width, res.height, res.blob);
+    simple.onScored(res);
     const list = $('#sites');
     list.innerHTML = '';
     const span = Math.max(1e-6, res.stats.hi - res.stats.lo);
@@ -1157,6 +1183,95 @@ async function main() {
   // ---------------------------------------------------------------- wire up
   buildLeft();
   buildWeightsEditor();
+  // ---- Simple Mode: a second presentation layer. Same worker, same data, same scoring; no second engine.
+  const simple = createSimple({
+    app,
+    pickTarget(i) {
+      const keep = current; // keep the chosen Earth location when the target changes
+      selectTarget(i);
+      if (keep) void showCell(keep.lat, keep.lon, undefined, false, false, false);
+    },
+    openCell: (lat, lon, rank) => void showCell(lat, lon, rank, true, false, false),
+    closeCell: () => closeDossier(),
+    setRegion(id) {
+      state.geography.regions = id ? [id] : [];
+      syncGeoUI();
+      syncFilterCount();
+      simple.onTarget();
+      requestScore();
+    },
+    region: () => (state.geography.regions[0] ?? '') as RegionId | '',
+    switchToNormal: () => setUiMode('normal'),
+    openAbout: () => renderAbout(app, showPlace),
+    toggleTheme: () => void toggleTheme(),
+  });
+  interface AdvancedSnap {
+    filters: { id: string; on: boolean; tau: number }[];
+    alpha: number;
+    geography: { countries: string[]; regions: RegionId[] };
+    stretchLow: number;
+    hideBelow: boolean;
+    opacity: number;
+  }
+  let advancedSnap: AdvancedSnap | null = null;
+  /** Switch between Normal and Simple Mode without losing the selected target, location or saved settings. */
+  function setUiMode(mode: UiMode) {
+    const wantSimple = mode === 'simple';
+    if (wantSimple === ui.simple) return;
+    if (wantSimple) {
+      // Remember the advanced settings, then use the defaults. Saved modes and weights are not touched.
+      advancedSnap = {
+        filters: state.filters.map((f) => ({ id: f.id, on: f.on, tau: f.tau })),
+        alpha: state.alpha,
+        geography: { countries: [...state.geography.countries], regions: [...state.geography.regions] },
+        stretchLow: state.stretchLow, hideBelow: state.hideBelow, opacity: state.opacity,
+      };
+      ui.simple = true;
+      exitFocus();
+      for (const f of state.filters) f.on = false;
+      applyDefaultFilters(app.target());
+      setAlphaUI(0);
+      state.geography = { countries: [], regions: [] };
+      state.stretchLow = 0.5;
+      state.hideBelow = false;
+      state.opacity = 0.85;
+      syncGeoUI();
+      syncViewUI();
+    } else {
+      ui.simple = false;
+      const snap = advancedSnap;
+      advancedSnap = null;
+      if (snap) {
+        for (const f of state.filters) {
+          const o = snap.filters.find((x) => x.id === f.id);
+          if (o) {
+            f.on = o.on;
+            f.tau = o.tau;
+          }
+        }
+        for (const fi of filterInputs) {
+          fi.cb.checked = fi.flt.on;
+          fi.num.value = String(fi.flt.tau);
+        }
+        setAlphaUI(snap.alpha);
+        state.geography = { countries: [...snap.geography.countries], regions: [...snap.geography.regions] };
+        state.stretchLow = snap.stretchLow;
+        state.hideBelow = snap.hideBelow;
+        state.opacity = snap.opacity;
+        syncGeoUI();
+        syncViewUI();
+      }
+    }
+    body.classList.toggle('simple', ui.simple);
+    state.weights = engineWeights(bodyOf(app.target()));
+    rememberMode(mode);
+    syncFilterCount();
+    renderWeights();
+    syncMode();
+    simple.onTarget();
+    applyPadding();
+    requestScore(); // also redraws the open location (showCell) in the new mode
+  }
   $('#mode-chip').onclick = () => settings.open($('#mode-chip'));
   $('#mode-line-btn').onclick = () => settings.open($('#mode-line-btn'));
   settings.onOpen(() => {
@@ -1433,16 +1548,16 @@ async function main() {
   await Promise.all([workerReady, mapApi.ready]);
   mapApi.setAnalogs(ds.analogs);
   // Apply a shared link (weights, filters, novelty, view) on top of the target defaults.
-  if (link.m && isPresetId(link.m)) {
+  if (!ui.simple && link.m && isPresetId(link.m)) {
     store.active[bodyOf(app.target())] = link.m; // the sender's mode, for this visit only
     state.weights = engineWeights(bodyOf(app.target()));
   }
-  if (link.w) {
+  if (!ui.simple && link.w) {
     // Weights from a link are an unsaved edit of the active mode: the recipient can Save or Reset them.
     if (validWeightVector(link.w, F)) applyWeightVector(bodyOf(app.target()), link.w);
     else toast('The shared link contained invalid weights; the mode defaults were used.');
   }
-  if (link.f) {
+  if (!ui.simple && link.f) {
     for (const flt of state.filters) {
       const on = link.f.find((x) => x.id === flt.id);
       flt.on = !!on;
@@ -1454,7 +1569,7 @@ async function main() {
     }
     syncFilterCount();
   }
-  if (link.a) setAlphaUI(link.a);
+  if (!ui.simple && link.a) setAlphaUI(link.a);
   if (state.projection !== 'mercator') mapApi.setProjection(state.projection);
   if (state.basemap !== 'satellite') mapApi.setBasemap(state.basemap);
   syncTargetUI();
@@ -1465,9 +1580,12 @@ async function main() {
   setPanel('right', !narrow);
   window.addEventListener('resize', applyPadding);
   requestScore();
-  if (link.s) void showCell(link.s.lat, link.s.lon, undefined, !link.v, false, true);
+  if (link.s) void showCell(link.s.lat, link.s.lon, undefined, !link.v, false, !ui.simple);
   // #tour keeps its original meaning: play the 30-second captioned demo.
   if (link.tour) window.setTimeout(() => tour.start(null, true), 800);
+  uiReady = true;
+  if (wantedMode !== (ui.simple ? 'simple' : 'normal')) setUiMode(wantedMode); // the start screen was used while loading
+  simple.onTarget();
   $('#loader').classList.add('hidden');
   (window as unknown as { app: App }).app = app;
 }

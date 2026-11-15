@@ -39,10 +39,22 @@
         </svg>
         <h1 id="start-title">Analog Finder</h1>
         <p class="start-sub">Where on Earth is most like the Moon and Mars?</p>
-        <div class="start-actions">
-          <button class="btn start-go" id="start-go" type="button">Start</button>
-          <button class="btn-ghost" id="start-settings" type="button">Settings</button>
+        <div class="mode-cards" role="group" aria-label="Choose how to use Analog Finder">
+          <button class="mode-card" id="start-normal" type="button" data-mode="normal">
+            <span class="eyebrow">Normal Mode</span>
+            <b>Full control</b>
+            <span class="mode-desc">All 18 measurements, adjustable weights and scoring modes, filters, charts and a 30 m terrain close-up. Best if you want the details.</span>
+            <span class="mode-go">Open Normal Mode <i aria-hidden="true">→</i></span>
+          </button>
+          <button class="mode-card" id="start-simple" type="button" data-mode="simple">
+            <span class="eyebrow">Simple Mode</span>
+            <b>Just the answer</b>
+            <span class="mode-desc">Pick a place on the Moon or Mars and see where on Earth looks most like it, explained in plain language. Best if you are new to this.</span>
+            <span class="mode-go">Open Simple Mode <i aria-hidden="true">→</i></span>
+          </button>
         </div>
+        <p class="note">Both modes use the same data and the same scoring. You can switch at any time and keep your place.</p>
+        <button class="btn-ghost" id="start-settings" type="button">Settings</button>
         <p class="note">Terrestrial Analog Finder · NASA Space Apps 2026</p>
       </div>
     </div>
@@ -93,7 +105,20 @@
         <button class="text-btn" id="btn-limits">Data and limitations</button>
         <button class="text-btn" id="btn-settings">Settings</button>
       </div>
+      <div id="simple-nav">
+        <button class="text-btn" id="sm-how" type="button">How it works</button>
+        <button class="text-btn" id="sm-theme" type="button" aria-label="Switch between light and dark">◐ Theme</button>
+        <button class="btn" id="sm-normal" type="button">Normal Mode</button>
+      </div>
     </header>
+
+    <aside id="simple-panel" class="panel sheet" aria-label="Simple Mode"></aside>
+    <div id="simple-legend" class="sheet" aria-label="Map key">
+      <div class="eyebrow">How closely each place matches</div>
+      <div class="sm-ramp"></div>
+      <div class="sm-ramp-labels"><span>Weaker</span><span>Stronger</span></div>
+      <div class="legend-key"><span><i class="k-site"></i>best matches</span><span><i class="k-analog"></i>known test sites</span></div>
+    </div>
 
     <aside id="left" class="panel sheet" aria-label="Target and controls"></aside>
     <button class="panel-toggle sheet" id="toggle-left" aria-label="Hide controls" title="Hide or show controls"></button>

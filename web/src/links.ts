@@ -17,6 +17,7 @@ export interface LinkState {
   p?: 'globe' | 'mercator';
   b?: 'satellite' | 'dark';
   tour?: boolean;
+  ui?: 'simple'; // Simple Mode (absent = Normal Mode, exactly as before)
 }
 
 const num = (x: string | null) => (x === null || x === '' || !Number.isFinite(+x) ? undefined : +x);
@@ -54,6 +55,7 @@ export function parseHash(hash: string): LinkState {
   if (p.get('p') === 'globe' || p.get('p') === 'mercator') out.p = p.get('p') as LinkState['p'];
   if (p.get('b') === 'satellite' || p.get('b') === 'dark') out.b = p.get('b') as LinkState['b'];
   if (p.has('tour')) out.tour = true;
+  if (p.get('ui') === 'simple') out.ui = 'simple';
   return out;
 }
 
@@ -71,6 +73,7 @@ export function buildHash(s: LinkState): string {
   if (s.s) parts.push(`s=${r4(s.s.lat)},${r4(s.s.lon)}`);
   if (s.p && s.p !== 'mercator') parts.push(`p=${s.p}`);
   if (s.b && s.b !== 'satellite') parts.push(`b=${s.b}`);
+  if (s.ui) parts.push('ui=simple');
   return '#' + parts.join('&');
 }
 
