@@ -75,6 +75,7 @@ All of the following are implemented in the current code.
 | Filters | Hard limits on vegetation, ice cover, night lights and steep slopes; searchable country and region selection; a *novelty* slider that favours places far from known analogs |
 | Candidates | Top cells grouped into ranked candidate sites with area and country |
 | Location view | Per-layer gap breakdown, an analog "fingerprint" chart, a full values table, side-by-side imagery with the target (NASA Moon/Mars Trek), and a 30 m terrain close-up with slope and roughness charts |
+| Coordinate search | Type coordinates in the top bar (decimal, N/S/E/W or degrees-minutes-seconds; `/` focuses it) to fly to that cell and open its location view. A hint shows how the input was read and which country it falls in |
 | Known analogs | 17 reference sites shown on the map; click one for its summary and score |
 | Discoveries | Pre-computed headline candidates at least 500 km from any known analog, plus a southern Africa spotlight |
 | Explanation | A nine-step "How it works" page with live demos, a guided tour, and a data and limitations page |
