@@ -1,11 +1,12 @@
 // Shareable deep links: the whole view (target, weights, filters, novelty, region, map view, selected site)
 // lives in the URL hash, e.g.
 //   #t=mars_jezero&a=0.3&f=ice:0.5&r=safrica&v=-24.1,-69.9,9&s=-24.1,-69.93
-// Weights are only written when they differ from the target's defaults (w=18 values joined by "_").
+// Weights are only written when they differ from the scoring mode's shipped default (w=18 values joined by "_").
 
 export interface LinkState {
   t?: string; // target id
-  w?: number[]; // weights (full vector) when changed
+  m?: string; // scoring mode (preset id)
+  w?: number[]; // weights (full vector) when different from the mode's shipped default
   f?: { id: string; tau: number }[]; // filters that are on (present = explicit, even if empty)
   c?: string[]; // selected country ISO codes
   g?: string[]; // selected geographic region IDs
@@ -25,6 +26,7 @@ export function parseHash(hash: string): LinkState {
   const p = new URLSearchParams(hash.replace(/^#/, ''));
   const out: LinkState = {};
   if (p.get('t')) out.t = p.get('t')!;
+  if (p.get('m') && /^[a-z_]{1,30}$/.test(p.get('m')!)) out.m = p.get('m')!;
   if (p.get('w')) {
     const w = p.get('w')!.split('_').map(Number);
     if (w.every((x) => Number.isFinite(x) && x >= 0 && x <= 3)) out.w = w;
@@ -58,6 +60,7 @@ export function parseHash(hash: string): LinkState {
 export function buildHash(s: LinkState): string {
   const parts: string[] = [];
   if (s.t) parts.push(`t=${encodeURIComponent(s.t)}`);
+  if (s.m) parts.push(`m=${s.m}`);
   if (s.w) parts.push(`w=${s.w.map((x) => +x.toFixed(2)).join('_')}`);
   if (s.f) parts.push(`f=${s.f.map((f) => `${f.id}:${+f.tau.toPrecision(4)}`).join(',')}`);
   if (s.c?.length) parts.push(`c=${s.c.join(',')}`);

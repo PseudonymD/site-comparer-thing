@@ -1,5 +1,6 @@
 /* Settings page and the persisted appearance preferences (light/dark, Moon/Mars colour switch).
-   The advanced section (weights, filters, map view) does not own any state. Each control mirrors an
+   The weightings and presets are built by main.ts into #set-weights (they own the scoring state). The
+   filters and map view sections here do not own any state. Each control mirrors an
    existing control in the left panel: changing it writes the value into that control and fires its
    event, so validation, scoring and the URL hash keep a single code path. */
 
@@ -47,7 +48,6 @@ function save() {
 }
 
 export interface SettingsConfig {
-  groups: { name: string; color: string; features: { id: string; name: string }[] }[];
   filterCount: number;
 }
 
@@ -55,6 +55,8 @@ export interface SettingsApi {
   open(returnFocus?: HTMLElement | null): void;
   close(): void;
   attachAdvanced(cfg: SettingsConfig): void;
+  /** Called each time the page opens, before it is shown (used to sync the weightings editor). */
+  onOpen(cb: () => void): void;
 }
 
 const $ = <T extends HTMLElement = HTMLElement>(sel: string, scope: ParentNode = document) => scope.querySelector(sel) as T;
@@ -70,6 +72,7 @@ export function initSettings(): SettingsApi {
   const page = $('#settings');
   let returnTo: HTMLElement | null = null;
   const refreshers: (() => void)[] = [];
+  const openHooks: (() => void)[] = [];
 
   // ---- appearance (works before the data has loaded)
   const themeBtns = page.querySelectorAll<HTMLButtonElement>('#set-theme button');
@@ -102,6 +105,7 @@ export function initSettings(): SettingsApi {
   const open = (from?: HTMLElement | null) => {
     returnTo = from ?? (document.activeElement as HTMLElement | null);
     syncAppearance();
+    openHooks.forEach((h) => h());
     refreshers.forEach((r) => r());
     page.classList.remove('hidden');
     page.scrollTop = 0;
@@ -226,31 +230,6 @@ export function initSettings(): SettingsApi {
     const host = $('#set-advanced');
     host.replaceChildren();
 
-    // Weightings
-    const w = section('Weightings', 'How much each layer counts, from 0 (ignored) to 3. These are the same weights as in the Weights tab.');
-    const reset = el('button', 'text-btn', 'Reset to target defaults');
-    reset.type = 'button';
-    reset.onclick = () => {
-      $('#reset-w').click();
-      refreshers.forEach((r) => r());
-    };
-    w.append(reset);
-    cfg.groups.forEach((g, gi) => {
-      const d = el('details', 'group');
-      d.open = gi === 0;
-      const sum = el('summary');
-      const sw = el('i', 'swatch');
-      sw.style.background = g.color;
-      sum.append(sw, el('span', undefined, g.name));
-      d.append(sum);
-      for (const f of g.features) {
-        const row = mirrorRange(`#w-${f.id}`, f.name, `#w-${f.id} ~ .val`, `set-w-${f.id}`);
-        if (row) d.append(row);
-      }
-      w.append(d);
-    });
-    host.append(w);
-
     // Filters
     const f = section('Filters', 'Cells past an enabled limit score zero.');
     for (let k = 0; k < cfg.filterCount; k++) {
@@ -275,5 +254,5 @@ export function initSettings(): SettingsApi {
     host.append(v);
   }
 
-  return { open, close, attachAdvanced };
+  return { open, close, attachAdvanced, onOpen: (cb) => void openHooks.push(cb) };
 }

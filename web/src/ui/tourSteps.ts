@@ -74,7 +74,7 @@ export const GUIDE_STEPS: GuideStep[] = [
     targets: ['#targets', '#target-select'],
     paras: (c) => [
       `The target is the Moon or Mars site that every land cell is compared with. Moon: ${list(c.moon)}. Mars: ${list(c.mars)}.`,
-      'Choosing one re-scores every cell against that site. It also resets the layer weights and filters to that target’s defaults, closes any open location, and switches the colour theme between Moon and Mars.',
+      'Choosing one re-scores every cell against that site. It also loads the layer weights of your current scoring mode for that body, resets the filters to that target’s defaults, closes any open location, and switches the colour theme between Moon and Mars.',
       'The tour does not change your choice.',
     ],
   },
@@ -90,14 +90,14 @@ export const GUIDE_STEPS: GuideStep[] = [
     ],
   },
   {
-    id: 'weights',
-    title: 'Weights: how much each layer counts',
-    targets: ['#pane-weights'],
-    prep: { left: 'weights' },
+    id: 'mode',
+    title: 'Scoring mode and weights',
+    targets: ['#mode-chip'],
+    prep: { left: 'current' },
     paras: (c) => {
       const out = [
-        `Each of the ${c.nFeatures} layers has a weight from 0 to 3. Under each name: the target’s value and its Earth percentile (p0 lowest, p100 highest). Layers are grouped as Terrain, Climate, Surface and Remoteness; open a group to see its sliders.`,
-        'Reset puts the weights back to the target’s defaults. At least one weight must stay above zero.',
+        `This button shows the scoring mode in use. There are three modes for each of the Moon and Mars: Exploration, Direct Comparison, and Direct Comparison + Earth Factors. Click it to open Settings.`,
+        `In Settings, each of the ${c.nFeatures} layers has an on/off switch and a weight from 0 to 3, grouped as Terrain, Climate, Surface and Remoteness. Save keeps your changes in this browser; Reset to default puts back the original for that one mode. At least one layer must stay on.`,
       ];
       if (c.proxies.length) out.push(`Layers tagged proxy in this build: ${c.proxies.join(', ')}. See Limitations for what proxies mean.`);
       return out;

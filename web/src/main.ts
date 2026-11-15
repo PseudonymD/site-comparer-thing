@@ -14,6 +14,11 @@ import { groupTargets, type LeftTab, type RightTab, type TourSnapshot } from './
 import { REGIONS as GEO_REGIONS, matchesGeography, validRegion, type RegionId } from './geography';
 import { validWeightVector } from './population';
 import { applyPrefs, initSettings } from './settings';
+import {
+  BODIES, PRESETS, STORAGE_KEY, WEIGHT_MAX, WEIGHT_MIN, WEIGHT_STEP, applyVector, cloneConfig, defaultConfig, effectiveWeights,
+  isPresetId, keyOf, literatureWeights, parseStore, presetInfo, resolveConfig, sameConfig, serializeStore, weightShares,
+  type Body, type PresetConfig, type PresetId,
+} from './presets';
 import { initStart } from './start';
 import type { CellInfo, Discovery, KnownAnalog, ScoreRequest, ScoreResult, Site, Target } from './types';
 
@@ -127,9 +132,40 @@ async function main() {
   const bp = (id: string, p: number) => meta.features[featIndex(id)].breakpoints[p];
   const link: LinkState = parseHash(location.hash);
   const t0 = Math.max(0, targets.targets.findIndex((t) => t.id === link.t));
+  // ---- scoring presets: one saved/working configuration per body and mode (src/presets.ts)
+  const featureIds = meta.features.map((f) => f.id);
+  const literature = Object.fromEntries(BODIES.map((b) => [b, literatureWeights(targets.targets, featureIds, b)])) as Record<Body, Record<string, number>>;
+  const defaultOf = (body: Body, id: PresetId) => defaultConfig(id, featureIds, literature[body]);
+  const readStore = () => {
+    try {
+      return localStorage.getItem(STORAGE_KEY);
+    } catch {
+      return null;
+    }
+  };
+  const store = parseStore(readStore(), featureIds);
+  /** Edits not yet saved. Switching presets keeps them, so nothing is lost by looking at another mode. */
+  const working = new Map<string, PresetConfig>();
+  const savedOf = (body: Body, id: PresetId) => resolveConfig(store.saved[keyOf(body, id)], defaultOf(body, id), featureIds);
+  const workingOf = (body: Body, id: PresetId) => {
+    const k = keyOf(body, id);
+    if (!working.has(k)) working.set(k, savedOf(body, id));
+    return working.get(k)!;
+  };
+  const isDirty = (body: Body, id: PresetId) => !sameConfig(workingOf(body, id), savedOf(body, id), featureIds);
+  const bodyOf = (t: Target) => t.body as Body;
+  const engineWeights = (body: Body) => effectiveWeights(workingOf(body, store.active[body]), featureIds);
+  const persist = () => {
+    try {
+      localStorage.setItem(STORAGE_KEY, serializeStore(store));
+      return true;
+    } catch {
+      return false;
+    }
+  };
   const state: AppState = {
     t: t0,
-    weights: [...targets.targets[t0].weights],
+    weights: engineWeights(bodyOf(targets.targets[t0])),
     filters: [
       { id: 'ndvi', label: 'Exclude vegetation: NDVI >', on: false, tau: 0.35, step: 0.05 },
       { id: 'ice', label: 'Exclude ice cover: fraction >', on: false, tau: 0.5, step: 0.05 },
@@ -206,13 +242,15 @@ async function main() {
   // ---------------------------------------------------------------- deep links
   function linkState(site?: { lat: number; lon: number }): LinkState {
     const t = app.target();
-    const wChanged = state.weights.some((w, j) => w !== t.weights[j]);
+    const mode = store.active[bodyOf(t)];
+    const shipped = effectiveWeights(defaultOf(bodyOf(t), mode), featureIds);
+    const wChanged = state.weights.some((w, j) => w !== shipped[j]);
     const on = state.filters.filter((f) => f.on).map((f) => ({ id: f.id, tau: f.tau }));
     const def = (t.default_filters || []).map((f) => ({ id: f.feature, tau: f.max }));
     const fChanged = JSON.stringify(on) !== JSON.stringify(def);
     const c = mapApi.map.getCenter();
     return {
-      t: t.id, w: wChanged ? state.weights : undefined, f: fChanged ? on : undefined, a: state.alpha || undefined,
+      t: t.id, m: mode, w: wChanged ? state.weights : undefined, f: fChanged ? on : undefined, a: state.alpha || undefined,
       c: state.geography.countries.length ? state.geography.countries : undefined,
       g: state.geography.regions.length ? state.geography.regions : undefined,
       r: state.region, v: { lat: c.lat, lon: c.lng, zoom: mapApi.map.getZoom() }, s: site,
@@ -306,6 +344,8 @@ async function main() {
   const left = $('#left');
   const sliders: HTMLInputElement[] = [];
   const sliderVals: HTMLElement[] = [];
+  const sliderChecks: HTMLInputElement[] = [];
+  const sliderPcts: HTMLElement[] = [];
   const targetLines: HTMLElement[] = [];
   const filterInputs: { flt: FilterState; cb: HTMLInputElement; num: HTMLInputElement }[] = [];
   const groups = ['Terrain', 'Climate', 'Surface', 'Remoteness'] as const;
@@ -344,19 +384,6 @@ async function main() {
       });
     });
   }
-  function syncGroupSums() {
-    for (const g of groups) {
-      let sum = 0;
-      let n = 0;
-      meta.features.forEach((f, j) => {
-        if (f.ui_group !== g) return;
-        sum += state.weights[j];
-        n++;
-      });
-      $(`#gsum-${g}`).textContent = `${n} layers · weight ${fmtW(sum)}`;
-    }
-  }
-
   const countryOptions = [...new Map(
     meta.countries
       .map((country, id) => ({ ...country, id }))
@@ -378,14 +405,13 @@ async function main() {
   let syncViewUI: () => void = () => {};
   function buildLeft() {
     const synth = meta.synthetic_features;
-    // Provenance summary for the Weights tab, derived only from the per-feature flags in meta.json.
-    const proxies = meta.features.filter((f) => f.proxy && !f.synthetic);
     left.innerHTML = `
       <div class="brief">
         <div class="brief-top">
           <div><div class="eyebrow" id="t-eyebrow"></div><h1 id="t-name"></h1></div>
           <div id="t-glyph"></div>
         </div>
+        <button class="mode-chip" id="mode-chip" type="button" title="Change the scoring mode and weights in Settings"></button>
         <p id="t-blurb" class="clamp"></p>
         <button class="text-btn" id="t-more" aria-expanded="false" hidden>More</button>
         <div class="evidence" id="evidence-row">
@@ -399,17 +425,11 @@ async function main() {
       ${synth.length ? `<div class="warn-box"><b>${synth.length} of ${F} layers ${synth.length > 1 ? 'are placeholders' : 'is a placeholder'}</b> in this build (${synth.map((s) => esc(meta.features[featIndex(s)].name)).join(', ')}). Treat rankings as illustrative.</div>` : ''}
       ${meta.bbox ? `<div class="warn-box">Regional build: only ${meta.bbox.join(', ')} is included.</div>` : ''}
       <div class="tabs" role="tablist" aria-label="Controls">
-        <button role="tab" id="tab-weights" aria-controls="pane-weights" data-tab="weights" aria-selected="true">Weights</button>
-        <button role="tab" id="tab-filters" aria-controls="pane-filters" data-tab="filters" aria-selected="false">Filters<span class="count" id="tab-filters-n"></span></button>
+        <button role="tab" id="tab-filters" aria-controls="pane-filters" data-tab="filters" aria-selected="true">Filters<span class="count" id="tab-filters-n"></span></button>
         <button role="tab" id="tab-view" aria-controls="pane-view" data-tab="view" aria-selected="false">View</button>
       </div>
       <div class="tab-body">
-        <div class="pane" id="pane-weights" role="tabpanel" aria-labelledby="tab-weights">
-          <div class="pane-intro"><p class="note">How much each layer counts, from 0 to 3. Under each name: the target's value and its Earth percentile (p0 lowest, p100 highest).</p><div class="pane-actions"><button class="text-btn" id="reset-w">Reset</button><button class="text-btn" id="w-all">Expand all</button></div></div>
-          ${proxies.length || synth.length ? `<p class="note proxy-note" id="proxy-note">${synth.length ? `${synth.length > 1 ? 'Placeholder layers' : 'Placeholder layer'}: ${synth.map((s) => esc(meta.features[featIndex(s)].name)).join(', ')}. ` : ''}${proxies.length ? `${proxies.length > 1 ? 'Proxy layers' : 'Proxy layer'}: ${proxies.map((f) => esc(f.name)).join(', ')}.` : ''}</p>` : ''}
-          <div id="weights"></div>
-        </div>
-        <div class="pane hidden" id="pane-filters" role="tabpanel" aria-labelledby="tab-filters">
+        <div class="pane" id="pane-filters" role="tabpanel" aria-labelledby="tab-filters">
           <h4>Leave out</h4>
           <p class="note">Cells past these limits score zero.</p>
           <div id="filters"></div>
@@ -444,7 +464,7 @@ async function main() {
     tabBtns.forEach((b) => {
       b.onclick = () => {
         tabBtns.forEach((o) => o.setAttribute('aria-selected', String(o === b)));
-        for (const id of ['weights', 'filters', 'view']) $(`#pane-${id}`).classList.toggle('hidden', id !== b.dataset.tab);
+        for (const id of ['filters', 'view']) $(`#pane-${id}`).classList.toggle('hidden', id !== b.dataset.tab);
       };
     });
     tabArrowKeys(tabBtns);
@@ -458,61 +478,6 @@ async function main() {
     };
     $('#t-limits').onclick = openLimits;
 
-    // weights
-    const wDiv = $('#weights');
-    for (const g of groups) {
-      const sec = document.createElement('details');
-      sec.className = 'group';
-      sec.open = g === groups[0]; // the others start collapsed; "Expand all" opens every group
-      // Collapsed groups still show a provenance badge when any layer inside is a proxy or placeholder.
-      const inGroup = meta.features.filter((f) => f.ui_group === g);
-      const gBadge = inGroup.some((f) => f.synthetic) ? '<span class="badge synth">placeholder</span>' : inGroup.some((f) => f.proxy) ? '<span class="badge proxy">proxy</span>' : '';
-      sec.innerHTML = `<summary><i class="swatch" style="background:${GROUP_COLORS[g]}"></i><span>${g}</span>${gBadge}<em id="gsum-${g}"></em></summary>`;
-      sec.addEventListener('toggle', syncAllLabel);
-      meta.features.forEach((f, j) => {
-        if (f.ui_group !== g) return;
-        const row = document.createElement('div');
-        row.className = 'wrow';
-        const badge = f.synthetic ? '<span class="badge synth">placeholder</span>' : f.proxy ? '<span class="badge proxy">proxy</span>' : '';
-        row.innerHTML = `<div class="wl"><label for="w-${f.id}">${esc(f.name)}${badge}</label><div class="tv"></div></div><input type="range" id="w-${f.id}" min="0" max="3" step="0.25"><span class="val"></span>`;
-        const input = row.querySelector('input')!;
-        input.addEventListener('input', () => {
-          state.weights[j] = +input.value;
-          if (!validWeightVector(state.weights, F)) {
-            state.weights[j] = 0.25;
-            input.value = '0.25';
-            toast('At least one feature must have a positive weight.');
-          }
-          sliderVals[j].textContent = fmtW(state.weights[j]);
-          row.classList.toggle('off', state.weights[j] === 0);
-          fill(input);
-          syncGroupSums();
-          requestScore();
-        });
-        sliders[j] = input;
-        sliderVals[j] = row.querySelector('.val')!;
-        targetLines[j] = row.querySelector('.tv')!;
-        sec.appendChild(row);
-      });
-      wDiv.appendChild(sec);
-    }
-    function groupEls() {
-      return [...wDiv.querySelectorAll<HTMLDetailsElement>('details.group')];
-    }
-    function syncAllLabel() {
-      $('#w-all').textContent = groupEls().every((d) => d.open) ? 'Collapse all' : 'Expand all';
-    }
-    $('#w-all').onclick = () => {
-      const open = !groupEls().every((d) => d.open);
-      groupEls().forEach((d) => (d.open = open));
-      syncAllLabel();
-    };
-    syncAllLabel();
-    $('#reset-w').onclick = () => {
-      state.weights = [...app.target().weights];
-      syncSliders();
-      requestScore();
-    };
     $('#best-site').onclick = () => {
       const s = lastResult?.sites[0];
       if (s) selectSite(s, 0);
@@ -712,13 +677,14 @@ async function main() {
         ? `<span class="beyond">beyond Earth</span>`
         : raw.beyond_earth ? `${fmtValue(raw.value, f)} · <span class="beyond">beyond Earth</span>` : `${fmtValue(raw.value, f)} · p${pct}`;
       const tv = raw.value === null ? `beyond Earth's max (clamped to ${fmtValue(raw.clamped, f)})` : fmtValue(raw.value, f) + (raw.beyond_earth ? ` → clamped ${fmtValue(raw.clamped, f)}` : '');
-      const lbl = left.querySelector(`label[for="w-${f.id}"]`) as HTMLElement;
+      const lbl = document.querySelector(`#set-weights label[for="w-${f.id}"]`) as HTMLElement;
       const tip = `${f.description}\nSource: ${f.source_name}${f.synthetic ? ' (placeholder data)' : ''}\nTarget value: ${tv} (higher than ${pct}% of Earth's land)`;
       lbl.title = tip;
       targetLines[j].title = tip;
     });
     mapApi.setTargetBody(t.body);
-    syncSliders();
+    renderWeights();
+    syncMode();
     syncBadge();
     updateHash();
   }
@@ -748,25 +714,198 @@ async function main() {
     document.getElementById('about-ref')?.scrollIntoView({ block: 'start' });
   }
 
-  function syncSliders() {
-    meta.features.forEach((_, j) => {
-      sliders[j].value = String(state.weights[j]);
-      sliderVals[j].textContent = fmtW(state.weights[j]);
-      sliders[j].closest('.wrow')!.classList.toggle('off', state.weights[j] === 0);
+  // ---------------------------------------------------------------- weightings (Settings page)
+  // The one weighting system: each (body, mode) has a working configuration; the engine's state.weights is
+  // always the effective vector of the active mode for the current target's body.
+  let wView: Body = bodyOf(targets.targets[t0]); // the body whose presets the Settings page is showing
+  const viewId = () => store.active[wView];
+  const viewCfg = () => workingOf(wView, viewId());
+  const viewVec = () => effectiveWeights(viewCfg(), featureIds);
+  function modeLabel(body: Body) {
+    return `${presetInfo(store.active[body]).name}${isDirty(body, store.active[body]) ? ' (unsaved)' : ''}`;
+  }
+  function syncMode() {
+    const body = bodyOf(app.target());
+    const label = modeLabel(body);
+    $('#mode-chip').innerHTML = `<span class="eyebrow">Scoring mode</span><b>${esc(label)}</b><span class="mode-edit">Change</span>`;
+    $('#mode-chip').title = `${body} targets are scored with “${label}”. Click to change the mode or weights.`;
+    $('#mode-line').textContent = `Mode: ${label}`;
+  }
+  function afterWeightChange(body: Body) {
+    if (body === bodyOf(app.target())) {
+      state.weights = engineWeights(body);
+      requestScore();
+    }
+    renderWeights();
+    syncMode();
+  }
+  /** Apply an edit to the configuration on show. Refuses an edit that would leave no layer scoring. */
+  function editConfig(mut: (c: PresetConfig) => void) {
+    const body = wView;
+    const id = viewId();
+    const before = cloneConfig(workingOf(body, id));
+    mut(workingOf(body, id));
+    if (!validWeightVector(effectiveWeights(workingOf(body, id), featureIds), F)) {
+      working.set(keyOf(body, id), before);
+      toast('At least one layer must stay on with a weight above zero.');
+      renderWeights();
+      return;
+    }
+    afterWeightChange(body);
+  }
+  /** Put a plain weight vector (shared link, tour restore) into the active mode as an unsaved edit. */
+  function applyWeightVector(body: Body, vec: number[]) {
+    working.set(keyOf(body, store.active[body]), applyVector(workingOf(body, store.active[body]), vec, featureIds));
+    if (body === bodyOf(app.target())) state.weights = engineWeights(body);
+    renderWeights();
+    syncMode();
+  }
+  function renderWeights() {
+    const body = wView;
+    const id = viewId();
+    const cfg = viewCfg();
+    const vec = viewVec();
+    const shares = weightShares(vec);
+    const dirty = isDirty(body, id);
+    const total = vec.reduce((a, b) => a + b, 0);
+    const nOn = vec.filter((w) => w > 0).length;
+    $('#wb-seg').querySelectorAll<HTMLButtonElement>('button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.v === body)));
+    $('#wp-seg').querySelectorAll<HTMLButtonElement>('button').forEach((b) => {
+      b.setAttribute('aria-pressed', String(b.dataset.v === id));
+      b.classList.toggle('dirty', isDirty(body, b.dataset.v as PresetId));
+    });
+    $('#wp-blurb').textContent = presetInfo(id).blurb;
+    const cur = bodyOf(app.target());
+    const same = body === cur;
+    $('#wp-scope').textContent = same
+      ? `Scoring ${app.target().name} and every other ${body} target right now. Values under each layer name are that target's value and its Earth percentile (p0 lowest, p100 highest).`
+      : `Not in use right now: you are viewing a ${cur} target. These ${body} settings apply as soon as you pick a ${body} target.`;
+    $('#set-weights').classList.toggle('other-body', !same);
+    $('#w-summary').innerHTML = `<b>Active weighting: ${nOn ? '100%' : '0%'}</b> across ${nOn} of ${F} layers · total weight ${fmtW(total)}`;
+    meta.features.forEach((f, j) => {
+      const on = cfg.enabled[f.id];
+      sliders[j].value = String(cfg.weights[f.id]);
+      sliders[j].disabled = !on;
+      sliderChecks[j].checked = on;
+      sliderVals[j].textContent = fmtW(cfg.weights[f.id]);
+      sliderPcts[j].textContent = vec[j] > 0 ? `${shares[j] >= 10 ? shares[j].toFixed(0) : shares[j].toFixed(1)}%` : '–';
+      sliders[j].closest('.wrow')!.classList.toggle('off', vec[j] === 0);
       fill(sliders[j]);
     });
-    syncGroupSums();
+    for (const g of groups) {
+      let sum = 0;
+      let n = 0;
+      meta.features.forEach((f, j) => {
+        if (f.ui_group !== g) return;
+        sum += vec[j];
+        if (vec[j] > 0) n++;
+      });
+      $(`#gsum-${g}`).textContent = `${n} on · ${sum ? ((sum / total) * 100).toFixed(0) : 0}%`;
+    }
+    const st = $('#w-state');
+    st.textContent = dirty ? 'Unsaved changes' : store.saved[keyOf(body, id)] ? 'Saved' : 'Default';
+    st.classList.toggle('unsaved', dirty);
+    ($('#w-save') as HTMLButtonElement).disabled = !dirty;
+    ($('#w-reset') as HTMLButtonElement).disabled = !store.saved[keyOf(body, id)] && sameConfig(cfg, defaultOf(body, id), featureIds);
   }
-
+  function buildWeightsEditor() {
+    const proxies = meta.features.filter((f) => f.proxy && !f.synthetic);
+    const synth = meta.synthetic_features;
+    $('#set-weights').innerHTML = `
+      <div class="set-row set-seg"><span id="wb-l">Planetary body</span><div class="seg" id="wb-seg" role="group" aria-labelledby="wb-l">${BODIES.map((b) => `<button type="button" data-v="${b}">${b}</button>`).join('')}</div></div>
+      <div class="preset-tabs" id="wp-seg" role="group" aria-label="Scoring mode">${PRESETS.map((pr) => `<button type="button" data-v="${pr.id}"><span>${esc(pr.name)}</span><i class="dirty-dot" aria-hidden="true"></i></button>`).join('')}</div>
+      <p class="note" id="wp-blurb"></p>
+      <p class="note" id="wp-scope"></p>
+      ${proxies.length || synth.length ? `<p class="note proxy-note" id="proxy-note">${synth.length ? `${synth.length > 1 ? 'Placeholder layers' : 'Placeholder layer'}: ${synth.map((x) => esc(meta.features[featIndex(x)].name)).join(', ')}. ` : ''}${proxies.length ? `${proxies.length > 1 ? 'Proxy layers' : 'Proxy layer'}: ${proxies.map((f) => esc(f.name)).join(', ')}.` : ''}</p>` : ''}
+      <div class="w-summary" id="w-summary" aria-live="polite"></div>
+      <div class="w-actions">
+        <button class="btn" id="w-save" type="button">Save</button>
+        <button class="btn-ghost sm" id="w-reset" type="button">Reset to default</button>
+        <span class="w-state" id="w-state" role="status"></span>
+        <button class="text-btn" id="w-all" type="button">Expand all</button>
+      </div>
+      <div id="weights"></div>`;
+    $('#wb-seg').querySelectorAll<HTMLButtonElement>('button').forEach((b) => {
+      b.onclick = () => {
+        wView = b.dataset.v as Body;
+        renderWeights();
+      };
+    });
+    $('#wp-seg').querySelectorAll<HTMLButtonElement>('button').forEach((b) => {
+      b.onclick = () => {
+        store.active[wView] = b.dataset.v as PresetId;
+        if (!persist()) toast('Browser storage is blocked, so the chosen mode will not be remembered after you close the page.');
+        afterWeightChange(wView);
+      };
+    });
+    const wDiv = $('#weights');
+    for (const g of groups) {
+      const sec = document.createElement('details');
+      sec.className = 'group';
+      sec.open = g === groups[0]; // the others start collapsed; "Expand all" opens every group
+      // Collapsed groups still show a provenance badge when any layer inside is a proxy or placeholder.
+      const inGroup = meta.features.filter((f) => f.ui_group === g);
+      const gBadge = inGroup.some((f) => f.synthetic) ? '<span class="badge synth">placeholder</span>' : inGroup.some((f) => f.proxy) ? '<span class="badge proxy">proxy</span>' : '';
+      sec.innerHTML = `<summary><i class="swatch" style="background:${GROUP_COLORS[g]}"></i><span>${g}</span>${gBadge}<em id="gsum-${g}"></em></summary>`;
+      sec.addEventListener('toggle', syncAllLabel);
+      meta.features.forEach((f, j) => {
+        if (f.ui_group !== g) return;
+        const row = document.createElement('div');
+        row.className = 'wrow';
+        const badge = f.synthetic ? '<span class="badge synth">placeholder</span>' : f.proxy ? '<span class="badge proxy">proxy</span>' : '';
+        row.innerHTML = `<input type="checkbox" class="w-on" id="we-${f.id}" aria-label="Use ${esc(f.name)}"><div class="wl"><label for="w-${f.id}">${esc(f.name)}${badge}</label><div class="tv"></div></div><input type="range" id="w-${f.id}" min="${WEIGHT_MIN}" max="${WEIGHT_MAX}" step="${WEIGHT_STEP}"><span class="val"></span><span class="pct mono" title="Share of the total active weight"></span>`;
+        const input = row.querySelector<HTMLInputElement>('input[type=range]')!;
+        const check = row.querySelector<HTMLInputElement>('.w-on')!;
+        input.addEventListener('input', () => editConfig((c) => (c.weights[f.id] = +input.value)));
+        check.addEventListener('change', () => editConfig((c) => (c.enabled[f.id] = check.checked)));
+        sliders[j] = input;
+        sliderChecks[j] = check;
+        sliderVals[j] = row.querySelector('.val')!;
+        sliderPcts[j] = row.querySelector('.pct')!;
+        targetLines[j] = row.querySelector('.tv')!;
+        sec.appendChild(row);
+      });
+      wDiv.appendChild(sec);
+    }
+    const groupEls = () => [...wDiv.querySelectorAll<HTMLDetailsElement>('details.group')];
+    function syncAllLabel() {
+      $('#w-all').textContent = groupEls().every((d) => d.open) ? 'Collapse all' : 'Expand all';
+    }
+    $('#w-all').onclick = () => {
+      const open = !groupEls().every((d) => d.open);
+      groupEls().forEach((d) => (d.open = open));
+      syncAllLabel();
+    };
+    syncAllLabel();
+    $('#w-save').onclick = () => {
+      const body = wView;
+      const id = viewId();
+      store.saved[keyOf(body, id)] = cloneConfig(workingOf(body, id));
+      const ok = persist();
+      renderWeights();
+      syncMode();
+      toast(ok ? `Saved ${body}: ${presetInfo(id).name}.` : 'Browser storage is blocked, so this was applied but will not be remembered after you close the page.');
+    };
+    $('#w-reset').onclick = () => {
+      const body = wView;
+      const id = viewId();
+      delete store.saved[keyOf(body, id)]; // only this one of the six
+      working.set(keyOf(body, id), defaultOf(body, id));
+      persist();
+      afterWeightChange(body);
+      toast(`Reset ${body}: ${presetInfo(id).name} to its default.`);
+    };
+    renderWeights();
+  }
   function selectTarget(i: number) {
     state.t = i;
-    state.weights = [...targets.targets[i].weights];
+    wView = bodyOf(targets.targets[i]);
+    state.weights = engineWeights(wView);
     applyDefaultFilters(targets.targets[i]);
     syncTargetUI();
     closeDossier();
     requestScore();
   }
-
   // ---------------------------------------------------------------- UI: panels, candidates, dossier
   const right = $('#right');
   let current: { lat: number; lon: number; cell: number } | null = null;
@@ -991,14 +1130,18 @@ async function main() {
 
   // ---------------------------------------------------------------- wire up
   buildLeft();
+  buildWeightsEditor();
+  $('#mode-chip').onclick = () => settings.open($('#mode-chip'));
+  $('#mode-line-btn').onclick = () => settings.open($('#mode-line-btn'));
+  settings.onOpen(() => {
+    wView = bodyOf(app.target());
+    renderWeights();
+  });
   applyDefaultFilters(app.target());
   root.style.setProperty('--inferno', cssGradient());
   $('#btn-about').onclick = () => renderAbout(app, showPlace);
   $('#btn-limits').onclick = openLimits;
-  settings.attachAdvanced({
-    groups: groups.map((g) => ({ name: g, color: GROUP_COLORS[g], features: meta.features.filter((f) => f.ui_group === g).map((f) => ({ id: f.id, name: f.name })) })),
-    filterCount: state.filters.length,
-  });
+  settings.attachAdvanced({ filterCount: state.filters.length });
   $('#btn-settings').onclick = () => settings.open($('#btn-settings'));
   $('#legend-limits').onclick = openLimits;
   // Mobile bottom nav and Guide sheet: thin wrappers over the existing controls.
@@ -1109,7 +1252,7 @@ async function main() {
       el.click();
     } else if (tries > 0) window.setTimeout(() => clickWhenReady(sel, tries - 1), 250);
   };
-  const leftTab = (): LeftTab => (left.querySelector<HTMLButtonElement>('.tabs button[aria-selected="true"]')?.dataset.tab as LeftTab) ?? 'weights';
+  const leftTab = (): LeftTab => (left.querySelector<HTMLButtonElement>('.tabs button[aria-selected="true"]')?.dataset.tab as LeftTab) ?? 'filters';
   const showLeftTab = (id: LeftTab) => left.querySelector<HTMLButtonElement>(`.tabs button[data-tab="${id}"]`)?.click();
   const rightTab = (): RightTab => (document.querySelector<HTMLButtonElement>('.rtabs button[aria-selected="true"]')?.dataset.r as RightTab) ?? 'cand';
   /** Put back the view captured by the tour (and, after the demo, the settings too). */
@@ -1120,8 +1263,7 @@ async function main() {
         state.t = s.t;
         syncTargetUI();
       }
-      state.weights = [...s.weights];
-      syncSliders();
+      applyWeightVector(bodyOf(app.target()), s.weights);
       for (const f of state.filters) {
         const o = s.filters.find((x) => x.id === f.id);
         if (o) {
@@ -1265,9 +1407,14 @@ async function main() {
   await Promise.all([workerReady, mapApi.ready]);
   mapApi.setAnalogs(ds.analogs);
   // Apply a shared link (weights, filters, novelty, view) on top of the target defaults.
+  if (link.m && isPresetId(link.m)) {
+    store.active[bodyOf(app.target())] = link.m; // the sender's mode, for this visit only
+    state.weights = engineWeights(bodyOf(app.target()));
+  }
   if (link.w) {
-    if (validWeightVector(link.w, F)) state.weights = [...link.w];
-    else toast('The shared link contained invalid weights; target defaults were restored.');
+    // Weights from a link are an unsaved edit of the active mode: the recipient can Save or Reset them.
+    if (validWeightVector(link.w, F)) applyWeightVector(bodyOf(app.target()), link.w);
+    else toast('The shared link contained invalid weights; the mode defaults were used.');
   }
   if (link.f) {
     for (const flt of state.filters) {

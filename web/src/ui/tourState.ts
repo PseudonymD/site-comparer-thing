@@ -1,7 +1,7 @@
 // DOM-free helpers for the guided tour: what a snapshot holds and how it is compared.
 // The tour snapshots the view when it starts and puts it back when it ends (see main.ts).
 
-export type LeftTab = 'weights' | 'filters' | 'view';
+export type LeftTab = 'filters' | 'view';
 export type RightTab = 'cand' | 'disc';
 
 export interface TourSnapshot {

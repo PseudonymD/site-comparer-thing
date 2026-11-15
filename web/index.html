@@ -58,6 +58,11 @@
           <div class="set-row set-seg"><span id="set-theme-l">Theme</span><div class="seg" id="set-theme" role="group" aria-labelledby="set-theme-l"><button type="button" data-v="light">Light</button><button type="button" data-v="dark">Dark</button></div></div>
           <div class="set-check"><input type="checkbox" id="set-tint"><label for="set-tint">Switch the interface colour from blue to red when the target changes from Moon to Mars</label></div>
         </section>
+        <section class="set-section" id="set-weights-sec">
+          <h2>Scoring mode and weightings</h2>
+          <p class="note">Pick a body and a mode. Each of the six combinations has its own weights, saved separately in this browser. The mode you pick is the one used to score that body's targets.</p>
+          <div id="set-weights"><p class="note">Loading the layers.</p></div>
+        </section>
         <div id="set-advanced"><p class="note">Loading the layers. Weightings, filters and map options appear here when the data is ready.</p></div>
       </div>
     </div>
@@ -101,6 +106,7 @@
         </div>
         <div id="rv-cand" class="rv" role="tabpanel" aria-labelledby="rtab-cand">
           <div class="panel-head">
+            <button class="text-btn mode-line-btn" id="mode-line-btn" type="button" title="Change the scoring mode in Settings"><span id="mode-line"></span></button>
             <div class="note" id="sites-sub"></div>
             <button class="vbadge hidden" id="sites-valid" title="How well do known analogs score? Click for the method."></button>
             <div id="region-chip" class="hidden"></div>
