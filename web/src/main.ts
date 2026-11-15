@@ -1119,7 +1119,7 @@ async function main() {
     $('#legend-mid').textContent = `99th percentile ${(res.stats.p99 * 100).toFixed(1)}`;
     $('#legend-hi').textContent = (hi * 100).toFixed(1);
     $('#legend-title').textContent = state.alpha > 0 ? `Analog score + novelty · ${shortName(app.target())}` : `Analog score · ${shortName(app.target())}`;
-    $('#legend-foot').textContent = `${res.stats.valid.toLocaleString()} cells re-scored in ${Math.round(res.timings.total)} ms`;
+    $('#legend-foot').textContent = `${res.stats.valid.toLocaleString()} cells scored in ${Math.round(res.timings.total)}\u00a0ms`;
   }
 
   function onScored(res: ScoreResult) {
@@ -1528,6 +1528,22 @@ async function main() {
   const narrow = isNarrow();
   setPanel('left', !narrow);
   setPanel('right', !narrow);
+  if (!link.v && state.region === 'world') {
+    // Frame the whole inhabited world inside the gap between the panels, so the top candidates
+    // (often in Central Asia) are not hidden under the right panel on first load.
+    mapApi.map.stop();
+    mapApi.map.setPadding(panelPadding());
+    mapApi.map.fitBounds([[-165, -56], [178, 74]], { animate: false });
+  }
+  // Expose the legend's on-screen height so narrow layouts can lift the scale bar above it.
+  const legendEl = $('#legend');
+  const syncLegendH = () => {
+    const h = legendEl.getClientRects().length ? legendEl.offsetHeight + 12 : 0;
+    document.documentElement.style.setProperty('--legend-h', `${h}px`);
+  };
+  new ResizeObserver(syncLegendH).observe(legendEl);
+  new MutationObserver(syncLegendH).observe(document.body, { attributes: true, attributeFilter: ['class'] });
+  syncLegendH();
   window.addEventListener('resize', applyPadding);
   requestScore();
   if (link.s) void showCell(link.s.lat, link.s.lon, undefined, !link.v, false, true);

@@ -736,6 +736,8 @@ body.touring #legend, body.touring #heat-toggle { display: none; }
   #guide-sheet .eyebrow { margin-bottom: 2px; }
   #map .maplibregl-ctrl-top-right { top: calc(var(--inset-t) + 4px); right: var(--gut); }
   #map .maplibregl-ctrl-bottom-right, #map .maplibregl-ctrl-bottom-left { bottom: calc(var(--nav-h) + 2px); right: 0; }
+  /* Keep the scale bar and attribution above the legend strip while it is showing. */
+  #map .maplibregl-ctrl-bottom-right { bottom: calc(var(--nav-h) + var(--legend-h, 0px) + 2px); transition: bottom 0.2s ease; }
 
   /* touch targets */
   .tabs button { min-height: 44px; padding-top: 0; padding-bottom: 0; }
