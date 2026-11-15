@@ -121,6 +121,8 @@ export interface ScoreRequest {
   countryIds?: number[] | null;
   /** Grid indices of the known analogs of this target. When set, the result reports how they rank. */
   check?: number[];
+  /** The target's default filters, applied to the analog check (as in pipeline/validate.py). */
+  checkFilters?: { feature: number; zThreshold: number }[];
 }
 /** How the target's known analogs rank among all land cells under the weights in this request (no filters). */
 export interface AnalogCheck {

@@ -170,7 +170,7 @@ function score(req: ScoreRequest): ScoreResult {
   const tImg = performance.now();
 
   const sites = topSites(hist, valid, req.topN, included);
-  const check = req.check?.length ? analogCheck(req.check, req.target, req.weights, excl) : undefined;
+  const check = req.check?.length ? analogCheck(req, excl) : undefined;
   const t1 = performance.now();
   return {
     type: 'scored', id: req.id, image: img, width: imgW, height: imgH, sites,
@@ -195,30 +195,71 @@ function posOfGrid(gridIndex: number): number {
   }
   return -1;
 }
+const NEIGHBOURHOOD = 2; // pipeline/validate.py: a site's score is the best land cell within ±2 cells
+const N_RANDOM = 1000;
+/** Best score among land cells within ±NEIGHBOURHOOD of a grid index (longitude wraps); NaN if none. */
+function siteScore(s: Float32Array, gridIndex: number): number {
+  const r = (gridIndex / nLon) | 0;
+  const c = gridIndex - r * nLon;
+  let best = NaN;
+  for (let dr = -NEIGHBOURHOOD; dr <= NEIGHBOURHOOD; dr++) {
+    const rr = r + dr;
+    if (rr < 0 || rr >= nLat) continue;
+    for (let dc = -NEIGHBOURHOOD; dc <= NEIGHBOURHOOD; dc++) {
+      const p = posOfGrid(rr * nLon + ((c + dc + nLon) % nLon));
+      if (p >= 0 && !(s[p] <= best)) best = s[p];
+    }
+  }
+  return best;
+}
+let randomCells: number[] | null = null;
+/** A fixed sample of land cells (deterministic, like the pipeline's seeded sample). */
+function sampleCells(): number[] {
+  if (randomCells) return randomCells;
+  const n = cells.length;
+  const k = Math.min(N_RANDOM, n);
+  const picked = new Set<number>();
+  let x = 42;
+  while (picked.size < k) {
+    x = (Math.imul(x, 1664525) + 1013904223) >>> 0;
+    picked.add(x % n);
+  }
+  randomCells = [...picked].map((p) => cells[p]);
+  return randomCells;
+}
+const sameFilters = (a: Filter[], b: Filter[]) =>
+  a.length === b.length && a.every((f, i) => f.feature === b[i].feature && f.zThreshold === b[i].zThreshold);
 /**
  * Where do this target's known analogs rank, under the current weights? Same definition as the pipeline's
- * validation (all land cells, no user filters, no novelty), so the number is comparable with the report.
+ * validation (pipeline/validate.py): all land cells, the target's default filters, no novelty, a site's score is
+ * the best cell within ±2 cells, AUC is the Mann-Whitney AUC against a fixed sample of random land cells, and
+ * an analog's percentile is the share of land cells scoring at or below it.
  */
-function analogCheck(grid: number[], target: number[], weights: number[], excl: Exclusion | undefined): AnalogCheck {
+function analogCheck(req: ScoreRequest, excl: Exclusion | undefined): AnalogCheck {
   const n = cells.length;
-  if (!plain) plain = new Float32Array(n);
-  scoreAll(q, F, buildLut(target, weights, []), plain, excl);
-  const pct: number[] = grid.map((g) => {
-    const p = posOfGrid(g);
-    if (p < 0) return NaN;
-    const s = plain![p];
-    let below = 0;
-    let tie = 0;
-    for (let i = 0; i < n; i++) {
-      const v = plain![i];
-      if (v < s) below++;
-      else if (v === s) tie++;
-    }
-    return ((below + 0.5 * (tie - 1)) / (n - 1)) * 100;
-  });
+  const checkFilters = req.checkFilters ?? [];
+  let s: Float32Array;
+  if (!req.bbox && !req.countryIds && sameFilters(req.filters, checkFilters)) {
+    s = scores; // the main pass already scored every cell exactly this way
+  } else {
+    if (!plain) plain = new Float32Array(n);
+    scoreAll(q, F, buildLut(req.target, req.weights, checkFilters), plain, excl);
+    s = plain;
+  }
+  const pos = req.check!.map((g) => siteScore(s, g));
+  const atOrBelow = new Array<number>(pos.length).fill(0);
+  for (let i = 0; i < n; i++) {
+    const v = s[i];
+    for (let k = 0; k < pos.length; k++) if (v <= pos[k]) atOrBelow[k]++;
+  }
+  const pct = pos.map((v, k) => (Number.isNaN(v) ? NaN : (atOrBelow[k] / n) * 100));
+  const neg = sampleCells().map((g) => siteScore(s, g)).filter((v) => !Number.isNaN(v));
+  const okPos = pos.filter((v) => !Number.isNaN(v));
+  let wins = 0;
+  for (const p of okPos) for (const v of neg) wins += p > v ? 1 : p === v ? 0.5 : 0;
   const ok = pct.filter((x) => !Number.isNaN(x)).sort((a, b) => a - b);
   const mid = ok.length ? (ok.length % 2 ? ok[(ok.length - 1) / 2] : (ok[ok.length / 2 - 1] + ok[ok.length / 2]) / 2) : NaN;
-  return { auc: ok.length ? ok.reduce((a, b) => a + b, 0) / ok.length / 100 : NaN, medianPercentile: mid, analogs: pct };
+  return { auc: okPos.length && neg.length ? wins / (okPos.length * neg.length) : NaN, medianPercentile: mid, analogs: pct };
 }
 function topSites(hist: Uint32Array, valid: number, topN: number, population: Uint8Array): Site[] {
   // Candidate cells: roughly the best 6000 (threshold from the histogram).
@@ -323,7 +364,14 @@ self.onmessage = (ev: MessageEvent) => {
   const msg = ev.data;
   if (msg.type === 'init') init(msg as WorkerInit);
   else if (msg.type === 'score') {
-    const r = score(msg as ScoreRequest);
+    let r: ScoreResult;
+    try {
+      r = score(msg as ScoreRequest);
+    } catch (e) {
+      // Always answer, so the main thread's request pump never waits forever.
+      (self as unknown as Worker).postMessage({ type: 'score-error', id: msg.id, message: (e as Error).message });
+      return;
+    }
     const t = performance.now();
     void encode(r.image, r.width, r.height)
       .catch(() => null)

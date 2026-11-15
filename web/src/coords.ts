@@ -14,8 +14,8 @@ export function parseCoords(text: string): ParsedCoords {
     .replace(/[º˚]/g, '°')
     .replace(/[−–]/g, '-');
   if (!s) return { error: 'Type a latitude and longitude' };
-  const tokens = s.match(/-?\d+(?:\.\d+)?|[NSEW]|[,;]|[^\s\d°'",;NSEW.-]+/g) ?? [];
-  if (tokens.some((t) => /^[^\d,;NSEW-]/.test(t))) return { error: 'Use numbers, optionally with N, S, E or W' };
+  const tokens = s.match(/-?(?:\d+(?:\.\d*)?|\.\d+)|[NSEW]|[,;]|[^\s\d°'",;NSEW.-]+/g) ?? [];
+  if (tokens.some((t) => /^[^\d,;NSEW.-]/.test(t))) return { error: 'Use numbers, optionally with N, S, E or W' };
 
   const leading = /^[NSEW]$/.test(tokens[0] ?? '');
   const groups: Group[] = [];
@@ -37,8 +37,9 @@ export function parseCoords(text: string): ParsedCoords {
       }
     } else {
       const v = Number(t);
-      if (g.nums.length && v < 0) close();
-      if (v < 0) g.neg = true;
+      const neg = t.startsWith('-'); // not v < 0: "-0" (as in -0° 30′) must keep its sign
+      if (g.nums.length && neg) close();
+      if (neg) g.neg = true;
       g.nums.push(Math.abs(v));
     }
   }

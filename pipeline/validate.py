@@ -51,14 +51,15 @@ def validate(q: np.ndarray, land_idx: np.ndarray, grid: Grid, targets: dict, ana
         g = g.reshape(grid.shape)
         sorted_s = np.sort(s)
         neg = np.array([_site_score(g, grid, *divmod_latlon(grid, land_idx[i])) for i in rand_idx])
-        rows = []
+        rows, pos = [], []
         for aid in t["validation"]:
             a = by_id[aid]
             v = _site_score(g, grid, a["lat"], a["lon"])
             pct = float(np.searchsorted(sorted_s, v, side="right") / sorted_s.size * 100) if np.isfinite(v) else float("nan")
             rank = int(sorted_s.size - np.searchsorted(sorted_s, v, side="left")) if np.isfinite(v) else None
             rows.append({"id": aid, "name": a["name"], "score": round(v, 4), "percentile": round(pct, 2), "rank": rank})
-        pos = np.array([r["score"] for r in rows], dtype=float)
+            pos.append(v)  # unrounded, so the AUC compares like with like against the random scores
+        pos = np.array(pos, dtype=float)
         extra = {}
         if t.get("validation_v1"):
             pos1 = np.array([_site_score(g, grid, by_id[a]["lat"], by_id[a]["lon"]) for a in t["validation_v1"]

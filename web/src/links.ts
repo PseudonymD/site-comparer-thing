@@ -1,7 +1,7 @@
 // Shareable deep links: the whole view (target, weights, filters, novelty, region, map view, selected site)
 // lives in the URL hash, e.g.
 //   #t=mars_jezero&a=0.3&f=ice:0.5&r=safrica&v=-24.1,-69.9,9&s=-24.1,-69.93
-// Weights are only written when they differ from the scoring mode's shipped default (w=18 values joined by "_").
+// Weights are always written by the app (w=18 values joined by "_"): the recipient may have saved other weights for the mode.
 
 export interface LinkState {
   t?: string; // target id
