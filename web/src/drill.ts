@@ -24,9 +24,12 @@ export function zoomFor30m(lat: number): number {
   return Math.min(13, Math.max(9, Math.round(z)));
 }
 
-let Z = 12;
+// Terrarium stores sea floor as negative elevation. Flatten it to "sea level" only below the lowest dry land on
+// Earth (Dead Sea shore, about -430 m), so land below sea level (Death Valley, Danakil, Qattara) keeps its shape.
+const FLOOR_M = -440;
+const ground = (e: number) => Math.max(FLOOR_M, e);
 
-async function loadTile(x: number, y: number): Promise<Float32Array> {
+async function loadTile(Z: number, x: number, y: number): Promise<Float32Array> {
   const n = 2 ** Z;
   const url = TILE_URL.replace('{z}', String(Z)).replace('{x}', String(((x % n) + n) % n)).replace('{y}', String(y));
   const res = await fetch(url, { mode: 'cors' });
@@ -61,7 +64,7 @@ function quantile(sorted: Float32Array, p: number) {
 export async function runDrill(lat: number, lon: number, target: Target, out: HTMLElement): Promise<void> {
   out.innerHTML = '<div class="note" style="margin-top:8px">Fetching ~30 m elevation tiles…</div>';
   try {
-    Z = zoomFor30m(lat);
+    const Z = zoomFor30m(lat); // local: concurrent drills at other latitudes use their own zoom
     const dLat = BOX_KM / 2 / 111.2;
     const dLon = BOX_KM / 2 / (111.2 * Math.max(0.05, Math.cos((lat * Math.PI) / 180)));
     const latN = Math.min(85, lat + dLat);
@@ -78,7 +81,7 @@ export async function runDrill(lat: number, lon: number, target: Target, out: HT
     for (let ty = Math.floor(py0 / 256); ty <= Math.floor((py1 - 1) / 256); ty++) {
       for (let tx = Math.floor(px0 / 256); tx <= Math.floor((px1 - 1) / 256); tx++) {
         tiles.push(
-          loadTile(tx, ty).then((t) => {
+          loadTile(Z, tx, ty).then((t) => {
             for (let yy = 0; yy < 256; yy++) {
               const gy = ty * 256 + yy - py0;
               if (gy < 0 || gy >= H) continue;
@@ -112,18 +115,18 @@ export async function runDrill(lat: number, lon: number, target: Target, out: HT
       pixelM += pm;
       for (let x = 1; x < W - 1; x++) {
         const i = y * W + x;
-        const e = Math.max(0, elev[i]);
-        const ex1 = Math.max(0, elev[i + 1]);
-        const ex0 = Math.max(0, elev[i - 1]);
-        const ey1 = Math.max(0, elev[i + W]);
-        const ey0 = Math.max(0, elev[i - W]);
+        const e = ground(elev[i]);
+        const ex1 = ground(elev[i + 1]);
+        const ex0 = ground(elev[i - 1]);
+        const ey1 = ground(elev[i + W]);
+        const ey0 = ground(elev[i - W]);
         const dzdx = (ex1 - ex0) / (2 * pm);
         const dzdy = (ey1 - ey0) / (2 * pm);
         const sl = Math.atan(Math.hypot(dzdx, dzdy));
         const o = (y - 1) * iw + (x - 1);
         slope[o] = (sl * 180) / Math.PI;
         let tsum = 0;
-        for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (dx || dy) tsum += Math.abs(Math.max(0, elev[i + dy * W + dx]) - e);
+        for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (dx || dy) tsum += Math.abs(ground(elev[i + dy * W + dx]) - e);
         tri[o] = tsum / 8;
         const aspect = Math.atan2(dzdy, -dzdx);
         shade[o] = Math.max(0, Math.sin(alt) * Math.cos(sl) + Math.cos(alt) * Math.sin(sl) * Math.cos(az - aspect));

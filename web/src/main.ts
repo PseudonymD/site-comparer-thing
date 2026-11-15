@@ -211,9 +211,9 @@ async function main() {
       return total ? below / total : NaN;
     },
     requestCell(lat: number, lon: number) {
-      const r = Math.floor((90 - lat) / meta.grid.res);
-      const c = Math.floor((lon + 180) / meta.grid.res);
-      if (r < 0 || r >= meta.grid.n_lat || c < 0 || c >= meta.grid.n_lon) return Promise.resolve(null);
+      if (!(lat >= -90 && lat <= 90) || !Number.isFinite(lon)) return Promise.resolve(null);
+      const r = Math.min(meta.grid.n_lat - 1, Math.floor((90 - lat) / meta.grid.res)); // lat -90 is the last row
+      const c = Math.floor((((lon + 180) % 360) + 360) % 360 / meta.grid.res) % meta.grid.n_lon; // lon 180 = -180
       const id = ++cellReqId;
       return new Promise((resolve) => {
         pendingCells.set(id, resolve);
@@ -245,14 +245,13 @@ async function main() {
   function linkState(site?: { lat: number; lon: number }): LinkState {
     const t = app.target();
     const mode = store.active[bodyOf(t)];
-    const shipped = effectiveWeights(defaultOf(bodyOf(t), mode), featureIds);
-    const wChanged = state.weights.some((w, j) => w !== shipped[j]);
     const on = state.filters.filter((f) => f.on).map((f) => ({ id: f.id, tau: f.tau }));
     const def = (t.default_filters || []).map((f) => ({ id: f.feature, tau: f.max }));
     const fChanged = JSON.stringify(on) !== JSON.stringify(def);
     const c = mapApi.map.getCenter();
     return {
-      t: t.id, m: mode, w: wChanged ? state.weights : undefined, f: fChanged ? on : undefined, a: state.alpha || undefined,
+      // Weights always travel with the link: the recipient may have saved their own weights for this mode.
+      t: t.id, m: mode, w: state.weights, f: fChanged ? on : undefined, a: state.alpha || undefined,
       c: state.geography.countries.length ? state.geography.countries : undefined,
       g: state.geography.regions.length ? state.geography.regions : undefined,
       r: state.region, v: { lat: c.lat, lon: c.lng, zoom: mapApi.map.getZoom() }, s: site,
@@ -289,6 +288,7 @@ async function main() {
     const use = targetUsable(t.vector, state.weights);
     return {
       type: 'score', id: ++reqId, target: use.target, weights: use.weights, check: validationCells(t),
+      checkFilters: (t.default_filters || []).map((f) => ({ feature: featIndex(f.feature), zThreshold: zThresholdFromValue(meta.features[featIndex(f.feature)].breakpoints, f.max) })),
       filters: state.filters.filter((f) => f.on).map((f) => {
         const fm = meta.features[featIndex(f.id)];
         return { feature: featIndex(f.id), zThreshold: zThresholdFromValue(fm.breakpoints, f.tau) };
@@ -316,6 +316,10 @@ async function main() {
       lastResult = msg as ScoreResult;
       syncBadge();
       onScored(lastResult);
+      pump();
+    } else if (msg.type === 'score-error') {
+      inFlight = false;
+      toast(`Could not score with these settings: ${msg.message}`);
       pump();
     } else if (msg.type === 'cell') {
       const cb = pendingCells.get(msg.id);
@@ -1052,8 +1056,11 @@ async function main() {
     }
     toast(`${a.name}: no land cell in the dataset here. ${a.note}`, 6000);
   }
+  let showSeq = 0; // bumped by every showCell and closeDossier; a stale showCell does nothing
   async function showCell(lat: number, lon: number, rank?: number, fly = false, keepScroll = false, zoomIn = false, analog?: KnownAnalog) {
+    const seq = ++showSeq;
     const info = await app.requestCell(lat, lon);
+    if (seq !== showSeq) return;
     if (!info) {
       toast('No land here. Pick a spot on land inside the data.');
       return;
@@ -1088,6 +1095,7 @@ async function main() {
   }
 
   function closeDossier() {
+    showSeq++; // a showCell still waiting for the worker must not reopen the dossier
     if (!current) return;
     current = null;
     currentAnalog = null;
