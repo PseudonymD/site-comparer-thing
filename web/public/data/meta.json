@@ -1,6 +1,6 @@
 {
  "schema_version": 1,
- "generated": "2026-11-14T11:48:30",
+ "generated": "2026-11-15T09:39:39",
  "grid": {
   "res": 0.1,
   "n_lon": 3600,
@@ -37,6 +37,8 @@
    "source_url": "https://registry.opendata.aws/terrain-tiles/",
    "synthetic": false,
    "proxy": false,
+   "fallback": false,
+   "attempts": [],
    "coverage": 1.0,
    "notes": null,
    "min": -2486.0796,
@@ -158,6 +160,8 @@
    "source_url": "https://registry.opendata.aws/terrain-tiles/",
    "synthetic": false,
    "proxy": false,
+   "fallback": false,
+   "attempts": [],
    "coverage": 1.0,
    "notes": null,
    "min": 0.0,
@@ -279,6 +283,8 @@
    "source_url": "https://registry.opendata.aws/terrain-tiles/",
    "synthetic": false,
    "proxy": false,
+   "fallback": false,
+   "attempts": [],
    "coverage": 1.0,
    "notes": null,
    "min": 0.0,
@@ -400,6 +406,8 @@
    "source_url": "https://registry.opendata.aws/terrain-tiles/",
    "synthetic": false,
    "proxy": false,
+   "fallback": false,
+   "attempts": [],
    "coverage": 1.0,
    "notes": null,
    "min": 0.0,
@@ -521,6 +529,8 @@
    "source_url": "https://registry.opendata.aws/terrain-tiles/",
    "synthetic": false,
    "proxy": false,
+   "fallback": false,
+   "attempts": [],
    "coverage": 1.0,
    "notes": null,
    "min": 0.0,
@@ -642,6 +652,13 @@
    "source_url": "https://power.larc.nasa.gov/",
    "synthetic": false,
    "proxy": false,
+   "fallback": true,
+   "attempts": [
+    {
+     "source": "modis_lst",
+     "skipped": "no EARTHDATA_TOKEN"
+    }
+   ],
    "coverage": 1.0,
    "notes": null,
    "min": -51.1205,
@@ -763,6 +780,13 @@
    "source_url": "https://power.larc.nasa.gov/",
    "synthetic": false,
    "proxy": false,
+   "fallback": true,
+   "attempts": [
+    {
+     "source": "modis_lst",
+     "skipped": "no EARTHDATA_TOKEN"
+    }
+   ],
    "coverage": 1.0,
    "notes": null,
    "min": 0.5825,
@@ -884,6 +908,13 @@
    "source_url": "https://power.larc.nasa.gov/",
    "synthetic": false,
    "proxy": false,
+   "fallback": true,
+   "attempts": [
+    {
+     "source": "modis_lst",
+     "skipped": "no EARTHDATA_TOKEN"
+    }
+   ],
    "coverage": 1.0,
    "notes": null,
    "min": -78.5826,
@@ -1005,6 +1036,8 @@
    "source_url": "https://power.larc.nasa.gov/",
    "synthetic": false,
    "proxy": false,
+   "fallback": false,
+   "attempts": [],
    "coverage": 1.0,
    "notes": null,
    "min": 0.0,
@@ -1126,6 +1159,8 @@
    "source_url": "https://power.larc.nasa.gov/",
    "synthetic": false,
    "proxy": false,
+   "fallback": false,
+   "attempts": [],
    "coverage": 1.0,
    "notes": null,
    "min": 16.5596,
@@ -1247,6 +1282,8 @@
    "source_url": "https://power.larc.nasa.gov/",
    "synthetic": false,
    "proxy": false,
+   "fallback": false,
+   "attempts": [],
    "coverage": 1.0,
    "notes": null,
    "min": 1.4788,
@@ -1368,6 +1405,13 @@
    "source_url": "https://nasa-gibs.github.io/gibs-api-docs/",
    "synthetic": false,
    "proxy": false,
+   "fallback": true,
+   "attempts": [
+    {
+     "source": "modis_ndvi",
+     "skipped": "no EARTHDATA_TOKEN"
+    }
+   ],
    "coverage": 1.0,
    "notes": null,
    "min": 0.0,
@@ -1489,6 +1533,8 @@
    "source_url": "https://soilgrids.org",
    "synthetic": false,
    "proxy": false,
+   "fallback": false,
+   "attempts": [],
    "coverage": 0.6842,
    "notes": "31.6% of land cells are outside SoilGrids: 30.4% set to 0 (no soil: ice sheets and Antarctica), 1.0% filled from soil within 3 cells, 0.1% filled from the nearest mapped soil (lakes, ice-free polar desert).",
    "min": 0.0,
@@ -1610,6 +1656,8 @@
    "source_url": "https://soilgrids.org",
    "synthetic": false,
    "proxy": false,
+   "fallback": false,
+   "attempts": [],
    "coverage": 0.6861,
    "notes": "31.4% of land cells are outside SoilGrids: 30.3% set to 0 (no soil: ice sheets), 1.0% filled from soil within 3 cells, 0.1% filled from the nearest mapped soil (lakes, ice-free polar desert).",
    "min": 0.0,
@@ -1731,6 +1779,8 @@
    "source_url": "https://doi.org/10.1594/PANGAEA.788537",
    "synthetic": false,
    "proxy": false,
+   "fallback": false,
+   "attempts": [],
    "coverage": 1.0,
    "notes": null,
    "min": 0.0,
@@ -1852,6 +1902,13 @@
    "source_url": "https://doi.org/10.1594/PANGAEA.788537",
    "synthetic": false,
    "proxy": false,
+   "fallback": true,
+   "attempts": [
+    {
+     "source": "modis_landcover",
+     "skipped": "no EARTHDATA_TOKEN"
+    }
+   ],
    "coverage": 1.0,
    "notes": null,
    "min": 0.0,
@@ -1973,6 +2030,13 @@
    "source_url": "https://nasa-gibs.github.io/gibs-api-docs/",
    "synthetic": false,
    "proxy": true,
+   "fallback": true,
+   "attempts": [
+    {
+     "source": "black_marble",
+     "skipped": "no EARTHDATA_TOKEN"
+    }
+   ],
    "coverage": 1.0,
    "notes": null,
    "min": 0.0,
@@ -2094,6 +2158,13 @@
    "source_url": "https://nasa-gibs.github.io/gibs-api-docs/",
    "synthetic": false,
    "proxy": false,
+   "fallback": true,
+   "attempts": [
+    {
+     "source": "merra2",
+     "skipped": "no EARTHDATA_TOKEN"
+    }
+   ],
    "coverage": 1.0,
    "notes": null,
    "min": 0.015,
