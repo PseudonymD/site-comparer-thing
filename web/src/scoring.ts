@@ -90,10 +90,12 @@ export function noSoilMask(q: Uint8Array, F: number, n: number, features: number
 /** Score all cells. q is cell-major [cell][F] uint8. Writes into out (length n). */
 export function scoreAll(q: Uint8Array, F: number, lut: Float64Array, out: Float32Array, excl?: Exclusion): void {
   const n = out.length;
+  const skip = new Uint8Array(F);
+  if (excl) for (const f of excl.features) skip[f] = 1;
   for (let i = 0, base = 0; i < n; i++, base += F) {
     let s = 0;
     if (excl && excl.mask[i]) {
-      for (let f = 0; f < F; f++) if (!excl.features.includes(f)) s += lut[(f << 8) + q[base + f]];
+      for (let f = 0; f < F; f++) if (!skip[f]) s += lut[(f << 8) + q[base + f]];
       s = excl.scale > 0 && s !== Infinity ? s * excl.scale : Infinity;
     } else {
       for (let f = 0; f < F; f++) s += lut[(f << 8) + q[base + f]];
@@ -104,16 +106,23 @@ export function scoreAll(q: Uint8Array, F: number, lut: Float64Array, out: Float
 
 export function scoreCell(qrow: ArrayLike<number>, target: ArrayLike<number>, weights: ArrayLike<number>, filters: Filter[] = [], skip: number[] = []): number {
   const c = contributions(qrow, target, weights, skip);
+  if (!c.some((_, f) => weights[f] > 0 && !skip.includes(f))) return 0; // no layer left to score here (as in scoreAll)
   for (const f of filters) if (qrow[f.feature] / 255 > f.zThreshold) return 0;
   let s = 0;
   for (const v of c) s += v;
   return 1 - Math.sqrt(s);
 }
 
-/** Per-feature share of the squared gap. Features in skip are left out entirely (contribution 0, others renormalised). */
+/**
+ * Per-feature share of the squared gap. Features in skip are left out entirely (contribution 0, others renormalised).
+ * When skip removes every weighted feature, all contributions are 0 (nothing left to score, as in scoreAll).
+ */
 export function contributions(qrow: ArrayLike<number>, target: ArrayLike<number>, weights: ArrayLike<number>, skip: number[] = []): number[] {
+  validateWeights(weights, target.length);
   const w = skip.length ? Array.from(weights, (x, f) => (skip.includes(f) ? 0 : x)) : weights;
-  const wsum = validateWeights(w, target.length);
+  let wsum = 0;
+  for (let f = 0; f < target.length; f++) wsum += w[f];
+  if (wsum <= 0) return Array.from({ length: target.length }, () => 0);
   const out: number[] = [];
   for (let f = 0; f < target.length; f++) {
     const d = qrow[f] / 255 - target[f];

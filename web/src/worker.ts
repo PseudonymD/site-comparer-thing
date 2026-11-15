@@ -170,7 +170,16 @@ function score(req: ScoreRequest): ScoreResult {
   const tImg = performance.now();
 
   const sites = topSites(hist, valid, req.topN, included);
-  const check = req.check?.length ? analogCheck(req.check, req.target, req.weights, excl) : undefined;
+  let check: AnalogCheck | undefined;
+  if (req.check?.length) {
+    // Depends only on target, weights and analog cells: reuse it while alpha, region or display settings change.
+    const key = JSON.stringify([req.target, req.weights, req.check]);
+    if (key !== checkKey) {
+      checkCache = analogCheck(req.check, req.target, req.weights, excl);
+      checkKey = key;
+    }
+    check = checkCache;
+  }
   const t1 = performance.now();
   return {
     type: 'scored', id: req.id, image: img, width: imgW, height: imgH, sites,
@@ -182,6 +191,8 @@ function score(req: ScoreRequest): ScoreResult {
 }
 
 let plain: Float32Array | null = null;
+let checkKey = '';
+let checkCache: AnalogCheck | undefined;
 /** Position of a grid index in the land-cell list, or -1. */
 function posOfGrid(gridIndex: number): number {
   let lo = 0;
@@ -323,7 +334,14 @@ self.onmessage = (ev: MessageEvent) => {
   const msg = ev.data;
   if (msg.type === 'init') init(msg as WorkerInit);
   else if (msg.type === 'score') {
-    const r = score(msg as ScoreRequest);
+    let r: ScoreResult;
+    try {
+      r = score(msg as ScoreRequest);
+    } catch (e) {
+      // Always answer, so the page does not wait forever for this request.
+      (self as unknown as Worker).postMessage({ type: 'scoreError', id: msg.id, message: (e as Error).message });
+      return;
+    }
     const t = performance.now();
     void encode(r.image, r.width, r.height)
       .catch(() => null)

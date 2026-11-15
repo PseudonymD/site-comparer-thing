@@ -34,11 +34,12 @@ export function renderDossier(app: App, info: CellInfo, lat: number, lon: number
   const t = app.target();
   const skip = info.excluded ?? []; // layers that do not apply to this cell (no soil under ice): left out, not zero
   const w = app.state.weights.map((x, j) => (skip.includes(j) ? 0 : x));
-  const contrib = contributions(info.q, t.vector, w);
+  const contrib = contributions(info.q, t.vector, app.state.weights, skip);
   const total = contrib.reduce((a, b) => a + b, 0);
-  const s = scoreCell(info.q, t.vector, w);
-  const filtered = info.score === 0 && s > 0;
-  const pctl = filtered ? NaN : app.percentileOf(info.blended);
+  const s = scoreCell(info.q, t.vector, app.state.weights, [], skip);
+  const outside = info.included === false; // outside the region / country selection (worker zeroes its score)
+  const filtered = !outside && info.score === 0 && s > 0;
+  const pctl = filtered || outside ? NaN : app.percentileOf(info.blended);
   const country = app.countryName(info.country);
   const near = app.nearestAnalog(lat, lon);
   const z = info.q.map((q) => q / 255);
@@ -107,7 +108,7 @@ export function renderDossier(app: App, info: CellInfo, lat: number, lon: number
         ${an ? `<p><b>About this site</b> (${esc(an.country)}): ${esc(an.note)}</p>${an.bodies.includes(t.body) ? '' : `<p class="note">This site is listed as a ${esc(anBodies)} analog. The score below compares it with the ${esc(t.body)} target you have selected.</p>`}` : ''}
         ${good.length ? `<p><b>Matches ${t.body} on</b> ${good.map((r) => esc(lower(r.f.name))).join(', ')}.</p>` : ''}
         ${bad.length ? `<p><b>Biggest gaps:</b> ${bad.map((r) => `${esc(lower(r.f.name))} (${fmtValue(r.here, r.f)} vs ${targetText(r)})`).join(', ')}.</p>` : ''}
-        <p class="note">${an ? '' : `Nearest known analog: ${esc(near.name)}, ${fmtKm(near.km)} away.`}${filtered ? ' This cell is excluded by one of your filters.' : ''}</p>
+        <p class="note">${an ? '' : `Nearest known analog: ${esc(near.name)}, ${fmtKm(near.km)} away.`}${filtered ? ' This cell is excluded by one of your filters.' : ''}${outside ? ' This cell is outside your selected region or countries.' : ''}</p>
       </div>
       <div class="d-sec" id="d-ev">
         <h3>Where it differs</h3>

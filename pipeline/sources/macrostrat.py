@@ -74,8 +74,8 @@ def _fetch_tile(cache_dir: Path, tile) -> bytes:
 
 def _decode_tile(raw: bytes, tile) -> list[dict]:
     import mapbox_vector_tile
-    from shapely.affinity import affine_transform
     from shapely.geometry import mapping, shape
+    from shapely.ops import transform
 
     decoded = mapbox_vector_tile.decode(raw, default_options={"y_coord_down": True})
     layer = decoded.get("units", {})
@@ -83,18 +83,20 @@ def _decode_tile(raw: bytes, tile) -> list[dict]:
     n = tile[2]
     lon0 = tile[0] / n * 360.0 - 180.0
     lon1 = (tile[0] + 1) / n * 360.0 - 180.0
-    lat0 = math.degrees(math.atan(math.sinh(math.pi * (1 - 2 * tile[1] / n))))
-    lat1 = math.degrees(math.atan(math.sinh(math.pi * (1 - 2 * (tile[1] + 1) / n))))
+
+    def to_lonlat(x, y):
+        # Tile pixels are linear in Web-Mercator y, not in latitude: invert the projection per vertex.
+        x, y = np.asarray(x, dtype=np.float64), np.asarray(y, dtype=np.float64)
+        lon = lon0 + (lon1 - lon0) * x / extent
+        lat = np.degrees(np.arctan(np.sinh(np.pi * (1 - 2 * (tile[1] + y / extent) / n))))
+        return lon, lat
     features = []
     for item in layer.get("features", []):
         props = item.get("properties") or {}
         if not is_major_mafic(props):
             continue
         geom = shape(item["geometry"])
-        geom = affine_transform(
-            geom,
-            [(lon1 - lon0) / extent, 0, 0, (lat1 - lat0) / extent, lon0, lat0],
-        )
+        geom = transform(to_lonlat, geom)
         features.append(
             {
                 "type": "Feature",

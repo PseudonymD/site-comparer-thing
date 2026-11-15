@@ -156,9 +156,11 @@ async function main() {
   const isDirty = (body: Body, id: PresetId) => !sameConfig(workingOf(body, id), savedOf(body, id), featureIds);
   const bodyOf = (t: Target) => t.body as Body;
   const engineWeights = (body: Body) => effectiveWeights(workingOf(body, store.active[body]), featureIds);
+  /** Modes taken from a shared link: used for this visit, but the recipient's own choice is what gets saved. */
+  const visitOnly: Partial<Record<Body, PresetId>> = {};
   const persist = () => {
     try {
-      localStorage.setItem(STORAGE_KEY, serializeStore(store));
+      localStorage.setItem(STORAGE_KEY, serializeStore({ ...store, active: { ...store.active, ...visitOnly } }));
       return true;
     } catch {
       return false;
@@ -315,6 +317,10 @@ async function main() {
       lastResult = msg as ScoreResult;
       syncBadge();
       onScored(lastResult);
+      pump();
+    } else if (msg.type === 'scoreError') {
+      inFlight = false;
+      toast(`Could not score with these settings: ${msg.message}`);
       pump();
     } else if (msg.type === 'cell') {
       const cb = pendingCells.get(msg.id);
@@ -860,6 +866,7 @@ async function main() {
     $('#wp-seg').querySelectorAll<HTMLButtonElement>('button').forEach((b) => {
       b.onclick = () => {
         store.active[wView] = b.dataset.v as PresetId;
+        delete visitOnly[wView]; // an explicit choice replaces the shared link's mode
         if (!persist()) toast('Browser storage is blocked, so the chosen mode will not be remembered after you close the page.');
         afterWeightChange(wView);
       };
@@ -1434,7 +1441,9 @@ async function main() {
   mapApi.setAnalogs(ds.analogs);
   // Apply a shared link (weights, filters, novelty, view) on top of the target defaults.
   if (link.m && isPresetId(link.m)) {
-    store.active[bodyOf(app.target())] = link.m; // the sender's mode, for this visit only
+    const b = bodyOf(app.target());
+    if (!(b in visitOnly)) visitOnly[b] = store.active[b];
+    store.active[b] = link.m; // the sender's mode, for this visit only
     state.weights = engineWeights(bodyOf(app.target()));
   }
   if (link.w) {

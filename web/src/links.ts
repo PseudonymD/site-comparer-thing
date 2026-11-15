@@ -1,3 +1,5 @@
+import { WEIGHT_MAX } from './presets';
+
 // Shareable deep links: the whole view (target, weights, filters, novelty, region, map view, selected site)
 // lives in the URL hash, e.g.
 //   #t=mars_jezero&a=0.3&f=ice:0.5&r=safrica&v=-24.1,-69.9,9&s=-24.1,-69.93
@@ -29,7 +31,7 @@ export function parseHash(hash: string): LinkState {
   if (p.get('m') && /^[a-z_]{1,30}$/.test(p.get('m')!)) out.m = p.get('m')!;
   if (p.get('w')) {
     const w = p.get('w')!.split('_').map(Number);
-    if (w.every((x) => Number.isFinite(x) && x >= 0 && x <= 100)) out.w = w;
+    if (w.every((x) => Number.isFinite(x) && x >= 0 && x <= WEIGHT_MAX)) out.w = w;
   }
   if (p.has('f')) {
     out.f = p
