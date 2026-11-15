@@ -1119,7 +1119,6 @@ async function main() {
     $('#legend-mid').textContent = `99th percentile ${(res.stats.p99 * 100).toFixed(1)}`;
     $('#legend-hi').textContent = (hi * 100).toFixed(1);
     $('#legend-title').textContent = state.alpha > 0 ? `Analog score + novelty · ${shortName(app.target())}` : `Analog score · ${shortName(app.target())}`;
-    $('#legend-foot').textContent = `${res.stats.valid.toLocaleString()} cells re-scored in ${Math.round(res.timings.total)} ms`;
   }
 
   function onScored(res: ScoreResult) {
@@ -1167,10 +1166,8 @@ async function main() {
   applyDefaultFilters(app.target());
   root.style.setProperty('--inferno', cssGradient());
   $('#btn-about').onclick = () => renderAbout(app, showPlace);
-  $('#btn-limits').onclick = openLimits;
   settings.attachAdvanced({ filterCount: state.filters.length });
   $('#btn-settings').onclick = () => settings.open($('#btn-settings'));
-  $('#legend-limits').onclick = openLimits;
   // Mobile bottom nav and Guide sheet: thin wrappers over the existing controls.
   $('#mnav-map').onclick = () => {
     setGuide(false);
@@ -1241,7 +1238,13 @@ async function main() {
   };
   const updateCoordHint = () => {
     const text = coordInput.value;
-    if (!text.trim()) return hideCoordHint();
+    if (!text.trim()) {
+      if (document.activeElement !== coordInput) return hideCoordHint();
+      coordSeq++;
+      coordHint.className = 'sheet';
+      coordHint.innerHTML = `<b>Jump to any place on Earth</b><span class="coord-place">Type latitude, then longitude, and press Enter.</span><span class="coord-eg">e.g. 39.45, 73.55  or  39°27′N 73°33′E</span>`;
+      return;
+    }
     const seq = ++coordSeq;
     clearTimeout(coordTimer);
     const p = parseCoords(text);
@@ -1528,6 +1531,22 @@ async function main() {
   const narrow = isNarrow();
   setPanel('left', !narrow);
   setPanel('right', !narrow);
+  if (!link.v && state.region === 'world') {
+    // Frame the whole inhabited world inside the gap between the panels, so the top candidates
+    // (often in Central Asia) are not hidden under the right panel on first load.
+    mapApi.map.stop();
+    mapApi.map.setPadding(panelPadding());
+    mapApi.map.fitBounds([[-165, -56], [178, 74]], { animate: false });
+  }
+  // Expose the legend's on-screen height so narrow layouts can lift the scale bar above it.
+  const legendEl = $('#legend');
+  const syncLegendH = () => {
+    const h = legendEl.getClientRects().length ? legendEl.offsetHeight + 12 : 0;
+    document.documentElement.style.setProperty('--legend-h', `${h}px`);
+  };
+  new ResizeObserver(syncLegendH).observe(legendEl);
+  new MutationObserver(syncLegendH).observe(document.body, { attributes: true, attributeFilter: ['class'] });
+  syncLegendH();
   window.addEventListener('resize', applyPadding);
   requestScore();
   if (link.s) void showCell(link.s.lat, link.s.lon, undefined, !link.v, false, true);
