@@ -43,6 +43,8 @@ REFS = {
     "byrne2009": "Byrne S. (2009) The polar deposits of Mars. Annu. Rev. Earth Planet. Sci. 37, 535-560.",
     "horgan2009": "Horgan B.H. et al. (2009) Distribution of hydrated minerals in the north polar region of Mars. JGR 114, E01005.",
     "kopp2011": "Kopp G. & Lean J.L. (2011) A new, lower value of total solar irradiance. GRL 38, L01706.",
+    "heldmann2013": "Heldmann J.L. et al. (2013) The high elevation Dry Valleys in Antarctica as analog sites for subsurface ice on Mars. Planet. Space Sci. 85, 53-58.",
+    "burkins2000": "Burkins M.B. et al. (2000) Origin and distribution of soil organic matter in Taylor Valley, Antarctica. Ecology 81, 2377-2391.",
     "appelbaum1990": "Appelbaum J. & Flood D.J. (1990) Solar radiation on Mars. Solar Energy 45, 353-363.",
 }
 
@@ -142,12 +144,21 @@ TARGETS = [
             "temp_mean": (-70.0, ["martinez2017"]), "temp_range": (60.0, ["martinez2017"]),
             "temp_min": (-125.0, ["martinez2017"]), "precip": (0.0, []), "humidity": (5.0, ["martinez2017"]),
             "solar": (2.6, ["appelbaum1990"]), "ndvi": (0.0, []), "soc": (0.0, []),
-            "sand": (40.0, ["tanaka2014"]), "basalt": (0.9, ["tanaka2014"]), "ice": (0.3, ["bramson2015", "morgan2021"]),
+            "sand": (40.0, ["tanaka2014"]), "basalt": (0.9, ["tanaka2014"]),
+            # Surface ice = 0: Arcadia's excess ice is buried under a dry, ice-free regolith lag (metres to tens of
+            # metres deep), so the surface is not glaciated. Our ice feature measures surface ice/snow cover.
+            # v1 used 0.3 (the subsurface ice fraction), which rewarded partly glaciated cells. See decisions.md.
+            "ice": (0.0, ["bramson2015", "morgan2021"]),
             "lights": (0.0, []), "aod": (0.4, ["lemmon2015"]),
         },
         "weights": _w(ice=1.5, slope_mean=1.5, slope_p90=1.25),
         "slope_hist": {"median": 1.2, "p90": 4.0, "baseline_m": 30, "refs": ["kreslavsky2000", "bramson2015"]},
-        "validation": ["haughton", "svalbard", "mcmurdo", "askja", "holuhraun"],
+        # Ground-ice analogs: ice-cemented permafrost under a cold, dry surface. v1 also listed Askja and
+        # Holuhraun, which are volcanic (lava) analogs with no ground ice, and lacked University Valley, the
+        # canonical Mars subsurface-ice analog (Heldmann et al. 2013). Revised AFTER seeing v1 results, so the
+        # report also prints the v1 list's AUC.
+        "validation": ["haughton", "svalbard", "mcmurdo", "university_valley"],
+        "validation_v1": ["haughton", "svalbard", "mcmurdo", "askja", "holuhraun"],
     },
     {
         "id": "mars_north_polar", "body": "Mars", "name": "Mars – North polar layered deposits",
@@ -207,6 +218,7 @@ def build_targets(cdfs: dict) -> dict:
                            "median": sh["median"], "p90": sh["p90"], "baseline_m": sh["baseline_m"],
                            "refs": sh["refs"], "method": "lognormal fit to literature median/p90"},
             "validation": t["validation"],
+            **({"validation_v1": t["validation_v1"]} if "validation_v1" in t else {}),
             # Targets that do not weight ice exclude ice sheets by default (user-toggleable in the UI).
             "default_filters": [] if t["weights"]["ice"] > 0 else [{"feature": "ice", "max": DEFAULT_ICE_MAX}],
         })

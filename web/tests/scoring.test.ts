@@ -63,3 +63,11 @@ describe('real-unit filter thresholds match Python', () => {
     for (const [tau, z] of fx.zthr_cases as [number, number][]) expect(zThresholdFromValue(fx.zthr_breakpoints, tau)).toBeCloseTo(z, 12);
   });
 });
+
+describe('weight validation', () => {
+  it('rejects zero, negative, and non-finite vectors', () => {
+    expect(() => buildLut([0, 1], [0, 0])).toThrow();
+    expect(() => buildLut([0, 1], [-1, 1])).toThrow();
+    expect(() => buildLut([0, 1], [Number.NaN, 1])).toThrow();
+  });
+});

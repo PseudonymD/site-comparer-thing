@@ -188,14 +188,40 @@ def cmd_publish(args) -> int:
     for name in PUBLISH_FILES:
         shutil.copy2(src / name, WEB_DATA_DIR / name)
         _p(f"{OK} {name:<20} {(src / name).stat().st_size / 1e6:7.2f} MB")
+    from .discoveries import generate
+
+    disc, _ = generate()
+    _p(f"{OK} discoveries.json ({len(disc['discoveries'])} sites) and spotlight.json regenerated from the new data")
     report = PIPELINE_DIR / "report.md"
     if meta["synthetic_features"]:
         _p(f"\n{WARN} synthetic features in this output: {', '.join(meta['synthetic_features'])}")
     _p("\nCopied to web/public/data/. Now commit and push (run from the repository root):\n")
-    _p("  git add web/public/data pipeline/report.md")
+    _p("  git add web/public/data pipeline/report.md")  # includes discoveries.json / spotlight.json
     _p(f'  git commit -m "data: pipeline run {meta["generated"][:10]} ({meta["n_cells"]:,} cells)"')
     _p("  git push\n")
     _ = report
+    return 0
+
+
+def cmd_patch(args) -> int:
+    from .patch import patch
+    from .util import setup_logging
+
+    log_path = setup_logging(args.verbose)
+    feats = [f.strip() for f in args.features.split(",") if f.strip()]
+    patch(feats, Path(args.src) if args.src else WEB_DATA_DIR, force=args.force, offline=args.offline)
+    _p(f"log: {log_path}")
+    _p("Next: python -m pipeline publish")
+    return 0
+
+
+def cmd_discoveries(args) -> int:
+    from .discoveries import generate
+
+    disc, spot = generate()
+    for d in disc["discoveries"]:
+        _p(f"  {d['target']:<20} {d['name'][:34]:<34} {d['lat']:8.2f} {d['lon']:8.2f}  p{d['percentile']:.2f}  {d['novelty_km']:>5} km")
+    _p(f"{OK} wrote web/public/data/discoveries.json ({len(disc['discoveries'])}) and spotlight.json")
     return 0
 
 
@@ -218,7 +244,7 @@ def main(argv=None) -> int:
     sub.add_parser("doctor", help="check Python, disk, RAM, network and token")
     r = sub.add_parser("run", help="run the pipeline (resumable)")
     r.add_argument("--res", type=float, default=0.1, help="grid resolution in degrees (default 0.1)")
-    r.add_argument("--only", help="comma list of groups to (re)compute: terrain,climate,surface,remoteness")
+    r.add_argument("--only", help="comma list of groups (terrain,climate,surface,remoteness) and/or feature ids (e.g. basalt) to (re)compute; everything else is reused from the cache")
     r.add_argument("--bbox", help="minlon,minlat,maxlon,maxlat (process a region only)")
     r.add_argument("--quick", action="store_true", help="tiny smoke test: 0.5°, terrain zoom 4, US South-West")
     r.add_argument("--terrain-zoom", type=int, default=7, help="Terrarium zoom for terrain (default 7)")
@@ -228,11 +254,18 @@ def main(argv=None) -> int:
     sub.add_parser("status", help="show what is done")
     p = sub.add_parser("publish", help="copy outputs into web/public/data and print git commands")
     p.add_argument("--allow-bbox", action="store_true", help="publish a regional (--bbox/--quick) output")
+    pa = sub.add_parser("patch", help="recompute only some features on top of the published data (e.g. --features basalt)")
+    pa.add_argument("--features", required=True, help="comma list of feature ids, e.g. basalt or soc,sand")
+    pa.add_argument("--src", help="directory with the data to patch (default web/public/data)")
+    pa.add_argument("--force", action="store_true", help="ignore cached results for these features")
+    pa.add_argument("--offline", action="store_true", help="no network: cached results only")
+    pa.add_argument("-v", "--verbose", action="store_true")
+    sub.add_parser("discoveries", help="pick headline discoveries + southern Africa spotlight from published data")
     a = sub.add_parser("assets", help="(developers) rebuild committed land-mask/country assets")
     a.add_argument("-v", "--verbose", action="store_true")
     args = ap.parse_args(argv)
     return {"doctor": cmd_doctor, "run": cmd_run, "status": cmd_status, "publish": cmd_publish,
-            "assets": cmd_assets}[args.cmd](args)
+            "patch": cmd_patch, "discoveries": cmd_discoveries, "assets": cmd_assets}[args.cmd](args)
 
 
 if __name__ == "__main__":

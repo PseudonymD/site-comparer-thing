@@ -1,17 +1,28 @@
 // Site dossier: rendered inside the right panel in place of the candidate list, so the map stays visible.
 import type { App } from '../main';
-import type { CellInfo, FeatureMeta } from '../types';
+import type { CellInfo, FeatureMeta, KnownAnalog } from '../types';
 import { contributions, scoreCell, valueFromQ } from '../scoring';
 import { esc, flag, fmtKm, fmtLatLon, fmtValue, GROUP_COLORS } from '../format';
 import { runDrill } from '../drill';
 import { fingerprint } from './fingerprint';
 import { rail } from './rail';
+import { planetPanel, watchPlanetTiles } from './planet';
+
+// The side-by-side stays open while stepping through candidates.
+let pmOpen = false;
+/** Used by the tour to put the side-by-side open state back after the demo. */
+export const planetOpen = () => pmOpen;
+export const setPlanetOpen = (v: boolean) => {
+  pmOpen = v;
+};
 
 export interface DossierNav {
   rank?: number; // 1-based position in the candidate list, when opened from it
+  analog?: KnownAnalog; // set when opened from a known analog marker
   total: number;
   onBack(): void;
   onStep(delta: number): void;
+  onCopy(): void;
 }
 
 const el = () => document.getElementById('dossier')!;
@@ -21,12 +32,13 @@ const bare = (v: number, f: FeatureMeta) => fmtValue(v, f.unit === 'fraction' ? 
 export function renderDossier(app: App, info: CellInfo, lat: number, lon: number, nav: DossierNav, keepScroll = false) {
   const { meta } = app.ds;
   const t = app.target();
-  const w = app.state.weights;
+  const skip = info.excluded ?? []; // layers that do not apply to this cell (no soil under ice): left out, not zero
+  const w = app.state.weights.map((x, j) => (skip.includes(j) ? 0 : x));
   const contrib = contributions(info.q, t.vector, w);
   const total = contrib.reduce((a, b) => a + b, 0);
   const s = scoreCell(info.q, t.vector, w);
   const filtered = info.score === 0 && s > 0;
-  const pctl = app.percentileOf(info.blended || s);
+  const pctl = filtered ? NaN : app.percentileOf(info.blended);
   const country = app.countryName(info.country);
   const near = app.nearestAnalog(lat, lon);
   const z = info.q.map((q) => q / 255);
@@ -41,7 +53,8 @@ export function renderDossier(app: App, info: CellInfo, lat: number, lon: number
   const targetText = (r: (typeof rows)[number]) => (r.raw.value === null ? 'beyond Earth' : fmtValue(r.raw.value, r.f));
 
   const maxC = Math.max(...contrib, 1e-9);
-  const off = rows.length - weighted.length;
+  const off = rows.length - weighted.length - skip.filter((j) => app.state.weights[j] > 0).length;
+  const skipNames = skip.filter((j) => app.state.weights[j] > 0).map((j) => meta.features[j].name.toLowerCase());
   const rails = [...weighted]
     .sort((a, b) => b.c - a.c)
     .map((r) => {
@@ -59,49 +72,61 @@ export function renderDossier(app: App, info: CellInfo, lat: number, lon: number
     .map((r) => {
       const tv = r.raw.value === null ? `<span class="beyond" title="Beyond Earth's range; clamped to Earth max">> ${fmtValue(r.raw.clamped, r.f)}</span>` :
         r.raw.beyond_earth ? `<span class="beyond" title="Beyond Earth's range (clamped to ${fmtValue(r.raw.clamped, r.f)})">${fmtValue(r.raw.value, r.f)}</span>` : fmtValue(r.raw.value, r.f);
-      return `<tr class="${r.w > 0 ? '' : 'off'}"><td>${esc(r.f.name)}</td><td>${fmtValue(r.here, r.f)}</td><td>${tv}</td><td>${Math.round(r.z * 100)}</td><td>${Math.round(r.t * 100)}</td></tr>`;
+      const na = skip.includes(r.j);
+      return `<tr class="${r.w > 0 ? '' : 'off'}"><td>${esc(r.f.name)}</td><td>${na ? 'n/a (no soil)' : fmtValue(r.here, r.f)}</td><td>${tv}</td><td>${Math.round(r.z * 100)}</td><td>${Math.round(r.t * 100)}</td></tr>`;
     })
     .join('');
 
+  const an = nav.analog;
+  const anBodies = an ? an.bodies.join(' & ') : '';
   const rankTxt = Number.isFinite(pctl) ? `top ${Math.max(0.01, (1 - pctl) * 100).toFixed(pctl > 0.99 ? 2 : 1)}%` : '–';
   const prevScroll = keepScroll ? ((el().querySelector('.d-scroll') as HTMLElement | null)?.scrollTop ?? 0) : 0;
   const oldDrill = keepScroll ? document.getElementById('drill-out') : null;
   el().innerHTML = `
     <div class="d-nav">
       <button class="text-btn" id="d-back">← All candidates</button>
-      ${nav.rank ? `<div class="d-step"><span>${nav.rank} of ${nav.total}</span>
+      ${an ? '<div class="d-step"><span>Known analog site</span></div>' : nav.rank ? `<div class="d-step"><span>${nav.rank} of ${nav.total}</span>
         <button class="icon-btn" id="d-prev" aria-label="Previous candidate" ${nav.rank <= 1 ? 'disabled' : ''}>↑</button>
         <button class="icon-btn" id="d-next" aria-label="Next candidate" ${nav.rank >= nav.total ? 'disabled' : ''}>↓</button></div>` : '<div class="d-step"><span>Picked on the map</span></div>'}
     </div>
+    <div class="d-share"><nav class="d-jump" aria-label="Jump to a section"><button class="text-btn" data-jump="d-ev">Evidence</button><button class="text-btn" data-jump="d-pm">Side by side</button><button class="text-btn" data-jump="d-dr">Terrain close-up</button></nav><button class="text-btn" id="d-copy" title="Copy a link that opens this exact view">Copy link</button></div>
     <div class="d-scroll">
       <div class="d-head">
         ${fingerprint(meta.features, t.vector, z, 104, `Fingerprint of this site against ${t.name}`)}
         <div class="d-id">
-          <div class="eyebrow">${fmtLatLon(lat, lon)} · cell ${info.cell}</div>
-          <h2>${flag(country.iso)} ${esc(country.name || 'Unknown location')}</h2>
+          <div class="eyebrow">${an ? `Known ${esc(anBodies)} analog · ` : ''}${fmtLatLon(lat, lon)} · cell ${info.cell}</div>
+          <h2>${flag(country.iso)} ${esc(an ? an.name : country.name || 'Unknown location')}</h2>
           <div class="facts">
             <div class="big">${filtered ? '<span class="beyond">filtered</span>' : (s * 100).toFixed(1)}</div>
             <div><b>${rankTxt}</b>of Earth's land</div>
-            <div title="Nearest known analog: ${esc(near.name)}"><b>${fmtKm(info.noveltyKm)}</b>from a known analog</div>
+            ${an ? `<div title="Bodies this site is used to rehearse"><b>${esc(anBodies)}</b>known analog for</div>` : `<div title="Nearest known analog: ${esc(near.name)}"><b>${fmtKm(info.noveltyKm)}</b>from a known analog</div>`}
           </div>
         </div>
       </div>
       <div class="d-why">
+        ${an ? `<p><b>About this site</b> (${esc(an.country)}): ${esc(an.note)}</p>${an.bodies.includes(t.body) ? '' : `<p class="note">This site is listed as a ${esc(anBodies)} analog. The score below compares it with the ${esc(t.body)} target you have selected.</p>`}` : ''}
         ${good.length ? `<p><b>Matches ${t.body} on</b> ${good.map((r) => esc(lower(r.f.name))).join(', ')}.</p>` : ''}
         ${bad.length ? `<p><b>Biggest gaps:</b> ${bad.map((r) => `${esc(lower(r.f.name))} (${fmtValue(r.here, r.f)} vs ${targetText(r)})`).join(', ')}.</p>` : ''}
-        <p class="note">Nearest known analog: ${esc(near.name)}, ${fmtKm(near.km)} away.${filtered ? ' This cell is excluded by one of your filters.' : ''}</p>
+        <p class="note">${an ? '' : `Nearest known analog: ${esc(near.name)}, ${fmtKm(near.km)} away.`}${filtered ? ' This cell is excluded by one of your filters.' : ''}</p>
       </div>
-      <div class="d-sec">
+      <div class="d-sec" id="d-ev">
         <h3>Where it differs</h3>
         <div class="rail-key"><span><i class="k-t"></i>target</span><span><i class="k-s"></i>this site</span><span>rank among all land, low → high</span><span class="k-share">share of gap</span></div>
         ${rails}
         ${off ? `<p class="note">${off} layer${off > 1 ? 's' : ''} with weight 0 not shown.</p>` : ''}
+        ${skipNames.length ? `<p class="note">Not applicable here and left out of the score, not counted as zero: ${esc(skipNames.join(', '))} (no soil under permanent ice).</p>` : ''}
         <details class="all-values"><summary>Show all values</summary>
           <table class="vals"><thead><tr><th>Layer</th><th>Here</th><th>${esc(t.body)} target</th><th>Here %ile</th><th>Target %ile</th></tr></thead><tbody>${tableRows}</tbody></table>
           <p class="note">Percentiles rank this value among all land on Earth (0–100). Highlighted targets lie beyond anything on Earth and were clamped before comparison.</p>
         </details>
       </div>
-      <div class="d-sec">
+      <div class="d-sec" id="d-pm">
+        <h3>Side by side with ${esc(t.body)}</h3>
+        <p class="note">The target's real terrain next to this candidate, at a similar ground scale.</p>
+        <button class="btn" id="pm-btn">Show ${esc(t.body)} beside Earth</button>
+        <div id="pm-out"></div>
+      </div>
+      <div class="d-sec" id="d-dr">
         <h3>Terrain close-up</h3>
         <p class="note">Fetches ~30 m elevation for a 20 km box around this cell and compares its slopes with the target's.</p>
         <button class="btn" id="drill-btn">Run terrain close-up</button>
@@ -115,7 +140,27 @@ export function renderDossier(app: App, info: CellInfo, lat: number, lon: number
     document.getElementById('drill-out')!.replaceWith(oldDrill);
     document.getElementById('drill-btn')!.textContent = 'Run again';
   }
+  el().querySelectorAll<HTMLButtonElement>('[data-jump]').forEach((b) => {
+    b.onclick = () => document.getElementById(b.dataset.jump!)?.scrollIntoView({ block: 'start' });
+  });
   document.getElementById('d-back')!.onclick = nav.onBack;
+  document.getElementById('d-copy')!.onclick = nav.onCopy;
+  const pmBtn = document.getElementById('pm-btn') as HTMLButtonElement;
+  const pmOut = document.getElementById('pm-out')!;
+  const showPm = () => {
+    pmOut.innerHTML = planetPanel(t, lat, lon);
+    watchPlanetTiles(pmOut);
+    pmBtn.textContent = `Hide ${t.body}`;
+    pmOpen = true;
+  };
+  pmBtn.onclick = () => {
+    if (pmOpen) {
+      pmOut.innerHTML = '';
+      pmBtn.textContent = `Show ${t.body} beside Earth`;
+      pmOpen = false;
+    } else showPm();
+  };
+  if (pmOpen) showPm();
   const prev = document.getElementById('d-prev');
   const next = document.getElementById('d-next');
   if (prev) prev.onclick = () => nav.onStep(-1);

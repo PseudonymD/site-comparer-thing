@@ -1,6 +1,7 @@
 import json
 
 import numpy as np
+import pytest
 
 from pipeline.scoring import blend, contributions, score
 from pipeline.tests.make_fixture import PATH, build
@@ -41,3 +42,11 @@ def test_filters_and_blend():
     assert s[0] == 0 and s[1] > 0
     b = blend(s, np.array([5000.0, 5000.0]), 0.5)
     assert b[0] == 0 and abs(b[1] - (0.5 * s[1] + 0.5)) < 1e-12
+
+
+def test_invalid_weights_are_rejected():
+    q = np.zeros((1, 18), dtype=np.uint8)
+    t = np.zeros(18)
+    for w in (np.zeros(18), np.r_[[-1.0], np.ones(17)], np.full(18, np.nan)):
+        with pytest.raises(ValueError):
+            score(q, t, w)

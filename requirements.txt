@@ -4,6 +4,7 @@ scipy==1.14.1
 rasterio==1.4.3
 pyproj==3.7.0
 requests==2.32.3
+mapbox-vector-tile==2.2.0
 pillow==11.0.0
 geopandas==1.0.1
 pyogrio==0.10.0

@@ -60,8 +60,9 @@ FEATURES: list[Feature] = [
             "Topsoil (0–5 cm) organic carbon, ISRIC SoilGrids 5 km aggregate."),
     Feature("sand", "Sand / fine regolith", "%", "surface", "Surface", ("soilgrids", "synthetic"),
             "Topsoil (0–5 cm) sand fraction, ISRIC SoilGrids 5 km aggregate."),
-    Feature("basalt", "Basaltic / volcanic", "fraction", "geology", "Surface", ("glim", "synthetic"),
-            "Fraction of the cell mapped as basic volcanic (vb) or pyroclastic (pb) rock in GLiM."),
+    Feature("basalt", "Basaltic / volcanic", "fraction", "geology", "Surface", ("glim", "macrostrat", "synthetic"),
+            "Fraction of the cell mapped as basic volcanic (vb) or basic plutonic (pb) rock in GLiM "
+            "(fallback: Macrostrat polygons whose major lithology is mafic)."),
     Feature("ice", "Permanent ice / snow", "fraction", "surface", "Surface",
             ("modis_landcover", "glim_ice", "naturalearth_ice", "synthetic"),
             "Fraction of the cell covered by permanent ice / snow."),
@@ -103,5 +104,7 @@ class RunOptions:
 
     def wants(self, feature_id: str) -> bool:
         if not self.only_groups:
+            return True
+        if feature_id in self.only_groups:  # --only also accepts feature ids, e.g. --only basalt
             return True
         return any(feature_id in FEATURE_GROUPS.get(g, []) for g in self.only_groups)

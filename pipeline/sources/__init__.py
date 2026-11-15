@@ -5,7 +5,7 @@ from __future__ import annotations
 import importlib
 
 SOURCE_MODULES = [
-    "terrain", "power", "modis_lst", "modis_ndvi", "gibs_ndvi", "soilgrids", "glim", "modis_landcover",
+    "terrain", "power", "modis_lst", "modis_ndvi", "gibs_ndvi", "soilgrids", "glim", "macrostrat", "modis_landcover",
     "glim_ice", "naturalearth_ice", "black_marble", "gibs_lights", "merra2", "gibs_aod", "synthetic",
 ]
 
@@ -17,6 +17,7 @@ DESCRIPTIONS = {
     "gibs_ndvi": ("NASA GIBS – MODIS Terra NDVI (colormap-decoded)", "https://nasa-gibs.github.io/gibs-api-docs/"),
     "soilgrids": ("ISRIC SoilGrids 2.0 (5 km)", "https://soilgrids.org"),
     "glim": ("GLiM global lithological map", "https://doi.org/10.1594/PANGAEA.788537"),
+    "macrostrat": ("Macrostrat geologic map (mafic major lithology)", "https://macrostrat.org"),
     "modis_landcover": ("MODIS MCD12C1 v061 land cover", "https://doi.org/10.5067/MODIS/MCD12C1.061"),
     "glim_ice": ("GLiM class 'ig' (ice & glaciers)", "https://doi.org/10.1594/PANGAEA.788537"),
     "naturalearth_ice": ("Natural Earth glaciated areas + Antarctic ice", "https://www.naturalearthdata.com/"),

@@ -1,0 +1,25 @@
+{
+ "note": "Hand-made gazetteer for naming discoveries: region name + bbox [minlon, minlat, maxlon, maxlat]. First match wins. 'literature' marks regions already proposed as analogs in published work (novelty in this app means 'not in our known-analog list').",
+ "places": [
+  {"name": "Western Qaidam Basin (Lenghu), Tibetan Plateau", "bbox": [90.0, 37.0, 95.5, 39.4],
+   "literature": "Already proposed as a Mars analog: Xiao L. et al. (2017) A new terrestrial analogue site for Mars research: the Qaidam Basin, Tibetan Plateau (NW China). Earth-Science Reviews 164, 84-101."},
+  {"name": "Qaidam Basin, Tibetan Plateau", "bbox": [95.5, 35.5, 99.0, 39.4],
+   "literature": "Already proposed as a Mars analog: Xiao L. et al. (2017) Earth-Science Reviews 164, 84-101."},
+  {"name": "Hexi Corridor foreland (Gansu)", "bbox": [96.0, 39.4, 101.0, 41.0]},
+  {"name": "Lop Nur – Kuruktag desert (Xinjiang)", "bbox": [87.5, 39.5, 92.0, 42.0]},
+  {"name": "Eastern Pamir (Kongur – Muztagh Ata)", "bbox": [73.5, 37.5, 76.0, 39.8]},
+  {"name": "Aksai Chin plateau (western Tibetan Plateau)", "bbox": [78.0, 34.0, 82.5, 37.0]},
+  {"name": "Arka Tag (northern Tibetan Plateau)", "bbox": [84.5, 35.8, 89.0, 37.5]},
+  {"name": "Hoh Xil (Kekexili) plateau", "bbox": [89.0, 34.0, 93.0, 36.5]},
+  {"name": "Chang Tang plateau (northern Tibet)", "bbox": [82.5, 32.0, 89.0, 35.8]},
+  {"name": "Southern Gobi (Ömnögovi)", "bbox": [99.0, 42.0, 106.0, 44.5]},
+  {"name": "Dzungarian Gobi (south-west Mongolia)", "bbox": [89.0, 44.5, 93.5, 46.8]},
+  {"name": "Badain Jaran Desert (Inner Mongolia)", "bbox": [100.0, 39.5, 104.0, 42.0]},
+  {"name": "Prince Charles Mountains (Lambert Glacier), Antarctica", "bbox": [60.0, -76.0, 72.0, -70.0]},
+  {"name": "Transantarctic Mountains, Antarctica", "bbox": [150.0, -87.0, 175.0, -75.0]},
+  {"name": "Tankwa Karoo", "bbox": [19.3, -33.0, 20.8, -31.5]},
+  {"name": "Richtersveld", "bbox": [16.4, -28.8, 17.6, -27.5]},
+  {"name": "Namib Desert", "bbox": [12.0, -27.0, 16.0, -19.0]},
+  {"name": "Atacama – Altiplano", "bbox": [-71.0, -27.5, -66.0, -17.0]}
+ ]
+}

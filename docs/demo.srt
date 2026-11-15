@@ -1,0 +1,23 @@
+1
+00:00:00,000 --> 00:00:05,000
+Where on Earth is most like the Moon? 2.1 million land cells, scored live on 18 open data layers.
+
+2
+00:00:05,000 --> 00:00:09,500
+Switch to Mars, Jezero crater: the known analogs light up.
+
+3
+00:00:09,500 --> 00:00:13,500
+Favour new places: good matches far from any known site rise.
+
+4
+00:00:13,500 --> 00:00:19,000
+A discovery, explained in real units: what matches, what doesn't, what it's for.
+
+5
+00:00:19,000 --> 00:00:24,000
+Zoom in: a live 30 m terrain close-up against the real Mars slopes.
+
+6
+00:00:24,000 --> 00:00:29,500
+Mars side by side with its Earth stand-in. Terrestrial Analog Finder: open data, open source.

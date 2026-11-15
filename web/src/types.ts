@@ -11,7 +11,10 @@ export interface FeatureMeta {
   source_url: string;
   synthetic: boolean;
   proxy: boolean;
+  fallback?: boolean;
+  attempts?: { source: string; error_type?: string; skipped?: string; coverage?: number }[];
   coverage: number | null;
+  notes?: string | null;
   min: number;
   max: number;
   breakpoints: number[];
@@ -29,6 +32,7 @@ export interface Meta {
   novelty_saturation_km: number;
   files: { features: string; cells: string; countries: string };
   synthetic_features: string[];
+  patched?: string[];
   features: FeatureMeta[];
   countries: { name: string; iso: string }[];
 }
@@ -79,6 +83,8 @@ export interface ValidationFile {
     target: string;
     name: string;
     auc: number;
+    auc_v1_list?: number;
+    validation_v1?: string[];
     median_analog_percentile: number;
     random_median_score: number;
     analogs: { id: string; name: string; score: number; percentile: number; rank: number | null }[];
@@ -96,6 +102,8 @@ export interface WorkerInit {
   res: number;
   analogs: { lat: number; lon: number }[];
   noveltySaturationKm: number;
+  /** Layers that have no data where the pipeline wrote 0 for "no soil": their feature indices and breakpoints. */
+  noSoil?: { features: number[]; breakpoints: number[][] };
 }
 
 export interface ScoreRequest {
@@ -108,6 +116,19 @@ export interface ScoreRequest {
   stretchLow: number;
   hideBelow: boolean;
   topN: number;
+  /** Limit the heatmap, candidates, and statistics to [minlon, minlat, maxlon, maxlat]. */
+  bbox?: [number, number, number, number] | null;
+  countryIds?: number[] | null;
+  /** Grid indices of the known analogs of this target. When set, the result reports how they rank. */
+  check?: number[];
+  /** The target's default filters, applied to the analog check (as in pipeline/validate.py). */
+  checkFilters?: { feature: number; zThreshold: number }[];
+}
+/** How the target's known analogs rank among all land cells under the weights in this request (no filters). */
+export interface AnalogCheck {
+  auc: number; // probability that a known analog outranks a random land cell
+  medianPercentile: number; // 0..100
+  analogs: number[]; // percentile (0..100) of each requested analog; NaN when the analog is not on the grid
 }
 
 export interface Site {
@@ -131,7 +152,8 @@ export interface ScoreResult {
   height: number;
   sites: Site[];
   stats: { lo: number; hi: number; valid: number; p50: number; p99: number };
-  hist: Uint32Array; // 2048-bin histogram of (blended) scores over unfiltered land cells
+  check?: AnalogCheck;
+  hist: Uint32Array; // 2048-bin histogram of (blended) scores over the selected population
   blob: Blob | null; // PNG of the image, encoded in the worker when OffscreenCanvas is available
   timings: { score: number; image: number; sites: number; encode: number; total: number };
 }
@@ -144,4 +166,70 @@ export interface CellInfo {
   country: number;
   score: number;
   blended: number;
+  included: boolean;
+  /** Feature indices that do not apply to this cell (e.g. soil on an ice sheet). Left out of its score. */
+  excluded: number[];
+}
+
+export interface FactorRow {
+  feature: string;
+  name: string;
+  unit: string;
+  site: number;
+  target: number;
+  target_raw: number | null;
+  beyond_earth: boolean;
+  share_of_gap: number;
+  synthetic: boolean;
+  proxy: boolean;
+}
+
+export interface Discovery {
+  id: string;
+  target: string;
+  target_name: string;
+  name: string;
+  country: string;
+  literature: string | null;
+  lat: number;
+  lon: number;
+  cell: number;
+  score: number;
+  percentile: number;
+  novelty_km: number;
+  nearest_known_analog: string;
+  best: FactorRow[];
+  worst: FactorRow[];
+  uses: string;
+  caveats: string[];
+}
+
+export interface DiscoveriesFile {
+  generated: string;
+  data_generated: string;
+  rule: string;
+  alpha: number;
+  synthetic_features: string[];
+  discoveries: Discovery[];
+}
+
+export interface SpotlightResult {
+  target: string;
+  target_name: string;
+  score: number;
+  percentile: number;
+  lat: number;
+  lon: number;
+  best: FactorRow[];
+  worst: FactorRow[];
+}
+
+export interface SpotlightFile {
+  generated: string;
+  data_generated: string;
+  bbox: [number, number, number, number];
+  method: string;
+  synthetic_features: string[];
+  places: { id: string; name: string; lat: number; lon: number; why: string; results: SpotlightResult[]; best_target: string; best_percentile: number }[];
+  region_best: (SpotlightResult & { country: string })[];
 }
