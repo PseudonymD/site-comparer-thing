@@ -98,6 +98,7 @@ On phones: panels become bottom sheets, and a bottom nav bar (Map / Candidates /
 | `settings.ts` | ~260 | Settings page, theme preferences |
 | `links.ts` | ~100 | Reads and writes the URL hash |
 | `types.ts` | ~230 | TypeScript descriptions of all data shapes |
+| `coords.ts` | ~90 | Parses typed coordinates for the top-bar search (pure logic, tested in `tests/coords.test.ts`) |
 | `format.ts`, `colormap.ts`, `geography.ts` | small | Number formatting, the score colour ramp, region lists |
 | `ui/dossier.ts` | ~180 | The location detail panel |
 | `ui/howitworks.ts` | ~700 | The explainer page and its demos |
@@ -183,9 +184,10 @@ Modules like `ui/dossier.ts` do not import state directly. `main.ts` builds an `
 
 - **Target buttons:** `selectTarget(i)` loads that body's active scoring mode, resets default filters, closes any open location, recolours the interface, and requests a score. The buttons are built from `targets.json`, not hard-coded.
 - **Clicking the map:** `map.onCellClick` → `showCell(lat, lon)` → asks the worker for that cell's 18 values → `renderDossier`. Clicking a numbered circle does the same. Clicking a known-analog diamond opens the same dossier with extra "known analog" text.
+- **Coordinate search:** the top-bar field (`#coord-search`) runs `parseCoords` on every keystroke and shows how it read the text, then asks the worker for that cell to add the country. Enter calls the same `showCell(lat, lon, …, fly, …, zoomIn)` path as a candidate, so it flies there, opens the dossier and updates the URL. Ocean points get the usual "No land here" toast.
 - **Focus mode:** opening a candidate collapses the left panel, hides the heatmap and zooms in (`site-focus` body class). A "Show heatmap" button toggles it back.
 - **Tabs:** buttons with `role="tab"` and `aria-selected`; left/right arrow keys move between them (`tabArrowKeys`).
-- **Keyboard:** `Esc` closes the About page, Settings or the dossier. Up/Down arrows step through candidates when a dossier is open.
+- **Keyboard:** `Esc` closes the About page, Settings or the dossier. Up/Down arrows step through candidates when a dossier is open. `/` focuses the coordinate search.
 - **Settings controls that copy others:** the Filters and Map view sections of the Settings page do not own state. They **mirror** the left-panel controls: changing one sets the original control's value and fires its event (`settings.ts`, `mirrorRange`). So there is one code path. The weights editor is different: it is the only place weights are edited, built by `buildWeightsEditor()` in `main.ts`.
 - **Unsaved changes:** weight edits are drafts. They apply to the map immediately, show an "Unsaved changes" label, and are only stored when you press **Save** (`presets.ts`).
 
@@ -280,6 +282,7 @@ Example of how they combine: `:root[data-theme='dark'][data-body='mars']:not([da
 
 | Breakpoint | What changes |
 |---|---|
+| ≤ 1500 px | The coordinate search shrinks to a ⌖ button that widens while you type |
 | ≤ 1280 px | The row of target buttons is replaced by a dropdown |
 | ≤ 1100 px | The "Data and limitations" link is hidden from the top bar |
 | ≤ 700 px | The "Analog Finder" text next to the logo is hidden |
@@ -303,6 +306,7 @@ Example of how they combine: `:root[data-theme='dark'][data-body='mars']:not([da
 | **Dossier** | `ui/dossier.ts` asks the worker for one cell and draws the fingerprint, gap bars and a values table |
 | **Guided tour** | `tour.ts` highlights a real on-screen element with a spotlight and a caption card. Texts live in `tourSteps.ts`. It saves a snapshot of your settings and restores them afterwards |
 | **Start / Settings** | `start.ts` and `settings.ts`: overlays toggled with the `hidden` class |
+| **Coordinate search** | `coords.ts` parses the text; Enter → `showCell` (same as clicking a candidate) |
 | **Share link** | `links.ts`, URL hash |
 
 ---

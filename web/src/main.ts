@@ -21,6 +21,7 @@ import {
   type Body, type PresetConfig, type PresetId,
 } from './presets';
 import { initStart } from './start';
+import { parseCoords } from './coords';
 import type { CellInfo, Discovery, KnownAnalog, ScoreRequest, ScoreResult, Site, Target } from './types';
 
 export const REGIONS: Record<string, { name: string; bbox: [number, number, number, number] }> = {
@@ -1213,6 +1214,11 @@ async function main() {
       return;
     }
     const tag = (e.target as HTMLElement).tagName;
+    if (e.key === '/' && !e.ctrlKey && !e.metaKey && !e.altKey && about.classList.contains('hidden') && !/^(INPUT|SELECT|TEXTAREA)$/.test(tag) && !(e.target as HTMLElement).isContentEditable) {
+      e.preventDefault();
+      coordInput.focus();
+      return;
+    }
     if (!current || !about.classList.contains('hidden') || /^(INPUT|SELECT|TEXTAREA|SUMMARY)$/.test(tag)) return;
     if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
       const btn = document.getElementById(e.key === 'ArrowDown' ? 'd-next' : 'd-prev') as HTMLButtonElement | null;
@@ -1222,6 +1228,65 @@ async function main() {
       }
     }
   });
+  // ---------------------------------------------------------------- coordinate search (top bar)
+  const coordForm = $('#coord-search') as HTMLFormElement;
+  const coordInput = $('#coord-input') as HTMLInputElement;
+  const coordHint = $('#coord-hint');
+  let coordTimer = 0;
+  let coordSeq = 0;
+  const hideCoordHint = () => {
+    coordSeq++;
+    clearTimeout(coordTimer);
+    coordHint.classList.add('hidden');
+  };
+  const updateCoordHint = () => {
+    const text = coordInput.value;
+    if (!text.trim()) return hideCoordHint();
+    const seq = ++coordSeq;
+    clearTimeout(coordTimer);
+    const p = parseCoords(text);
+    coordHint.classList.remove('hidden');
+    if ('error' in p) {
+      coordHint.className = 'sheet coord-err';
+      coordHint.innerHTML = `<span>${esc(p.error)}</span><span class="coord-eg">e.g. 39.45, 73.55 · 39.45N 73.55E · 39°27′N 73°33′E</span>`;
+      return;
+    }
+    const where = fmtLatLon(p.lat, p.lon);
+    const draw = (place: string) => {
+      coordHint.className = 'sheet';
+      coordHint.innerHTML = `<span class="coord-go">↵ Go to</span><b>${esc(where)}</b><span class="coord-place">${place}</span>`;
+    };
+    draw('…');
+    coordTimer = window.setTimeout(async () => {
+      const info = await app.requestCell(p.lat, p.lon);
+      if (seq !== coordSeq) return;
+      if (!info) return draw('No land cell here');
+      const c = app.countryName(info.country);
+      draw(c.name ? `${flag(c.iso)} ${esc(c.name)}` : 'Land cell');
+    }, 150);
+  };
+  coordInput.addEventListener('input', updateCoordHint);
+  coordInput.addEventListener('focus', updateCoordHint);
+  coordInput.addEventListener('blur', () => setTimeout(hideCoordHint, 120));
+  coordInput.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    e.stopPropagation();
+    coordInput.value = '';
+    hideCoordHint();
+    coordInput.blur();
+  });
+  coordForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const p = parseCoords(coordInput.value);
+    if ('error' in p) {
+      updateCoordHint();
+      return;
+    }
+    hideCoordHint();
+    coordInput.blur();
+    void showCell(p.lat, p.lon, undefined, true, false, true);
+  });
+
   mapApi.onCellClick((lat, lon) => void showCell(lat, lon));
   mapApi.onAnalogClick((a) => void showAnalog(a));
   mapApi.map.on('moveend', updateHash);
