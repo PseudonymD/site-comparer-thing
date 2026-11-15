@@ -48,7 +48,7 @@ export function renderDiscoveries(el: HTMLElement, ds: Dataset, hooks: PanelHook
     </article>`,
     )
     .join('');
-  el.innerHTML = `<p class="note">New candidates the scoring itself picked: Earth's top 1% for a target and at least 500 km from every known analog. Rule: ${esc(file.rule)}</p>${cards}`;
+  el.innerHTML = `<p class="note">New candidates the scoring itself picked: Earth's top 1% for a target and at least 500 km from every known analog. Rule: ${esc(file.rule)}</p><p class="note">These were found by the pipeline with the original per-target literature weights, so they do not change with the scoring mode you choose in Settings.</p>${cards}`;
   el.querySelectorAll<HTMLElement>('.disc').forEach((card) => {
     const d = file.discoveries[+card.dataset.k!];
     card.querySelector<HTMLButtonElement>('[data-act=fly]')!.onclick = () => hooks.flyToDiscovery(d);

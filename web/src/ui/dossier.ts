@@ -32,7 +32,8 @@ const bare = (v: number, f: FeatureMeta) => fmtValue(v, f.unit === 'fraction' ? 
 export function renderDossier(app: App, info: CellInfo, lat: number, lon: number, nav: DossierNav, keepScroll = false) {
   const { meta } = app.ds;
   const t = app.target();
-  const w = app.state.weights;
+  const skip = info.excluded ?? []; // layers that do not apply to this cell (no soil under ice): left out, not zero
+  const w = app.state.weights.map((x, j) => (skip.includes(j) ? 0 : x));
   const contrib = contributions(info.q, t.vector, w);
   const total = contrib.reduce((a, b) => a + b, 0);
   const s = scoreCell(info.q, t.vector, w);
@@ -52,7 +53,8 @@ export function renderDossier(app: App, info: CellInfo, lat: number, lon: number
   const targetText = (r: (typeof rows)[number]) => (r.raw.value === null ? 'beyond Earth' : fmtValue(r.raw.value, r.f));
 
   const maxC = Math.max(...contrib, 1e-9);
-  const off = rows.length - weighted.length;
+  const off = rows.length - weighted.length - skip.filter((j) => app.state.weights[j] > 0).length;
+  const skipNames = skip.filter((j) => app.state.weights[j] > 0).map((j) => meta.features[j].name.toLowerCase());
   const rails = [...weighted]
     .sort((a, b) => b.c - a.c)
     .map((r) => {
@@ -70,7 +72,8 @@ export function renderDossier(app: App, info: CellInfo, lat: number, lon: number
     .map((r) => {
       const tv = r.raw.value === null ? `<span class="beyond" title="Beyond Earth's range; clamped to Earth max">> ${fmtValue(r.raw.clamped, r.f)}</span>` :
         r.raw.beyond_earth ? `<span class="beyond" title="Beyond Earth's range (clamped to ${fmtValue(r.raw.clamped, r.f)})">${fmtValue(r.raw.value, r.f)}</span>` : fmtValue(r.raw.value, r.f);
-      return `<tr class="${r.w > 0 ? '' : 'off'}"><td>${esc(r.f.name)}</td><td>${fmtValue(r.here, r.f)}</td><td>${tv}</td><td>${Math.round(r.z * 100)}</td><td>${Math.round(r.t * 100)}</td></tr>`;
+      const na = skip.includes(r.j);
+      return `<tr class="${r.w > 0 ? '' : 'off'}"><td>${esc(r.f.name)}</td><td>${na ? 'n/a (no soil)' : fmtValue(r.here, r.f)}</td><td>${tv}</td><td>${Math.round(r.z * 100)}</td><td>${Math.round(r.t * 100)}</td></tr>`;
     })
     .join('');
 
@@ -111,6 +114,7 @@ export function renderDossier(app: App, info: CellInfo, lat: number, lon: number
         <div class="rail-key"><span><i class="k-t"></i>target</span><span><i class="k-s"></i>this site</span><span>rank among all land, low → high</span><span class="k-share">share of gap</span></div>
         ${rails}
         ${off ? `<p class="note">${off} layer${off > 1 ? 's' : ''} with weight 0 not shown.</p>` : ''}
+        ${skipNames.length ? `<p class="note">Not applicable here and left out of the score, not counted as zero: ${esc(skipNames.join(', '))} (no soil under permanent ice).</p>` : ''}
         <details class="all-values"><summary>Show all values</summary>
           <table class="vals"><thead><tr><th>Layer</th><th>Here</th><th>${esc(t.body)} target</th><th>Here %ile</th><th>Target %ile</th></tr></thead><tbody>${tableRows}</tbody></table>
           <p class="note">Percentiles rank this value among all land on Earth (0–100). Highlighted targets lie beyond anything on Earth and were clamped before comparison.</p>

@@ -102,6 +102,8 @@ export interface WorkerInit {
   res: number;
   analogs: { lat: number; lon: number }[];
   noveltySaturationKm: number;
+  /** Layers that have no data where the pipeline wrote 0 for "no soil": their feature indices and breakpoints. */
+  noSoil?: { features: number[]; breakpoints: number[][] };
 }
 
 export interface ScoreRequest {
@@ -117,6 +119,14 @@ export interface ScoreRequest {
   /** Limit the heatmap, candidates, and statistics to [minlon, minlat, maxlon, maxlat]. */
   bbox?: [number, number, number, number] | null;
   countryIds?: number[] | null;
+  /** Grid indices of the known analogs of this target. When set, the result reports how they rank. */
+  check?: number[];
+}
+/** How the target's known analogs rank among all land cells under the weights in this request (no filters). */
+export interface AnalogCheck {
+  auc: number; // probability that a known analog outranks a random land cell
+  medianPercentile: number; // 0..100
+  analogs: number[]; // percentile (0..100) of each requested analog; NaN when the analog is not on the grid
 }
 
 export interface Site {
@@ -140,6 +150,7 @@ export interface ScoreResult {
   height: number;
   sites: Site[];
   stats: { lo: number; hi: number; valid: number; p50: number; p99: number };
+  check?: AnalogCheck;
   hist: Uint32Array; // 2048-bin histogram of (blended) scores over the selected population
   blob: Blob | null; // PNG of the image, encoded in the worker when OffscreenCanvas is available
   timings: { score: number; image: number; sites: number; encode: number; total: number };
@@ -154,6 +165,8 @@ export interface CellInfo {
   score: number;
   blended: number;
   included: boolean;
+  /** Feature indices that do not apply to this cell (e.g. soil on an ice sheet). Left out of its score. */
+  excluded: number[];
 }
 
 export interface FactorRow {

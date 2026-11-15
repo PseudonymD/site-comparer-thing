@@ -97,7 +97,7 @@ export const GUIDE_STEPS: GuideStep[] = [
     paras: (c) => {
       const out = [
         `This button shows the scoring mode in use. There are three modes for each of the Moon and Mars: Exploration, Direct Comparison, and Direct Comparison + Earth Factors. Click it to open Settings.`,
-        `In Settings, each of the ${c.nFeatures} layers has an on/off switch and a weight from 0 to 3, grouped as Terrain, Climate, Surface and Remoteness. Save keeps your changes in this browser; Reset to default puts back the original for that one mode. At least one layer must stay on.`,
+        `In Settings, each of the ${c.nFeatures} layers has an on/off switch and a weight in percentage points, grouped as Terrain, Climate, Surface and Remoteness. Save keeps your changes in this browser; Reset to default puts back the original for that one mode. At least one layer must stay on.`,
       ];
       if (c.proxies.length) out.push(`Layers tagged proxy in this build: ${c.proxies.join(', ')}. See Limitations for what proxies mean.`);
       return out;

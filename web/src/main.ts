@@ -15,8 +15,9 @@ import { REGIONS as GEO_REGIONS, matchesGeography, validRegion, type RegionId } 
 import { validWeightVector } from './population';
 import { applyPrefs, initSettings } from './settings';
 import {
-  BODIES, PRESETS, STORAGE_KEY, WEIGHT_MAX, WEIGHT_MIN, WEIGHT_STEP, applyVector, cloneConfig, defaultConfig, effectiveWeights,
-  isPresetId, keyOf, literatureWeights, parseStore, presetInfo, resolveConfig, sameConfig, serializeStore, weightShares,
+  APPLICABILITY, BODIES, PRESETS, STORAGE_KEY, WEIGHT_MAX, WEIGHT_MIN, WEIGHT_STEP, applyVector, cloneConfig, defaultConfig,
+  effectiveWeights, isEarthFactor, isPresetId, keyOf, parseStore, presetInfo, resolveConfig, sameConfig, serializeStore,
+  targetUsable, weightShares,
   type Body, type PresetConfig, type PresetId,
 } from './presets';
 import { initStart } from './start';
@@ -124,6 +125,7 @@ async function main() {
       type: 'init', features: ds.features, cells: ds.cells, countries: ds.countries, nFeatures: F,
       nLon: meta.grid.n_lon, nLat: meta.grid.n_lat, res: meta.grid.res,
       analogs: ds.analogs.map((a) => ({ lat: a.lat, lon: a.lon })), noveltySaturationKm: meta.novelty_saturation_km,
+      noSoil: { features: ['sand', 'soc'].map(featIndex).filter((j) => j >= 0), breakpoints: ['sand', 'soc'].filter((id) => featIndex(id) >= 0).map((id) => meta.features[featIndex(id)].breakpoints) },
     },
     [ds.features, ds.cells, ds.countries],
   );
@@ -134,8 +136,7 @@ async function main() {
   const t0 = Math.max(0, targets.targets.findIndex((t) => t.id === link.t));
   // ---- scoring presets: one saved/working configuration per body and mode (src/presets.ts)
   const featureIds = meta.features.map((f) => f.id);
-  const literature = Object.fromEntries(BODIES.map((b) => [b, literatureWeights(targets.targets, featureIds, b)])) as Record<Body, Record<string, number>>;
-  const defaultOf = (body: Body, id: PresetId) => defaultConfig(id, featureIds, literature[body]);
+  const defaultOf = (body: Body, id: PresetId) => defaultConfig(body, id, featureIds);
   const readStore = () => {
     try {
       return localStorage.getItem(STORAGE_KEY);
@@ -266,13 +267,27 @@ async function main() {
   }
 
   // ---------------------------------------------------------------- scoring loop
+  /** Grid indices of the target's known analogs, so the worker can report how well the current weights rank them. */
+  function validationCells(t: Target): number[] {
+    const out: number[] = [];
+    for (const id of t.validation ?? []) {
+      const a = ds.analogs.find((x) => x.id === id);
+      if (!a) continue;
+      const r = Math.floor((90 - a.lat) / meta.grid.res);
+      const c = Math.floor((a.lon + 180) / meta.grid.res);
+      if (r >= 0 && r < meta.grid.n_lat && c >= 0 && c < meta.grid.n_lon) out.push(r * meta.grid.n_lon + c);
+    }
+    return out;
+  }
   let reqId = 0;
   let inFlight = false;
   let dirty = false;
   function buildRequest(): ScoreRequest {
     const t = app.target();
+    // A target value that is not a number is missing, not zero: that layer is left out of the score.
+    const use = targetUsable(t.vector, state.weights);
     return {
-      type: 'score', id: ++reqId, target: t.vector, weights: state.weights,
+      type: 'score', id: ++reqId, target: use.target, weights: use.weights, check: validationCells(t),
       filters: state.filters.filter((f) => f.on).map((f) => {
         const fm = meta.features[featIndex(f.id)];
         return { feature: featIndex(f.id), zThreshold: zThresholdFromValue(fm.breakpoints, f.tau) };
@@ -298,6 +313,7 @@ async function main() {
     if (msg.type === 'scored') {
       inFlight = false;
       lastResult = msg as ScoreResult;
+      syncBadge();
       onScored(lastResult);
       pump();
     } else if (msg.type === 'cell') {
@@ -691,7 +707,9 @@ async function main() {
 
   function syncBadge() {
     const t = app.target();
-    const v = ds.validation?.results.find((r) => r.target === t.id);
+    // Live: how the known analogs of this target rank under the weights in use right now. (The pipeline's
+    // static table in the About page used the original per-target literature weights.)
+    const v = lastResult?.check && Number.isFinite(lastResult.check.auc) ? { auc: lastResult.check.auc, median_analog_percentile: lastResult.check.medianPercentile } : undefined;
     // The same badge appears in the left brief and, compactly, above the candidate list.
     for (const b of [$('#t-valid'), $('#sites-valid')]) {
       if (!v) {
@@ -701,6 +719,7 @@ async function main() {
       const cls = v.auc >= 0.85 ? 'good' : v.auc >= 0.65 ? 'fair' : 'weak';
       const word = cls === 'good' ? 'works well' : cls === 'fair' ? 'works moderately' : 'weak';
       b.className = `vbadge ${cls}`;
+      b.title = 'Recomputed for the scoring mode and weights in use. Click for the method and the original validation table.';
       b.innerHTML = `<i></i><span>How well does this work? <b>AUC ${v.auc.toFixed(2)}</b> · known analogs median p${v.median_analog_percentile.toFixed(0)} · ${word}</span>`;
       b.onclick = () => {
         renderAbout(app, showPlace);
@@ -781,7 +800,7 @@ async function main() {
       ? `Scoring ${app.target().name} and every other ${body} target right now. Values under each layer name are that target's value and its Earth percentile (p0 lowest, p100 highest).`
       : `Not in use right now: you are viewing a ${cur} target. These ${body} settings apply as soon as you pick a ${body} target.`;
     $('#set-weights').classList.toggle('other-body', !same);
-    $('#w-summary').innerHTML = `<b>Active weighting: ${nOn ? '100%' : '0%'}</b> across ${nOn} of ${F} layers · total weight ${fmtW(total)}`;
+    $('#w-summary').innerHTML = `<b>Active weighting: ${nOn ? '100%' : '0%'}</b> across ${nOn} of ${F} layers · weights add up to ${fmtW(total)}${total === 100 ? '' : ' (shares below are out of that total)'}`;
     meta.features.forEach((f, j) => {
       const on = cfg.enabled[f.id];
       sliders[j].value = String(cfg.weights[f.id]);
@@ -790,6 +809,13 @@ async function main() {
       sliderVals[j].textContent = fmtW(cfg.weights[f.id]);
       sliderPcts[j].textContent = vec[j] > 0 ? `${shares[j] >= 10 ? shares[j].toFixed(0) : shares[j].toFixed(1)}%` : '–';
       sliders[j].closest('.wrow')!.classList.toggle('off', vec[j] === 0);
+      // What this layer means for the body being edited (see APPLICABILITY in presets.ts).
+      const info = APPLICABILITY[body][f.id];
+      const earth = isEarthFactor(body, f.id);
+      const tag = sliders[j].closest('.wrow')!.querySelector<HTMLElement>('.ekind')!;
+      tag.textContent = earth ? 'Earth-only' : '';
+      tag.hidden = !earth;
+      sliders[j].closest('.wrow')!.setAttribute('title', info ? `${body}: ${info.kind}. ${info.note}` : '');
       fill(sliders[j]);
     });
     for (const g of groups) {
@@ -853,7 +879,7 @@ async function main() {
         const row = document.createElement('div');
         row.className = 'wrow';
         const badge = f.synthetic ? '<span class="badge synth">placeholder</span>' : f.proxy ? '<span class="badge proxy">proxy</span>' : '';
-        row.innerHTML = `<input type="checkbox" class="w-on" id="we-${f.id}" aria-label="Use ${esc(f.name)}"><div class="wl"><label for="w-${f.id}">${esc(f.name)}${badge}</label><div class="tv"></div></div><input type="range" id="w-${f.id}" min="${WEIGHT_MIN}" max="${WEIGHT_MAX}" step="${WEIGHT_STEP}"><span class="val"></span><span class="pct mono" title="Share of the total active weight"></span>`;
+        row.innerHTML = `<input type="checkbox" class="w-on" id="we-${f.id}" aria-label="Use ${esc(f.name)}"><div class="wl"><label for="w-${f.id}">${esc(f.name)}${badge}<span class="ekind"></span></label><div class="tv"></div></div><input type="range" id="w-${f.id}" min="${WEIGHT_MIN}" max="${WEIGHT_MAX}" step="${WEIGHT_STEP}"><span class="val"></span><span class="pct mono" title="Share of the total active weight"></span>`;
         const input = row.querySelector<HTMLInputElement>('input[type=range]')!;
         const check = row.querySelector<HTMLInputElement>('.w-on')!;
         input.addEventListener('input', () => editConfig((c) => (c.weights[f.id] = +input.value)));

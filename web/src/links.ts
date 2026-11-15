@@ -29,7 +29,7 @@ export function parseHash(hash: string): LinkState {
   if (p.get('m') && /^[a-z_]{1,30}$/.test(p.get('m')!)) out.m = p.get('m')!;
   if (p.get('w')) {
     const w = p.get('w')!.split('_').map(Number);
-    if (w.every((x) => Number.isFinite(x) && x >= 0 && x <= 3)) out.w = w;
+    if (w.every((x) => Number.isFinite(x) && x >= 0 && x <= 100)) out.w = w;
   }
   if (p.has('f')) {
     out.f = p

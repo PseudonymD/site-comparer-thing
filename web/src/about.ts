@@ -56,6 +56,7 @@ ${stepsHTML(app)}
       has been tuned since. All analogs are famous sites known to us from the start, so none is a strict hold-out, but none was used to fit weights. Changes made after
       seeing results: the default ice filter, the SoilGrids gap fix (Antarctica had been given peat-like soil carbon) and the Arcadia surface-ice value and analog list.
       Details: <code>docs/decisions.md</code> and <code>pipeline/report.md</code> in the repository.</p>
+      <p class="note"><b>Which weights?</b> The badge in the app is recomputed live for the scoring mode and weights you are using. The table below was computed once by the pipeline with the original per-target literature weights, so the two can differ. Both treat the known analogs the same way: all land cells, no filters.</p>
       ${validation ? `<table><thead><tr><th>Target</th><th>ROC-AUC</th><th>Median analog percentile</th><th>Known analogs (Earth percentile)</th></tr></thead><tbody>${valRows}</tbody></table>` : '<p class="note">No validation file in this build.</p>'}
 
       <h3>Data sources (this build)</h3>

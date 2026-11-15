@@ -1,10 +1,10 @@
 /// <reference lib="webworker" />
 // Scoring worker: holds the uint8 feature matrix, re-scores every land cell on demand, paints the
 // Web-Mercator score image and extracts the top-N candidate sites.
-import { blend, buildLut, haversineKm, scoreAll, type Filter } from './scoring';
+import { blend, buildLut, exclusionScale, haversineKm, noSoilMask, scoreAll, type Exclusion, type Filter } from './scoring';
 import { buildColormap } from './colormap';
 import { isSelected } from './population';
-import type { ScoreRequest, ScoreResult, Site, WorkerInit, CellInfo } from './types';
+import type { AnalogCheck, ScoreRequest, ScoreResult, Site, WorkerInit, CellInfo } from './types';
 
 let F = 18;
 let q: Uint8Array;
@@ -22,6 +22,8 @@ let imgW = 0;
 let imgH = 0;
 let lut32: Uint32Array;
 let included: Uint8Array;
+let noSoil: Uint8Array | null = null; // 1 = no soil data here (pipeline wrote 0): soil layers are not applicable
+let soilFeatures: number[] = [];
 let satKm = 2000;
 const MAX_MERC_LAT = 85.0511287798;
 
@@ -39,6 +41,7 @@ function init(msg: WorkerInit) {
   blended = new Float32Array(n);
   included = new Uint8Array(n);
   colorIdx = new Uint8Array(nLon * nLat);
+  buildNoSoilMask(msg.noSoil);
   // Novelty distances (once).
   dist = new Float32Array(n);
   const an = msg.analogs;
@@ -71,6 +74,16 @@ function init(msg: WorkerInit) {
   (self as unknown as Worker).postMessage({ type: 'ready', nCells: n });
 }
 
+function buildNoSoilMask(spec: WorkerInit['noSoil']) {
+  noSoil = null;
+  soilFeatures = [];
+  if (!spec || !spec.features.length) return;
+  const mask = noSoilMask(q, F, cells.length, spec.features, spec.breakpoints);
+  if (mask) {
+    noSoil = mask;
+    soilFeatures = spec.features;
+  }
+}
 function percentileFromHist(hist: Uint32Array, total: number, p: number): number {
   const target = total * p;
   let acc = 0;
@@ -95,7 +108,8 @@ function score(req: ScoreRequest): ScoreResult {
   const n = cells.length;
   const filters: Filter[] = req.filters;
   const lut = buildLut(req.target, req.weights, filters);
-  scoreAll(q, F, lut, scores);
+  const excl: Exclusion | undefined = noSoil ? { mask: noSoil, features: soilFeatures, scale: exclusionScale(req.weights, soilFeatures) } : undefined;
+  scoreAll(q, F, lut, scores, excl);
   const a = req.alpha;
   const HB = 2048;
   const hist = new Uint32Array(HB);
@@ -156,16 +170,56 @@ function score(req: ScoreRequest): ScoreResult {
   const tImg = performance.now();
 
   const sites = topSites(hist, valid, req.topN, included);
+  const check = req.check?.length ? analogCheck(req.check, req.target, req.weights, excl) : undefined;
   const t1 = performance.now();
   return {
     type: 'scored', id: req.id, image: img, width: imgW, height: imgH, sites,
     stats: { lo, hi, valid, p50: percentileFromHist(hist, valid, 0.5), p99: percentileFromHist(hist, valid, 0.99) },
-    hist,
+    hist, check,
     timings: { score: tScore - t0, image: tImg - tScore, sites: t1 - tImg, encode: 0, total: t1 - t0 },
     blob: null,
   };
 }
 
+let plain: Float32Array | null = null;
+/** Position of a grid index in the land-cell list, or -1. */
+function posOfGrid(gridIndex: number): number {
+  let lo = 0;
+  let hi = cells.length - 1;
+  while (lo <= hi) {
+    const mid = (lo + hi) >> 1;
+    const v = cells[mid];
+    if (v === gridIndex) return mid;
+    if (v < gridIndex) lo = mid + 1;
+    else hi = mid - 1;
+  }
+  return -1;
+}
+/**
+ * Where do this target's known analogs rank, under the current weights? Same definition as the pipeline's
+ * validation (all land cells, no user filters, no novelty), so the number is comparable with the report.
+ */
+function analogCheck(grid: number[], target: number[], weights: number[], excl: Exclusion | undefined): AnalogCheck {
+  const n = cells.length;
+  if (!plain) plain = new Float32Array(n);
+  scoreAll(q, F, buildLut(target, weights, []), plain, excl);
+  const pct: number[] = grid.map((g) => {
+    const p = posOfGrid(g);
+    if (p < 0) return NaN;
+    const s = plain![p];
+    let below = 0;
+    let tie = 0;
+    for (let i = 0; i < n; i++) {
+      const v = plain![i];
+      if (v < s) below++;
+      else if (v === s) tie++;
+    }
+    return ((below + 0.5 * (tie - 1)) / (n - 1)) * 100;
+  });
+  const ok = pct.filter((x) => !Number.isNaN(x)).sort((a, b) => a - b);
+  const mid = ok.length ? (ok.length % 2 ? ok[(ok.length - 1) / 2] : (ok[ok.length / 2 - 1] + ok[ok.length / 2]) / 2) : NaN;
+  return { auc: ok.length ? ok.reduce((a, b) => a + b, 0) / ok.length / 100 : NaN, medianPercentile: mid, analogs: pct };
+}
 function topSites(hist: Uint32Array, valid: number, topN: number, population: Uint8Array): Site[] {
   // Candidate cells: roughly the best 6000 (threshold from the histogram).
   const want = Math.min(6000, valid);
@@ -256,6 +310,7 @@ function cellInfo(gridIndex: number): CellInfo | null {
       return {
         pos: mid, cell: v, q: Array.from(q.subarray(mid * F, mid * F + F)), noveltyKm: dist[mid],
         country: countries[mid], score: scores ? scores[mid] : 0, blended: blended ? blended[mid] : 0, included: !!included[mid],
+        excluded: noSoil && noSoil[mid] ? soilFeatures : [],
       };
     }
     if (v < gridIndex) lo = mid + 1;
