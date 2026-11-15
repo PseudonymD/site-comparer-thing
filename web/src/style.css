@@ -107,7 +107,17 @@ h1, h2, h3, h4, p { margin: 0; }
 .target:hover { background: var(--raised); }
 .target[aria-pressed='true'] { background: var(--accent); color: var(--on-accent); font-weight: 600; }
 #target-select { display: none; flex: 1; min-width: 0; max-width: 320px; background: var(--raised); border: 1px solid var(--line); border-radius: 7px; padding: 6px 8px; font-weight: 600; }
-.guide { margin-left: auto; display: flex; align-items: center; gap: 16px; padding-left: 16px; border-left: 1px solid var(--line); }
+#coord-search { position: relative; flex: none; margin-left: auto; display: flex; align-items: center; gap: 8px; }
+.coord-label { font-weight: 600; font-size: 12.5px; white-space: nowrap; }
+#coord-input { width: 200px; background: var(--raised) no-repeat 8px 50% / 13px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23888' stroke-width='1.7' stroke-linecap='round'%3E%3Ccircle cx='6.5' cy='6.5' r='4.5'/%3E%3Cpath d='M10 10l4.5 4.5'/%3E%3C/svg%3E"); border: 1px solid var(--line); border-radius: 7px; padding: 6px 8px 6px 27px; color: var(--ink); font: 400 11.5px/1.3 var(--mono); font-stretch: 80%; }
+#coord-input::placeholder { color: var(--muted); }
+#coord-input:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 35%, transparent); }
+#coord-hint { position: absolute; top: calc(100% + 8px); right: 0; min-width: 100%; width: max-content; max-width: min(340px, calc(100vw - 24px)); padding: 9px 11px; display: flex; flex-direction: column; gap: 3px; font: 400 11.5px/1.4 var(--mono); font-stretch: 80%; z-index: 30; }
+#coord-hint b { font-weight: 600; font-size: 12.5px; }
+#coord-hint .coord-go, #coord-hint .coord-eg { color: var(--muted); }
+#coord-hint .coord-place { font-family: var(--text); }
+#coord-hint.coord-err > span:first-child { color: var(--ink); font-weight: 500; }
+.guide { margin-left: 0; display: flex; align-items: center; gap: 16px; padding-left: 16px; border-left: 1px solid var(--line); }
 .guide .text-btn { font-weight: 500; }
 
 /* ---------- panels ---------- */
@@ -208,6 +218,7 @@ input[type='checkbox'] { accent-color: var(--accent); width: 15px; height: 15px;
 .site .score b { font: 700 17px/1 var(--display); font-stretch: 80%; font-variant-numeric: tabular-nums; }
 .score-bar { width: 52px; height: 3px; background: var(--line); border-radius: 2px; overflow: hidden; display: block; }
 .score-bar i { display: block; height: 100%; background: var(--inferno); background-size: 52px 100%; }
+.site .tag { border: 0; padding: 0; letter-spacing: 0.04em; font-size: 10px; opacity: 0.85; }
 .tag { font: 500 11px/1 var(--mono); font-stretch: 80%; letter-spacing: 0.06em; text-transform: uppercase; color: var(--good); border: 1px solid currentColor; border-radius: 3px; padding: 2px 3px; margin-left: 7px; vertical-align: 1px; }
 
 /* ---------- right: dossier ---------- */
@@ -325,13 +336,19 @@ body.site-focus:not(.focus-heat) #legend { display: none; }
 .ref-key { font-family: var(--mono); font-stretch: 80%; font-size: 10.5px; color: var(--muted); }
 #toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); z-index: 200; padding: 10px 14px; font-size: 13px; font-weight: 500; }
 
-@media (max-width: 1280px) {
+@media (max-width: 1500px) {
   .targets { display: none; }
   #target-select { display: block; }
 }
-@media (max-width: 1100px) {
-  /* keep the guide group on one line next to the select */
-  #btn-limits { display: none; }
+@media (max-width: 900px) {
+  /* phones/tablets: a magnifier button that widens over the top bar while in use */
+  .coord-label { display: none; }
+  #coord-input { width: 112px; height: 34px; padding: 6px 6px 6px 26px; font-size: 13px; }
+  #coord-input::placeholder { color: var(--muted); }
+  #coord-search:focus-within { position: absolute; left: 10px; right: 10px; top: 50%; transform: translateY(-50%); z-index: 2; }
+  #coord-search:focus-within #coord-input { width: 100%; height: 38px; padding: 6px 10px 6px 30px; background-position: 9px 50%; background-size: 14px; color: var(--ink); font-size: 16px; cursor: text; }
+  #coord-search:focus-within #coord-input::placeholder { color: var(--muted); }
+  #coord-search:focus-within #coord-hint { left: 0; right: 0; width: auto; max-width: none; }
 }
 @media (max-width: 700px) {
   .brand { font-size: 0; gap: 0; }
@@ -709,6 +726,8 @@ body.touring #legend, body.touring #heat-toggle { display: none; }
   #guide-sheet .eyebrow { margin-bottom: 2px; }
   #map .maplibregl-ctrl-top-right { top: calc(var(--inset-t) + 4px); right: var(--gut); }
   #map .maplibregl-ctrl-bottom-right, #map .maplibregl-ctrl-bottom-left { bottom: calc(var(--nav-h) + 2px); right: 0; }
+  /* Keep the scale bar and attribution above the legend strip while it is showing. */
+  #map .maplibregl-ctrl-bottom-right { bottom: calc(var(--nav-h) + var(--legend-h, 0px) + 2px); transition: bottom 0.2s ease; }
 
   /* touch targets */
   .tabs button { min-height: 44px; padding-top: 0; padding-bottom: 0; }
@@ -828,7 +847,7 @@ body.start-open #topbar, body.start-open .panel, body.start-open .panel-toggle {
 #simple-nav, #simple-panel, #simple-legend { display: none; }
 body.simple #left, body.simple #right, body.simple #toggle-left, body.simple #toggle-right, body.simple #legend,
 body.simple #heat-toggle, body.simple #mnav, body.simple #guide-sheet, body.simple .targets, body.simple #target-select,
-body.simple .guide { display: none !important; }
+body.simple .guide, body.simple #coord-search { display: none !important; }
 body.simple #simple-nav { display: flex; align-items: center; gap: 16px; margin-left: auto; }
 body.simple #simple-panel { display: flex; left: var(--gut); width: min(420px, 100vw - var(--gut) * 2); }
 body.simple #simple-legend { display: block; position: fixed; bottom: var(--gut); z-index: 9; width: 250px; padding: 10px 12px; left: var(--inset-l); }
@@ -918,4 +937,8 @@ body.simple #simple-legend { display: block; position: fixed; bottom: var(--gut)
   .sm-cols { grid-template-columns: 1fr; }
   .sm-big { font-size: 44px; }
   .sm-row-body { grid-template-columns: 1fr; }
+}
+/* Declutter: on desktop the left panel already shows the scoring mode and validation badge. */
+@media (min-width: 901px) {
+  #mode-line-btn, #sites-valid { display: none !important; }
 }

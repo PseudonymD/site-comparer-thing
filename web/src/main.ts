@@ -22,6 +22,7 @@ import {
 } from './presets';
 import { initStart, rememberMode, type UiMode } from './start';
 import { createSimple } from './ui/simple';
+import { parseCoords } from './coords';
 import type { CellInfo, Discovery, KnownAnalog, ScoreRequest, ScoreResult, Site, Target } from './types';
 
 export const REGIONS: Record<string, { name: string; bbox: [number, number, number, number] }> = {
@@ -223,9 +224,9 @@ async function main() {
       return total ? below / total : NaN;
     },
     requestCell(lat: number, lon: number) {
-      const r = Math.floor((90 - lat) / meta.grid.res);
-      const c = Math.floor((lon + 180) / meta.grid.res);
-      if (r < 0 || r >= meta.grid.n_lat || c < 0 || c >= meta.grid.n_lon) return Promise.resolve(null);
+      if (!(lat >= -90 && lat <= 90) || !Number.isFinite(lon)) return Promise.resolve(null);
+      const r = Math.min(meta.grid.n_lat - 1, Math.floor((90 - lat) / meta.grid.res)); // lat -90 is the last row
+      const c = Math.floor((((lon + 180) % 360) + 360) % 360 / meta.grid.res) % meta.grid.n_lon; // lon 180 = -180
       const id = ++cellReqId;
       return new Promise((resolve) => {
         pendingCells.set(id, resolve);
@@ -265,14 +266,13 @@ async function main() {
       };
     }
     const mode = store.active[bodyOf(t)];
-    const shipped = effectiveWeights(defaultOf(bodyOf(t), mode), featureIds);
-    const wChanged = state.weights.some((w, j) => w !== shipped[j]);
     const on = state.filters.filter((f) => f.on).map((f) => ({ id: f.id, tau: f.tau }));
     const def = (t.default_filters || []).map((f) => ({ id: f.feature, tau: f.max }));
     const fChanged = JSON.stringify(on) !== JSON.stringify(def);
     const c = mapApi.map.getCenter();
     return {
-      t: t.id, m: mode, w: wChanged ? state.weights : undefined, f: fChanged ? on : undefined, a: state.alpha || undefined,
+      // Weights always travel with the link: the recipient may have saved their own weights for this mode.
+      t: t.id, m: mode, w: state.weights, f: fChanged ? on : undefined, a: state.alpha || undefined,
       c: state.geography.countries.length ? state.geography.countries : undefined,
       g: state.geography.regions.length ? state.geography.regions : undefined,
       r: state.region, v: { lat: c.lat, lon: c.lng, zoom: mapApi.map.getZoom() }, s: site,
@@ -309,6 +309,7 @@ async function main() {
     const use = targetUsable(t.vector, state.weights);
     return {
       type: 'score', id: ++reqId, target: use.target, weights: use.weights, check: validationCells(t),
+      checkFilters: (t.default_filters || []).map((f) => ({ feature: featIndex(f.feature), zThreshold: zThresholdFromValue(meta.features[featIndex(f.feature)].breakpoints, f.max) })),
       filters: state.filters.filter((f) => f.on).map((f) => {
         const fm = meta.features[featIndex(f.id)];
         return { feature: featIndex(f.id), zThreshold: zThresholdFromValue(fm.breakpoints, f.tau) };
@@ -336,6 +337,10 @@ async function main() {
       lastResult = msg as ScoreResult;
       syncBadge();
       onScored(lastResult);
+      pump();
+    } else if (msg.type === 'score-error') {
+      inFlight = false;
+      toast(`Could not score with these settings: ${msg.message}`);
       pump();
     } else if (msg.type === 'cell') {
       const cb = pendingCells.get(msg.id);
@@ -1074,8 +1079,11 @@ async function main() {
     }
     toast(`${a.name}: no land cell in the dataset here. ${a.note}`, 6000);
   }
+  let showSeq = 0; // bumped by every showCell and closeDossier; a stale showCell does nothing
   async function showCell(lat: number, lon: number, rank?: number, fly = false, keepScroll = false, zoomIn = false, analog?: KnownAnalog) {
+    const seq = ++showSeq;
     const info = await app.requestCell(lat, lon);
+    if (seq !== showSeq) return;
     if (!info) {
       toast('No land here. Pick a spot on land inside the data.');
       return;
@@ -1111,6 +1119,7 @@ async function main() {
   }
 
   function closeDossier() {
+    showSeq++; // a showCell still waiting for the worker must not reopen the dossier
     if (!current) return;
     current = null;
     currentAnalog = null;
@@ -1143,7 +1152,6 @@ async function main() {
     $('#legend-mid').textContent = `99th percentile ${(res.stats.p99 * 100).toFixed(1)}`;
     $('#legend-hi').textContent = (hi * 100).toFixed(1);
     $('#legend-title').textContent = state.alpha > 0 ? `Analog score + novelty · ${shortName(app.target())}` : `Analog score · ${shortName(app.target())}`;
-    $('#legend-foot').textContent = `${res.stats.valid.toLocaleString()} cells re-scored in ${Math.round(res.timings.total)} ms`;
   }
 
   function onScored(res: ScoreResult) {
@@ -1281,10 +1289,8 @@ async function main() {
   applyDefaultFilters(app.target());
   root.style.setProperty('--inferno', cssGradient());
   $('#btn-about').onclick = () => renderAbout(app, showPlace);
-  $('#btn-limits').onclick = openLimits;
   settings.attachAdvanced({ filterCount: state.filters.length });
   $('#btn-settings').onclick = () => settings.open($('#btn-settings'));
-  $('#legend-limits').onclick = openLimits;
   // Mobile bottom nav and Guide sheet: thin wrappers over the existing controls.
   $('#mnav-map').onclick = () => {
     setGuide(false);
@@ -1328,6 +1334,11 @@ async function main() {
       return;
     }
     const tag = (e.target as HTMLElement).tagName;
+    if (e.key === '/' && !e.ctrlKey && !e.metaKey && !e.altKey && about.classList.contains('hidden') && !/^(INPUT|SELECT|TEXTAREA)$/.test(tag) && !(e.target as HTMLElement).isContentEditable) {
+      e.preventDefault();
+      coordInput.focus();
+      return;
+    }
     if (!current || !about.classList.contains('hidden') || /^(INPUT|SELECT|TEXTAREA|SUMMARY)$/.test(tag)) return;
     if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
       const btn = document.getElementById(e.key === 'ArrowDown' ? 'd-next' : 'd-prev') as HTMLButtonElement | null;
@@ -1337,6 +1348,71 @@ async function main() {
       }
     }
   });
+  // ---------------------------------------------------------------- coordinate search (top bar)
+  const coordForm = $('#coord-search') as HTMLFormElement;
+  const coordInput = $('#coord-input') as HTMLInputElement;
+  const coordHint = $('#coord-hint');
+  let coordTimer = 0;
+  let coordSeq = 0;
+  const hideCoordHint = () => {
+    coordSeq++;
+    clearTimeout(coordTimer);
+    coordHint.classList.add('hidden');
+  };
+  const updateCoordHint = () => {
+    const text = coordInput.value;
+    if (!text.trim()) {
+      if (document.activeElement !== coordInput) return hideCoordHint();
+      coordSeq++;
+      coordHint.className = 'sheet';
+      coordHint.innerHTML = `<b>Jump to any place on Earth</b><span class="coord-place">Type latitude, then longitude, and press Enter.</span><span class="coord-eg">e.g. 39.45, 73.55  or  39°27′N 73°33′E</span>`;
+      return;
+    }
+    const seq = ++coordSeq;
+    clearTimeout(coordTimer);
+    const p = parseCoords(text);
+    coordHint.classList.remove('hidden');
+    if ('error' in p) {
+      coordHint.className = 'sheet coord-err';
+      coordHint.innerHTML = `<span>${esc(p.error)}</span><span class="coord-eg">e.g. 39.45, 73.55 · 39.45N 73.55E · 39°27′N 73°33′E</span>`;
+      return;
+    }
+    const where = fmtLatLon(p.lat, p.lon);
+    const draw = (place: string) => {
+      coordHint.className = 'sheet';
+      coordHint.innerHTML = `<span class="coord-go">↵ Go to</span><b>${esc(where)}</b><span class="coord-place">${place}</span>`;
+    };
+    draw('…');
+    coordTimer = window.setTimeout(async () => {
+      const info = await app.requestCell(p.lat, p.lon);
+      if (seq !== coordSeq) return;
+      if (!info) return draw('No land cell here');
+      const c = app.countryName(info.country);
+      draw(c.name ? `${flag(c.iso)} ${esc(c.name)}` : 'Land cell');
+    }, 150);
+  };
+  coordInput.addEventListener('input', updateCoordHint);
+  coordInput.addEventListener('focus', updateCoordHint);
+  coordInput.addEventListener('blur', () => setTimeout(hideCoordHint, 120));
+  coordInput.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    e.stopPropagation();
+    coordInput.value = '';
+    hideCoordHint();
+    coordInput.blur();
+  });
+  coordForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const p = parseCoords(coordInput.value);
+    if ('error' in p) {
+      updateCoordHint();
+      return;
+    }
+    hideCoordHint();
+    coordInput.blur();
+    void showCell(p.lat, p.lon, undefined, true, false, !ui.simple);
+  });
+
   mapApi.onCellClick((lat, lon) => void showCell(lat, lon));
   mapApi.onAnalogClick((a) => void showAnalog(a));
   mapApi.map.on('moveend', updateHash);
@@ -1578,6 +1654,22 @@ async function main() {
   const narrow = isNarrow();
   setPanel('left', !narrow);
   setPanel('right', !narrow);
+  if (!link.v && state.region === 'world') {
+    // Frame the whole inhabited world inside the gap between the panels, so the top candidates
+    // (often in Central Asia) are not hidden under the right panel on first load.
+    mapApi.map.stop();
+    mapApi.map.setPadding(panelPadding());
+    mapApi.map.fitBounds([[-165, -56], [178, 74]], { animate: false });
+  }
+  // Expose the legend's on-screen height so narrow layouts can lift the scale bar above it.
+  const legendEl = $('#legend');
+  const syncLegendH = () => {
+    const h = legendEl.getClientRects().length ? legendEl.offsetHeight + 12 : 0;
+    document.documentElement.style.setProperty('--legend-h', `${h}px`);
+  };
+  new ResizeObserver(syncLegendH).observe(legendEl);
+  new MutationObserver(syncLegendH).observe(document.body, { attributes: true, attributeFilter: ['class'] });
+  syncLegendH();
   window.addEventListener('resize', applyPadding);
   requestScore();
   if (link.s) void showCell(link.s.lat, link.s.lon, undefined, !link.v, false, !ui.simple);

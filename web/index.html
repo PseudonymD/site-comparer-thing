@@ -99,10 +99,14 @@
       <button class="brand" id="btn-start" type="button" title="Back to the start screen"><span class="brand-mark" aria-hidden="true"></span>Analog Finder</button>
       <nav class="targets" id="targets" aria-label="Target site"></nav>
       <select id="target-select" aria-label="Target site"></select>
+      <form id="coord-search" role="search" autocomplete="off">
+        <label class="coord-label" for="coord-input">Go to</label>
+        <input id="coord-input" type="search" placeholder="lat, lon" aria-label="Go to coordinates: latitude, longitude (press / to focus)" aria-describedby="coord-hint" spellcheck="false" enterkeyhint="go">
+        <div id="coord-hint" class="sheet hidden" role="status" aria-live="polite"></div>
+      </form>
       <div class="guide" role="group" aria-label="Guide">
-        <button class="text-btn" id="btn-tour">Take the tour</button>
+        <button class="text-btn" id="btn-tour">Tour</button>
         <button class="text-btn" id="btn-about">How it works</button>
-        <button class="text-btn" id="btn-limits">Data and limitations</button>
         <button class="text-btn" id="btn-settings">Settings</button>
       </div>
       <div id="simple-nav">
@@ -148,9 +152,7 @@
       <div class="eyebrow" id="legend-title">Analog score</div>
       <div class="legend-hist" id="legend-hist"></div>
       <div class="legend-ticks"><span id="legend-lo"></span><span id="legend-mid"></span><span id="legend-hi"></span></div>
-      <div class="legend-foot" id="legend-foot"></div>
       <div class="legend-key"><span><i class="k-site"></i>candidate</span><span><i class="k-analog"></i>known analog site</span></div>
-      <div class="legend-more"><button class="text-btn legend-limits" id="legend-limits" type="button">Limitations</button></div>
     </div>
 
     <button id="heat-toggle" class="sheet" aria-pressed="false">Show heatmap</button>

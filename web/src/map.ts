@@ -72,6 +72,8 @@ export function createMap(container: HTMLElement): MapApi {
   });
   map.addControl(new maplibregl.NavigationControl({ visualizePitch: false, showCompass: false }), 'top-right');
   map.addControl(new maplibregl.ScaleControl({ maxWidth: 120, unit: 'metric' }), 'bottom-right');
+  // Map credits start folded behind the (i) button instead of a paragraph over the map.
+  map.once('load', () => container.querySelector('.maplibregl-ctrl-attrib')?.classList.remove('maplibregl-compact-show'));
 
   // The score raster is a north-up Web-Mercator PNG covering the whole world (±85.05°), produced by
   // the worker. (A canvas source would avoid the PNG round trip, but its texture upload proved
