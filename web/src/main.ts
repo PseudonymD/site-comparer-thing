@@ -1,4 +1,5 @@
 import './style.css';
+import { inject } from '@vercel/analytics';
 import { loadDataset, type Dataset } from './data';
 import { createMap, type MapApi } from './map';
 import { cssGradient, infernoRgb } from './colormap';
@@ -88,6 +89,9 @@ function toast(msg: string, ms = 3500) {
 }
 
 async function main() {
+  // Initialize Vercel Analytics
+  inject();
+  
   // Appearance and the start screen come first so they work while the data streams in.
   applyPrefs();
   const settings = initSettings();
